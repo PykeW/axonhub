@@ -229,3 +229,304 @@ These pages should stay out of the first version:
 3. Richer status badges and clearer failure reason exposure.
 
 This order gets the team to a usable "sell shared capacity and let customers actually call it" loop first, then improves troubleshooting depth and operator efficiency.
+
+## Frontend Route Tree and Page Decomposition
+
+### Design Goals
+
+- Split the information architecture into operator-side and project-side tracks, reducing single-page state-machine complexity.
+- Keep URL semantics stable so the MVP can grow into richer operational, governance, and troubleshooting flows without route churn.
+- Stay compatible with AxonHub's existing TanStack Router and file-based routing style, without forcing URL structure and final file names to match exactly.
+- In the first release, prioritize the loop of product creation -> channel-pool binding -> sub-key issuance -> project onboarding -> request troubleshooting; defer secondary capabilities into tabs or embedded sections.
+
+### Recommended Route Tree
+
+The visible URL information architecture should be organized around two main tracks:
+
+```text
+/operator/relay-subkeys
+  /products
+  /products/create
+  /products/:productId
+  /products/:productId/edit
+  /keys
+  /keys/create
+  /keys/:keyId
+  /keys/:keyId/billing
+  /keys/:keyId/requests
+  /channel-pool-health
+  /requests
+
+/projects/:projectId/relay-subkey
+  /overview
+  /products
+  /keys
+  /keys/:keyId
+  /usage
+  /get-started
+  /verify
+```
+
+Notes:
+- The `operator` track serves platform operators, support, and risk-control roles.
+- The `projects/:projectId/relay-subkey` track serves buyer-side project admins and developers.
+- If the MVP needs additional scope control, only `products`, `keys`, `overview`, and `get-started` need to become standalone routes first; the remaining capabilities can live in tabs.
+
+### File-Based Route Naming Guidance
+
+The documentation should explicitly distinguish two layers:
+- `URL route tree / information architecture`: user-facing navigation and page responsibility.
+- `file-based route naming`: the implementation that hangs under the existing `__root`, `_auth`, operator layout, and project layout structure.
+
+A reasonable implementation-oriented naming example:
+
+```text
+frontend/src/routes/
+  __root.tsx
+  _auth.operator.relay-subkeys.products.index.tsx
+  _auth.operator.relay-subkeys.products.create.tsx
+  _auth.operator.relay-subkeys.products.$productId.index.tsx
+  _auth.operator.relay-subkeys.keys.index.tsx
+  _auth.operator.relay-subkeys.keys.create.tsx
+  _auth.operator.relay-subkeys.keys.$keyId.index.tsx
+  _auth.operator.relay-subkeys.keys.$keyId.billing.tsx
+  _auth.operator.relay-subkeys.requests.tsx
+  _auth.operator.relay-subkeys.channel-pool-health.tsx
+
+  _auth.projects.$projectId.relay-subkey.overview.tsx
+  _auth.projects.$projectId.relay-subkey.products.tsx
+  _auth.projects.$projectId.relay-subkey.keys.tsx
+  _auth.projects.$projectId.relay-subkey.keys.$keyId.tsx
+  _auth.projects.$projectId.relay-subkey.usage.tsx
+  _auth.projects.$projectId.relay-subkey.get-started.tsx
+  _auth.projects.$projectId.relay-subkey.verify.tsx
+```
+
+### Page Responsibility and Flow Mapping
+
+#### Operator-side pages
+
+| Page | Route | Related Flow | Core Responsibility |
+| --- | --- | --- | --- |
+| Product list | `/operator/relay-subkeys/products` | Operator creates shared-capacity products | Inspect status, filter, activate/archive, open details |
+| Product create | `/operator/relay-subkeys/products/create` | Operator creates shared-capacity products | Enter product code, name, provider type, and model scope |
+| Product detail | `/operator/relay-subkeys/products/:productId` | Product detail and channel-pool configuration | Manage pool binding, priority, weight, and model filter |
+| Sub-key list | `/operator/relay-subkeys/keys` | Operator issues sub-keys to projects | View all keys, filter states, identify low-balance and expired keys |
+| Sub-key create | `/operator/relay-subkeys/keys/create` | Operator issues sub-keys to projects | Pick project, product, balance mode, expiry, and hard limits |
+| Sub-key detail | `/operator/relay-subkeys/keys/:keyId` | Key lifecycle management | Inspect overview, recent failures, and execute management actions |
+| Billing page | `/operator/relay-subkeys/keys/:keyId/billing` | Recharge and ledger flow | Recharge, refund, manually adjust, inspect accounting evidence |
+| Request trace page | `/operator/relay-subkeys/requests` | Shared-pool troubleshooting | Search failures by key, product, or channel |
+| Channel pool health dashboard | `/operator/relay-subkeys/channel-pool-health` | Shared-pool troubleshooting | Inspect product-pool health and upstream capacity risk |
+
+#### Project-side pages
+
+| Page | Route | Related Flow | Core Responsibility |
+| --- | --- | --- | --- |
+| Overview | `/projects/:projectId/relay-subkey/overview` | Project admin inspects and adopts the key | Summarize products, keys, balances, and recent failures |
+| Product access page | `/projects/:projectId/relay-subkey/products` | Project admin reviews product scope | Show project-visible products and model descriptions |
+| Key list | `/projects/:projectId/relay-subkey/keys` | Project admin inspects and adopts the key | View usable keys and copy access info |
+| Key detail | `/projects/:projectId/relay-subkey/keys/:keyId` | Project admin inspects and adopts the key | Copy API key and base URL, inspect status and recent failures |
+| Usage page | `/projects/:projectId/relay-subkey/usage` | Request succeeds and settlement completes | Inspect balance, consumption trend, and recent charges |
+| Getting started page | `/projects/:projectId/relay-subkey/get-started` | Project admin inspects and adopts the key | Provide SDK examples, error-code explanations, and onboarding hints |
+| Verify page | `/projects/:projectId/relay-subkey/verify` | Integration verification | Run lightweight verification and show recent verification results |
+
+### Page and Component Decomposition
+
+#### Page-level components
+
+Operator-side:
+- `RelayProductListPage`
+- `RelayProductCreatePage`
+- `RelayProductDetailPage`
+- `RelayKeyListPage`
+- `RelayKeyCreatePage`
+- `RelayKeyDetailPage`
+- `RelayKeyBillingPage`
+- `RelayRequestTracePage`
+- `RelayChannelPoolHealthPage`
+
+Project-side:
+- `ProjectRelayOverviewPage`
+- `ProjectRelayProductAccessPage`
+- `ProjectRelayKeyListPage`
+- `ProjectRelayKeyDetailPage`
+- `ProjectRelayUsagePage`
+- `ProjectRelayGetStartedPage`
+- `ProjectRelayVerifyPage`
+
+#### Shared business components
+
+Product-related:
+- `RelayProductTable`
+- `RelayProductStatusBadge`
+- `RelayProductForm`
+- `RelayChannelPoolTable`
+- `RelayChannelPoolEditor`
+- `RelayChannelHealthSummary`
+- `AllowedModelList`
+
+Key-related:
+- `RelayKeyTable`
+- `RelayKeyStatusBadge`
+- `RelayKeyCreateForm`
+- `RelayKeyOverviewCard`
+- `RelayKeyMaskedSecretCard`
+- `RelayKeyLimitPanel`
+- `RelayKeyDerivedStateBadges`
+
+Billing and usage:
+- `RelayWalletSummaryCard`
+- `RelayLedgerTable`
+- `RelayRechargeDialog`
+- `RelayUsageSummaryChart`
+- `RelayUsageFilters`
+- `RelayChargeResultBadge`
+
+Request troubleshooting:
+- `RelayRequestTable`
+- `RelayRequestFilters`
+- `RelayExecutionTimeline`
+- `RelayFailureStageBadge`
+- `RelayRequestDetailDrawer`
+
+Project onboarding:
+- `RelaySdkExampleCard`
+- `RelayBaseUrlCard`
+- `RelayVerifyPanel`
+- `RelayErrorGuide`
+
+#### Recommended decomposition inside large pages
+
+- `RelayProductDetailPage`
+  - `RelayProductHeader`
+  - `RelayProductOverviewTab`
+  - `RelayProductChannelPoolTab`
+  - `RelayProductAllowedModelsTab`
+  - `RelayProductAssignedKeysTab`
+- `RelayKeyDetailPage`
+  - `RelayKeyHeader`
+  - `RelayKeyOverviewTab`
+  - `RelayKeyBillingTab`
+  - `RelayKeyRequestTab`
+  - `RelayKeyLimitTab`
+- `ProjectRelayKeyDetailPage`
+  - `ProjectRelayKeyHeader`
+  - `ProjectRelayKeyAccessTab`
+  - `ProjectRelayKeyUsageTab`
+  - `ProjectRelayKeyRecentFailuresTab`
+
+### Data Loading and State Management Guidance
+
+Recommended usage:
+- Page-level remote data: TanStack Query
+- Lightweight cross-page UI state: Zustand
+- Forms: React Hook Form plus Zod
+- Table filters: URL search params
+
+Suggested query hooks:
+- `useRelayProductsQuery`
+- `useRelayProductDetailQuery`
+- `useRelayChannelPoolQuery`
+- `useRelayKeysQuery`
+- `useRelayKeyDetailQuery`
+- `useRelayWalletQuery`
+- `useRelayLedgerEntriesQuery`
+- `useRelayRequestTraceQuery`
+- `useRelayChannelPoolHealthQuery`
+- `useProjectRelayOverviewQuery`
+- `useProjectRelayUsageQuery`
+
+Suggested mutation hooks:
+- `useCreateRelayProductMutation`
+- `useUpdateRelayProductMutation`
+- `useBindRelayChannelMutation`
+- `useCreateRelayKeyMutation`
+- `useSuspendRelayKeyMutation`
+- `useResumeRelayKeyMutation`
+- `useArchiveRelayKeyMutation`
+- `useRechargeRelayWalletMutation`
+- `useAdjustRelayKeyLimitMutation`
+
+Suggested Zustand stores:
+- `useRelayProductFilterStore`
+- `useRelayKeyFilterStore`
+- `useRelayRequestTraceFilterStore`
+- `useRelayUiStore`
+
+Guidance: business truth should stay in query results; stores should hold UI state and lightweight filter state only.
+
+### GraphQL / API Boundary Suggestions
+
+The relay management console should continue to prefer a GraphQL-first boundary. Suggested domain grouping:
+
+Product domain:
+- `listRelayProducts`
+- `getRelayProduct`
+- `createRelayProduct`
+- `updateRelayProduct`
+- `archiveRelayProduct`
+
+Channel-pool domain:
+- `listRelayProductChannels`
+- `bindRelayProductChannel`
+- `unbindRelayProductChannel`
+- `reorderRelayProductChannels`
+
+Sub-key domain:
+- `listRelayKeys`
+- `getRelayKey`
+- `createRelayKey`
+- `suspendRelayKey`
+- `resumeRelayKey`
+- `archiveRelayKey`
+- `renewRelayKey`
+
+Wallet domain:
+- `getRelayWallet`
+- `listRelayLedgerEntries`
+- `rechargeRelayWallet`
+- `refundRelayWallet`
+- `adjustRelayWallet`
+
+Troubleshooting domain:
+- `listRelayRequests`
+- `getRelayRequestDetail`
+- `listRelayChannelPoolHealth`
+
+Project-side domain:
+- `getProjectRelayOverview`
+- `listProjectRelayProducts`
+- `listProjectRelayKeys`
+- `getProjectRelayKeyDetail`
+- `getProjectRelayUsageSummary`
+
+### MVP Route Boundaries
+
+In the first release, only the following pages need to become standalone routes; the rest can remain tabs or drawers:
+
+Operator-side:
+- `/operator/relay-subkeys/products`
+- `/operator/relay-subkeys/products/:productId`
+- `/operator/relay-subkeys/keys`
+- `/operator/relay-subkeys/keys/:keyId`
+
+Project-side:
+- `/projects/:projectId/relay-subkey/overview`
+- `/projects/:projectId/relay-subkey/keys/:keyId`
+- `/projects/:projectId/relay-subkey/get-started`
+
+Benefits:
+- Small route count.
+- Simpler permission checks.
+- Faster MVP delivery.
+- Future extraction of `billing`, `requests`, and `channel-pool-health` into standalone pages without rewriting URL semantics.
+
+### Post-MVP Expansion Directions
+
+Potential future standalone routes:
+- Richer request troubleshooting views.
+- A dedicated channel-pool health dashboard.
+- Product approval and publishing flows.
+- Bulk key management pages.
+- Project-level verification center.
+- Custom notification and alert pages.

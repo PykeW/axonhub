@@ -223,3 +223,304 @@ AxonHub 已经具备 API 网关、渠道路由、请求审计与 API Key 鉴权�
 3. 更细的状态 badge 与失败原因透出。
 
 按这个顺序推进，可以先跑通“卖出共享容量并可被真实调用”的最小闭环，再补强排障与运营效率。
+
+## 前端路由树与页面拆解
+
+### 设计目标
+
+- 将页面信息架构拆为“运营侧”和“项目侧”两条主线，降低单页状态机复杂度。
+- 保持 URL 语义稳定，便于后续从 MVP 扩展到更完整的运营、治理与排障流程。
+- 实现层继续兼容 AxonHub 现有 TanStack Router 与 file-based routing 风格，但不要求 URL 与最终文件名完全一致。
+- MVP 首发优先保证“产品创建 -> 渠道池绑定 -> Sub-Key 发放 -> 项目接入 -> 请求排障”闭环，其它能力先以内嵌 Tab 或 Section 承载。
+
+### 路由树建议
+
+建议把可见 URL 信息架构组织为两条主线：
+
+```text
+/operator/relay-subkeys
+  /products
+  /products/create
+  /products/:productId
+  /products/:productId/edit
+  /keys
+  /keys/create
+  /keys/:keyId
+  /keys/:keyId/billing
+  /keys/:keyId/requests
+  /channel-pool-health
+  /requests
+
+/projects/:projectId/relay-subkey
+  /overview
+  /products
+  /keys
+  /keys/:keyId
+  /usage
+  /get-started
+  /verify
+```
+
+说明：
+- `operator` 主线承载平台运营、客服和风控支持视角。
+- `projects/:projectId/relay-subkey` 主线承载买方项目管理员和开发者视角。
+- 若 MVP 需要进一步收敛，可先只落 `products`、`keys`、`overview`、`get-started` 等最小页面，其余能力以内嵌 Tab 过渡。
+
+### File-Based Route 命名建议
+
+文档需要明确区分两层概念：
+- `URL 路由树 / 信息架构`：面向用户的导航与职责划分。
+- `file-based route 命名`：挂在现有 `__root`、`_auth`、operator layout、project layout 之下的实现方式。
+
+可参考的实现层命名示例：
+
+```text
+frontend/src/routes/
+  __root.tsx
+  _auth.operator.relay-subkeys.products.index.tsx
+  _auth.operator.relay-subkeys.products.create.tsx
+  _auth.operator.relay-subkeys.products.$productId.index.tsx
+  _auth.operator.relay-subkeys.keys.index.tsx
+  _auth.operator.relay-subkeys.keys.create.tsx
+  _auth.operator.relay-subkeys.keys.$keyId.index.tsx
+  _auth.operator.relay-subkeys.keys.$keyId.billing.tsx
+  _auth.operator.relay-subkeys.requests.tsx
+  _auth.operator.relay-subkeys.channel-pool-health.tsx
+
+  _auth.projects.$projectId.relay-subkey.overview.tsx
+  _auth.projects.$projectId.relay-subkey.products.tsx
+  _auth.projects.$projectId.relay-subkey.keys.tsx
+  _auth.projects.$projectId.relay-subkey.keys.$keyId.tsx
+  _auth.projects.$projectId.relay-subkey.usage.tsx
+  _auth.projects.$projectId.relay-subkey.get-started.tsx
+  _auth.projects.$projectId.relay-subkey.verify.tsx
+```
+
+### 页面职责与 Flow 映射
+
+#### 运营侧页面
+
+| 页面 | 路由 | 对应 Flow | 核心职责 |
+| --- | --- | --- | --- |
+| 产品列表 | `/operator/relay-subkeys/products` | 运营创建共享容量产品 | 查看状态、筛选、上下架、进入详情 |
+| 产品新建 | `/operator/relay-subkeys/products/create` | 运营创建共享容量产品 | 填写产品编码、名称、provider 类型、模型范围 |
+| 产品详情 | `/operator/relay-subkeys/products/:productId` | 产品详情与渠道池配置 | 配置渠道池、优先级、权重、模型过滤 |
+| Sub-Key 列表 | `/operator/relay-subkeys/keys` | 运营为项目发放 Sub-Key | 查看所有 Key、筛选状态、识别低余额和过期 Key |
+| Sub-Key 新建 | `/operator/relay-subkeys/keys/create` | 运营为项目发放 Sub-Key | 选择项目、产品、余额模式、有效期、硬限额 |
+| Sub-Key 详情 | `/operator/relay-subkeys/keys/:keyId` | Key 管理、暂停、恢复、归档 | 查看概览、最近失败原因、执行管理动作 |
+| 账务页 | `/operator/relay-subkeys/keys/:keyId/billing` | 充值/流水页 | 充值、退款、人工调整、查看账务凭证 |
+| 请求排障页 | `/operator/relay-subkeys/requests` | 共享池故障排查 | 按 Key / 产品 / 渠道检索失败请求 |
+| 渠道健康看板 | `/operator/relay-subkeys/channel-pool-health` | 共享池故障排查 | 查看产品池健康、识别上游容量风险 |
+
+#### 项目侧页面
+
+| 页面 | 路由 | 对应 Flow | 核心职责 |
+| --- | --- | --- | --- |
+| 总览页 | `/projects/:projectId/relay-subkey/overview` | 项目管理员查看并接入 Key | 汇总产品、Key、余额和最近失败 |
+| 产品接入页 | `/projects/:projectId/relay-subkey/products` | 项目管理员查看产品范围 | 查看项目可见产品和模型说明 |
+| Key 列表 | `/projects/:projectId/relay-subkey/keys` | 项目管理员查看并接入 Key | 查看项目内可用 Key、复制接入信息 |
+| Key 详情 | `/projects/:projectId/relay-subkey/keys/:keyId` | 项目管理员查看并接入 Key | 复制 API Key / Base URL、查看状态和最近失败 |
+| 用量页 | `/projects/:projectId/relay-subkey/usage` | 请求成功并完成扣费 | 查看余额、消耗趋势、最近扣费 |
+| 接入说明页 | `/projects/:projectId/relay-subkey/get-started` | 项目管理员查看并接入 Key | 提供 SDK 示例、错误码说明、接入提醒 |
+| 验证页 | `/projects/:projectId/relay-subkey/verify` | 接入验证 | 执行简单联通校验并展示最近验证结果 |
+
+### 页面与组件拆分建议
+
+#### 页面级组件
+
+运营侧：
+- `RelayProductListPage`
+- `RelayProductCreatePage`
+- `RelayProductDetailPage`
+- `RelayKeyListPage`
+- `RelayKeyCreatePage`
+- `RelayKeyDetailPage`
+- `RelayKeyBillingPage`
+- `RelayRequestTracePage`
+- `RelayChannelPoolHealthPage`
+
+项目侧：
+- `ProjectRelayOverviewPage`
+- `ProjectRelayProductAccessPage`
+- `ProjectRelayKeyListPage`
+- `ProjectRelayKeyDetailPage`
+- `ProjectRelayUsagePage`
+- `ProjectRelayGetStartedPage`
+- `ProjectRelayVerifyPage`
+
+#### 共享业务组件
+
+产品相关：
+- `RelayProductTable`
+- `RelayProductStatusBadge`
+- `RelayProductForm`
+- `RelayChannelPoolTable`
+- `RelayChannelPoolEditor`
+- `RelayChannelHealthSummary`
+- `AllowedModelList`
+
+Key 相关：
+- `RelayKeyTable`
+- `RelayKeyStatusBadge`
+- `RelayKeyCreateForm`
+- `RelayKeyOverviewCard`
+- `RelayKeyMaskedSecretCard`
+- `RelayKeyLimitPanel`
+- `RelayKeyDerivedStateBadges`
+
+账务与用量相关：
+- `RelayWalletSummaryCard`
+- `RelayLedgerTable`
+- `RelayRechargeDialog`
+- `RelayUsageSummaryChart`
+- `RelayUsageFilters`
+- `RelayChargeResultBadge`
+
+请求排障相关：
+- `RelayRequestTable`
+- `RelayRequestFilters`
+- `RelayExecutionTimeline`
+- `RelayFailureStageBadge`
+- `RelayRequestDetailDrawer`
+
+项目接入相关：
+- `RelaySdkExampleCard`
+- `RelayBaseUrlCard`
+- `RelayVerifyPanel`
+- `RelayErrorGuide`
+
+#### 页面内部推荐拆分
+
+- `RelayProductDetailPage`
+  - `RelayProductHeader`
+  - `RelayProductOverviewTab`
+  - `RelayProductChannelPoolTab`
+  - `RelayProductAllowedModelsTab`
+  - `RelayProductAssignedKeysTab`
+- `RelayKeyDetailPage`
+  - `RelayKeyHeader`
+  - `RelayKeyOverviewTab`
+  - `RelayKeyBillingTab`
+  - `RelayKeyRequestTab`
+  - `RelayKeyLimitTab`
+- `ProjectRelayKeyDetailPage`
+  - `ProjectRelayKeyHeader`
+  - `ProjectRelayKeyAccessTab`
+  - `ProjectRelayKeyUsageTab`
+  - `ProjectRelayKeyRecentFailuresTab`
+
+### 数据加载与状态管理建议
+
+建议优先使用：
+- 页面级数据：TanStack Query
+- 少量跨页 UI 状态：Zustand
+- 表单：React Hook Form + Zod
+- 表格筛选参数：URL search params
+
+建议的 Query hooks：
+- `useRelayProductsQuery`
+- `useRelayProductDetailQuery`
+- `useRelayChannelPoolQuery`
+- `useRelayKeysQuery`
+- `useRelayKeyDetailQuery`
+- `useRelayWalletQuery`
+- `useRelayLedgerEntriesQuery`
+- `useRelayRequestTraceQuery`
+- `useRelayChannelPoolHealthQuery`
+- `useProjectRelayOverviewQuery`
+- `useProjectRelayUsageQuery`
+
+建议的 Mutation hooks：
+- `useCreateRelayProductMutation`
+- `useUpdateRelayProductMutation`
+- `useBindRelayChannelMutation`
+- `useCreateRelayKeyMutation`
+- `useSuspendRelayKeyMutation`
+- `useResumeRelayKeyMutation`
+- `useArchiveRelayKeyMutation`
+- `useRechargeRelayWalletMutation`
+- `useAdjustRelayKeyLimitMutation`
+
+建议的 Zustand stores：
+- `useRelayProductFilterStore`
+- `useRelayKeyFilterStore`
+- `useRelayRequestTraceFilterStore`
+- `useRelayUiStore`
+
+说明：业务真相应来自 Query，store 仅保存 UI 状态和轻量筛选状态，不缓存完整服务端实体。
+
+### GraphQL / API 边界建议
+
+建议 Relay 管理台继续走 GraphQL 主线，边界可按以下领域组织：
+
+产品域：
+- `listRelayProducts`
+- `getRelayProduct`
+- `createRelayProduct`
+- `updateRelayProduct`
+- `archiveRelayProduct`
+
+渠道池域：
+- `listRelayProductChannels`
+- `bindRelayProductChannel`
+- `unbindRelayProductChannel`
+- `reorderRelayProductChannels`
+
+Sub-Key 域：
+- `listRelayKeys`
+- `getRelayKey`
+- `createRelayKey`
+- `suspendRelayKey`
+- `resumeRelayKey`
+- `archiveRelayKey`
+- `renewRelayKey`
+
+钱包域：
+- `getRelayWallet`
+- `listRelayLedgerEntries`
+- `rechargeRelayWallet`
+- `refundRelayWallet`
+- `adjustRelayWallet`
+
+请求排障域：
+- `listRelayRequests`
+- `getRelayRequestDetail`
+- `listRelayChannelPoolHealth`
+
+项目侧域：
+- `getProjectRelayOverview`
+- `listProjectRelayProducts`
+- `listProjectRelayKeys`
+- `getProjectRelayKeyDetail`
+- `getProjectRelayUsageSummary`
+
+### MVP 路由边界
+
+首版建议只把以下页面做成独立 route，其余先以内嵌 Tab 或 Drawer 承载：
+
+运营侧：
+- `/operator/relay-subkeys/products`
+- `/operator/relay-subkeys/products/:productId`
+- `/operator/relay-subkeys/keys`
+- `/operator/relay-subkeys/keys/:keyId`
+
+项目侧：
+- `/projects/:projectId/relay-subkey/overview`
+- `/projects/:projectId/relay-subkey/keys/:keyId`
+- `/projects/:projectId/relay-subkey/get-started`
+
+这样做的好处：
+- 路由数量少。
+- 权限判断简单。
+- 更适合快速跑通 MVP。
+- 后续再把 `billing`、`requests`、`channel-pool-health` 拆为独立页面，也不会推翻 URL 语义。
+
+### Post-MVP 扩展方向
+
+后续可以再拆为独立 route 的能力：
+- 更完整的请求排障页。
+- 更完整的渠道池健康看板。
+- 产品审批流 / 发布流。
+- Key 批量管理页。
+- 项目级验证中心。
+- 自定义通知与告警页。
