@@ -12,13 +12,13 @@ AxonHub implements a bidirectional data transformation pipeline that ensures sea
 
 ### Pipeline Components
 
-| Component | Purpose | Key Features |
-| --- | --- | --- |
-| **Client** | Application layer | Web apps, mobile apps, API clients |
-| **Inbound Transformer** | Request preprocessing | Parse, validate, normalize input |
-| **Unified Request** | Core processing | Route selection, load balancing, failover |
-| **Outbound Transformer** | Provider adaptation | Format conversion, protocol mapping |
-| **Provider** | AI services | OpenAI, Anthropic, DeepSeek, etc. |
+| Component                | Purpose               | Key Features                              |
+| ------------------------ | --------------------- | ----------------------------------------- |
+| **Client**               | Application layer     | Web apps, mobile apps, API clients        |
+| **Inbound Transformer**  | Request preprocessing | Parse, validate, normalize input          |
+| **Unified Request**      | Core processing       | Route selection, load balancing, failover |
+| **Outbound Transformer** | Provider adaptation   | Format conversion, protocol mapping       |
+| **Provider**             | AI services           | OpenAI, Anthropic, DeepSeek, etc.         |
 
 This architecture ensures:
 
@@ -131,6 +131,13 @@ go test ./...
 bash ./scripts/e2e/e2e-test.sh
 ```
 
+## MVP Design References
+
+For the relay/sub-key shared-capacity initiative, use these companion documents to align product flows with implementation planning:
+
+- [Self-Hosted Relay + Sub-Key Shared-Capacity MVP: Page Inventory and User Flows](./relay-subkey-mvp-page-flows.md)
+- [Self-Hosted Relay + Shared-Capacity Sub-Key MVP: Backend and Data Design](./relay-subkey-mvp-backend-design.md)
+
 ## Code Quality
 
 ### Run Go Linter
@@ -157,6 +164,7 @@ pnpm format:check
 ### Recommended: use `AbstractService.RunInTransaction`
 
 `RunInTransaction` will:
+
 - Reuse the existing transaction if `ctx` already carries one.
 - Otherwise start a new transaction, attach the tx-bound `*ent.Client` to `ctx`, and commit/rollback automatically.
 
@@ -183,18 +191,22 @@ func (s *SomeService) doWork(ctx context.Context) error {
 When introducing a new provider channel, keep backend and frontend changes aligned:
 
 1. **Extend the channel enum in the Ent schema**
+
    - Add the provider key to the `field.Enum("type")` list in [internal/ent/schema/channel.go](../../../internal/ent/schema/channel.go)
    - Run `make generate` to regenerate artifacts and migrations
 
 2. **Wire the outbound transformer**
+
    - Update the switch in `ChannelService.buildChannel` to construct the correct outbound transformer for the new enum
    - Or add a new transformer under `internal/llm/transformer` if necessary
 
 3. **Register provider metadata**
+
    - Add or extend an entry in [frontend/src/features/channels/data/config_providers.ts](../../../frontend/src/features/channels/data/config_providers.ts)
    - Keep the helper functions working by ensuring every channel type listed exists in `CHANNEL_CONFIGS`
 
 4. **Sync the frontend schema and presentation**
+
    - Append the enum value to the Zod schema in [frontend/src/features/channels/data/schema.ts](../../../frontend/src/features/channels/data/schema.ts)
    - Add channel configuration to [frontend/src/features/channels/data/constants.ts](../../../frontend/src/features/channels/data/constants.ts)
 

@@ -12,13 +12,13 @@ AxonHub 实现了一个双向数据转换管道，确保客户端与 AI 提供�
 
 ### 管道组件
 
-| 组件 | 用途 | 关键特性 |
-| --- | --- | --- |
-| **客户端** | 应用层 | Web 应用、移动应用、API 客户端 |
-| **入站转换器** | 请求预处理 | 解析、验证、规范化输入 |
-| **统一请求** | 核心处理 | 路由选择、负载均衡、故障转移 |
-| **出站转换器** | 提供商适配 | 格式转换、协议映射 |
-| **提供商** | AI 服务 | OpenAI、Anthropic、DeepSeek 等 |
+| 组件           | 用途       | 关键特性                       |
+| -------------- | ---------- | ------------------------------ |
+| **客户端**     | 应用层     | Web 应用、移动应用、API 客户端 |
+| **入站转换器** | 请求预处理 | 解析、验证、规范化输入         |
+| **统一请求**   | 核心处理   | 路由选择、负载均衡、故障转移   |
+| **出站转换器** | 提供商适配 | 格式转换、协议映射             |
+| **提供商**     | AI 服务    | OpenAI、Anthropic、DeepSeek 等 |
 
 该架构确保：
 
@@ -131,6 +131,13 @@ go test ./...
 bash ./scripts/e2e/e2e-test.sh
 ```
 
+## MVP 设计参考
+
+围绕 Relay/Sub-key 共享容量 MVP，可结合以下配套文档同步产品流程与实现方案：
+
+- [自托管 Relay + Sub-key 共享容量 MVP：页面清单与用户流程](./relay-subkey-mvp-page-flows.md)
+- [自托管 Relay + Sub-key 共享容量 MVP：后端与数据设计](./relay-subkey-mvp-backend-design.md)
+
 ## 代码质量
 
 ### 运行 Go Linter
@@ -157,6 +164,7 @@ pnpm format:check
 ### 推荐：使用 `AbstractService.RunInTransaction`
 
 `RunInTransaction` 会：
+
 - 如果 `ctx` 已经携带事务，则复用当前事务。
 - 否则开启新事务，将 tx 绑定的 `*ent.Client` 放入 `ctx`，并自动 commit/rollback。
 
@@ -183,18 +191,22 @@ func (s *SomeService) doWork(ctx context.Context) error {
 新增渠道时需要同时关注后端与前端的改动：
 
 1. **在 Ent Schema 中扩展枚举**
+
    - 在 [internal/ent/schema/channel.go](../../../internal/ent/schema/channel.go) 的 `field.Enum("type")` 列表里添加新的渠道标识
    - 执行 `make generate` 以生成代码与迁移
 
 2. **在业务层构造 Transformer**
+
    - 在 `ChannelService.buildChannel` 的 switch 中为新枚举返回合适的 outbound transformer
    - 必要时在 `internal/llm/transformer` 下实现新的 transformer
 
 3. **注册 Provider 元数据**
+
    - 在 [frontend/src/features/channels/data/config_providers.ts](../../../frontend/src/features/channels/data/config_providers.ts) 添加或扩展 Provider 配置
    - 确保 `channelTypes` 中引用的渠道都已经在 `CHANNEL_CONFIGS` 中存在
 
 4. **同步前端的 schema 与展示**
+
    - 将枚举值加入 [frontend/src/features/channels/data/schema.ts](../../../frontend/src/features/channels/data/schema.ts) 的 Zod schema
    - 在 [frontend/src/features/channels/data/constants.ts](../../../frontend/src/features/channels/data/constants.ts) 中添加渠道配置
 
