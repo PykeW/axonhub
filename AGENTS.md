@@ -1,82 +1,166 @@
 # AGENTS.md
 
-This file provides guidance to AI coding assistants when working with code in this repository.
+## Project Name
+AxonHub - an all-in-one AI gateway and development platform.
 
-> **Detailed rules are split into focused files under `.agent/rules/`**. See [Rules Index](#rules-index) below.
+## Overview
+AxonHub is a multi-app repository that combines a Go backend, a standalone React + TypeScript frontend, and a nested Go module for LLM transformation utilities. Its main purpose is to let clients keep using familiar SDKs and API formats while transparently routing requests to different AI providers. The backend handles configuration, routing, authentication, observability, and provider adaptation, while the frontend provides the management console and user-facing UI.
 
-## Global Rules
-
-1. Do NOT run lint or build commands unless explicitly requested by the user.
-2. Do NOT restart the development server — it's already started and managed.
-3. All summary files should be stored in `.agent/summary` directory if available.
-
-## Configuration
-
-- Backend API: port 8090, Frontend dev server: port 5173 (proxies to backend).
-- Configuration: `conf/conf.go` (YAML + env var), SQLite by default.
-
-## Project Overview
-
-AxonHub is an all-in-one AI development platform that serves as a unified API gateway for multiple AI providers. It provides OpenAI and Anthropic-compatible API interfaces with automatic request transformation, enabling seamless communication between clients and various AI providers through a sophisticated bidirectional data transformation pipeline.
+The project is designed around request transformation and provider compatibility. It supports OpenAI-, Anthropic-, and Gemini-compatible flows, model mapping, load balancing, tracing, API key management, and deployment-oriented configuration for local development and production environments.
 
 ## Technology Stack
+- Language/Runtime: Go 1.26.0, Node.js with pnpm, TypeScript
+- Framework(s): Gin, Ent ORM, gqlgen, Uber FX, React 19, TanStack Router, TanStack Query, Zustand, Tailwind CSS, Vite, Playwright
+- Key Dependencies: viper, zap, uuid, pgx, mysql driver, sqlite, i18next, Radix UI, DnD Kit, React Hook Form, Zod, Framer Motion, OpenTelemetry
+- Build Tools: Make, Air, GoReleaser, Docker/Docker Compose, ESLint, Prettier, Knip, Husky
 
-- **Backend**: Go 1.26.0+ with Gin, Ent ORM, gqlgen, FX
-- **Frontend**: React 19 + TypeScript, TanStack Router/Query, Zustand, Tailwind CSS
+## Project Structure
+```text
+.
+|-- cmd/axonhub/          # Backend entry point and CLI commands
+|-- cmd/schema/           # Configuration schema generator
+|-- conf/                 # YAML + environment configuration loading
+|-- deploy/               # Install/start/stop scripts and Helm assets
+|-- docs/                 # English, Chinese, and Japanese documentation
+|-- examples/             # Example API payloads and samples
+|-- frontend/             # Standalone React + TypeScript app
+|-- integration_test/     # Cross-provider integration tests
+|-- internal/             # Backend implementation, Ent models, services, metrics, auth, tracing
+|-- llm/                  # Separate Go module for LLM transformers and helpers
+|-- scripts/              # E2E, lint, sync, migration, and utility scripts
+|-- README*.md            # Project introduction in multiple languages
+|-- Makefile              # Root build/test/generate workflow
+|-- docker-compose.yml    # Local container deployment
+|-- render.yaml           # Render deployment config
+`-- config.example.yml    # Sample runtime configuration
+```
 
-## Backend Structure
+### Notable backend areas
+- `internal/server/` - HTTP server, routes, API handlers, GraphQL, and static assets
+- `internal/server/biz/` - Core business logic and services
+- `internal/ent/` - Ent schema, generated entities, and database access
+- `internal/log/`, `internal/metrics/`, `internal/tracing/` - observability and runtime support
+- `internal/authz/` and `internal/scopes/` - authorization and permission rules
+- `internal/contexts/` - request/thread/trace context helpers
+- `internal/pkg/` - shared utilities
 
-- `cmd/axonhub/main.go` — Application entry point
-- `internal/server/` — HTTP server and route handling with Gin
-- `internal/server/biz/` — Core business logic and services
-- `internal/server/api/` — REST and GraphQL API handlers
-- `internal/server/gql/` — GraphQL schema and resolvers
-- `internal/ent/` — Ent ORM for database operations
-- `internal/ent/schema/` — Database schema definitions
-- `internal/contexts/` — Context handling utilities
-- `internal/pkg/` — Shared utilities (xerrors, xjson, xcache, xfile, xcontext, etc.)
-- `internal/scopes/` — Permission system with role-based access control
-- `llm/` — LLM utilities, transformers, and pipeline processing (separate Go module)
-- `llm/pipeline/` — Pipeline processing architecture
-- `conf/conf.go` — Configuration loading and validation
+### Notable frontend areas
+- `frontend/src/main.tsx` - app bootstrap
+- `frontend/src/routes/` - TanStack Router route modules
+- `frontend/src/features/` - feature-oriented UI organization
+- `frontend/src/components/` - shared UI and utility components
+- `frontend/src/gql/` - GraphQL client integration
+- `frontend/src/stores/` - Zustand state management
+- `frontend/src/locales/` - i18n resources
+- `frontend/src/lib/` and `frontend/src/utils/` - shared helpers and domain utilities
 
-## Go Modules
+## Key Features
+- AI gateway that translates between client SDKs and provider-specific APIs
+- OpenAI, Anthropic, and Gemini compatible request flows
+- Provider routing, failover, and load balancing
+- Request tracing and observability
+- RBAC and API key/profile management
+- Multi-database support: SQLite, PostgreSQL, MySQL, TiDB, and related hosted variants
+- Web management console and deployment-friendly packaging
 
-- The repository root (`/`) is the main Go module: `github.com/looplj/axonhub`.
-- `llm/` is a separate Go module: `github.com/looplj/axonhub/llm`.
+## Getting Started
 
-### `llm/` Module Notes
+### Prerequisites
+- Go 1.26.0 or newer
+- Node.js 18+ with pnpm
+- Git
+- Optional: Docker and Docker Compose for containerized runs
 
-- `llm/` is an independent module. Always run Go commands from the `llm/` directory (e.g., `cd llm && go test ./...`).
-- Running `go test ./llm/...` from repo root will fail with module boundary errors.
+### Installation
+```bash
+git clone https://github.com/looplj/axonhub.git
+cd axonhub
 
-## Frontend Structure
+# Backend dependencies are managed by Go modules at the repo root
+# Frontend dependencies are managed separately
+cd frontend
+pnpm install
+```
 
-- `frontend/src/routes/` — TanStack Router file-based routing
-- `frontend/src/gql/` — GraphQL API communication
-- `frontend/src/features/` — Feature-based component organization
-- `frontend/src/components/` — Reusable shared components
-- `frontend/src/hooks/` — Custom shared hooks
-- `frontend/src/stores/` — Zustand state management
-- `frontend/src/locales/` — i18n support (en.json, zh.json)
-- `frontend/src/lib/` — Core utilities (API client, i18n, permissions, utils)
-- `frontend/src/utils/` — Domain-specific utilities (date, format, error handling)
-- `frontend/src/config/` — App configuration
-- `frontend/src/context/` — React context providers
+### Usage
+```bash
+# Backend development with hot reload
+air
 
-## Rules Index
+# Or build the backend binary
+make build-backend
+./axonhub
 
-All detailed rules are in `.agent/rules/`:
+# Frontend development server
+cd frontend
+pnpm dev
 
-| File | Scope | Description |
-|------|-------|-------------|
-| [go-general.md](.agent/rules/go-general.md) | `**/*.go` | Go 通用约定、错误处理、依赖注入、开发命令约束 |
-| [ent-graphql.md](.agent/rules/ent-graphql.md) | `internal/ent/schema/**/*.go`, `internal/server/gql/**/*.go`, `internal/server/gql/**/*.graphql`, `gqlgen.yml` | Ent、GraphQL、代码生成、schema 变更规则 |
-| [biz-services.md](.agent/rules/biz-services.md) | `internal/server/biz/**/*.go` | Biz service、上下文取值、事务与级联删除规则 |
-| [cache-compat.md](.agent/rules/cache-compat.md) | `**/*.go` | 缓存结构兼容性与升级安全规则 |
-| [frontend-general.md](.agent/rules/frontend-general.md) | `frontend/**/*.ts`, `frontend/**/*.tsx` | 前端通用开发约定、GraphQL 数据约束、页面作用域 |
-| [frontend-i18n.md](.agent/rules/frontend-i18n.md) | `frontend/src/**/*.ts`, `frontend/src/**/*.tsx`, `frontend/src/locales/*.json` | i18n 与货币格式规则 |
-| [frontend-ui.md](.agent/rules/frontend-ui.md) | `frontend/**/*.tsx` | 前端 UI 组件使用规则 |
-| [e2e.md](.agent/rules/e2e.md) | `frontend/tests/**/*.ts` | E2E testing rules |
-| [docs.md](.agent/rules/docs.md) | `docs/**/*.md` | Documentation rules |
-| [workflows/add-channel.md](.agent/rules/workflows/add-channel.md) | Manual | Workflow for adding a new channel |
+# Full project build (backend + frontend)
+make build
+
+# Run root backend tests and llm module tests
+make test-backend-all
+
+# Run E2E tests
+make e2e-test
+```
+
+## Development
+
+### Available Scripts
+Root automation is defined in `Makefile`:
+- `make generate` - run GraphQL/Ent generation from `internal/server/gql`
+- `make generate-openapi` - run OpenAPI generation from `internal/server/gql/openapi`
+- `make generate-schema` - regenerate `config.schema.json` from `cmd/schema`
+- `make build-backend` - build `./cmd/axonhub`
+- `make build-frontend` - build the frontend and copy assets into `internal/server/static/dist`
+- `make build` - build both frontend and backend
+- `make test-backend-all` - run `go test ./...` at the root and `cd llm && go test ./...`
+- `make e2e-test` - run the E2E suite via `scripts/e2e/e2e-test.sh`
+- `make lint` - run repository lint checks
+- `make lint-privacy` - enforce privacy.DecisionContext usage rules
+- `make sync-faq` / `make sync-models` - update synced content from scripts
+- `make filter-logs` - analyze load-balancing logs
+
+Frontend scripts live in `frontend/package.json`:
+- `pnpm dev`
+- `pnpm build`
+- `pnpm lint`
+- `pnpm lint:fix`
+- `pnpm format:check`
+- `pnpm format`
+- `pnpm knip`
+- `pnpm test:e2e` and related Playwright variants
+
+### Development Workflow
+- Use `air` or `make build-backend` for backend iteration.
+- Use `cd frontend && pnpm dev` for the frontend dev server.
+- Regenerate code with `make generate` after schema changes.
+- Regenerate configuration schema with `make generate-schema` when config definitions change.
+- Run `make test-backend-all` before backend-related changes.
+- Run `make e2e-test` for end-to-end verification when UI/API flows change.
+- Keep frontend code aligned with `frontend/src/features`, `frontend/src/routes`, and `frontend/src/gql` conventions.
+
+## Configuration
+- Primary runtime configuration is loaded by `conf/conf.go` from `config.yml`, `./conf`, `/etc/axonhub/`, or `$HOME/.config/axonhub/`, with environment variable overrides using the `AXONHUB_` prefix.
+- Example runtime settings are in `config.example.yml`.
+- Backend defaults include SQLite, port `8090`, and JSON logging.
+- Important environment variables include `AXONHUB_SERVER_PORT`, `AXONHUB_DB_DIALECT`, `AXONHUB_DB_DSN`, `AXONHUB_LOG_LEVEL`, `AXONHUB_CACHE_MODE`, `AXONHUB_METRICS_ENABLED`, and `AXONHUB_GC_CRON`.
+- Frontend environment examples are in `frontend/.env.example`; `VITE_API_URL` and `VITE_PORT` control the dev proxy and server port.
+- Playwright test defaults are set in `frontend/playwright.config.ts` via `AXONHUB_ADMIN_EMAIL`, `AXONHUB_ADMIN_PASSWORD`, and `AXONHUB_API_URL`.
+- Deployment-related configuration also appears in `docker-compose.yml`, `render.yaml`, `.air.toml`, and `.goreleaser.yml`.
+
+## Architecture
+AxonHub follows a layered architecture centered on request transformation. The backend starts in `cmd/axonhub/main.go`, loads config from `conf/`, and wires services with Uber FX. HTTP routing and API handling live under `internal/server/`, while database models and migrations are managed by Ent in `internal/ent/`. Observability is handled through logging, metrics, and tracing packages under `internal/log`, `internal/metrics`, and `internal/tracing`.
+
+The frontend is a separate Vite application under `frontend/` that uses TanStack Router for routing, TanStack Query for server state, Zustand for local state, and a feature-based folder structure. A nested `llm/` module contains provider transformation utilities and is treated as its own Go module, so Go commands for that code should be run from `llm/`.
+
+## Contributing
+- Keep backend and frontend changes aligned when adding or modifying provider/channel behavior.
+- Regenerate generated artifacts after schema changes instead of editing generated files by hand.
+- Prefer small, focused changes that preserve the request transformation pipeline.
+- Follow the existing docs and module boundaries; `llm/` is a separate Go module.
+- Review `docs/en/development/development.md` for detailed development guidance.
+
+## License
+The repository uses mixed licensing: the root project is Apache-2.0, while `llm/` is LGPL-3.0. See `LICENSE` for the full licensing overview and any file-specific exceptions.
