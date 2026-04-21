@@ -42,7 +42,7 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
     },
   });
 
-  function onSubmit(_: z.infer<typeof formSchema>) {
+  function onSubmit(_data: z.infer<typeof formSchema>) {
     setIsLoading(true);
 
     setTimeout(() => {

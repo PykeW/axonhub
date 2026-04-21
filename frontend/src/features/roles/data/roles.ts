@@ -75,7 +75,7 @@ export function useRoles(
   } = {}
 ) {
   const { handleError } = useErrorHandler();
-  const { t } = useTranslation();
+  const { t: _t } = useTranslation();
 
   const queryVariables = {
     ...variables,

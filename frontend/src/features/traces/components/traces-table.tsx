@@ -22,8 +22,8 @@ import type { DateTimeRangeValue } from '@/utils/date-range';
 import { Trace, TraceConnection } from '../data/schema';
 import { DataTableToolbar } from './data-table-toolbar';
 import { useTracesColumns } from './traces-columns';
-const MotionTableRow = motion.create(TableRow);
 
+const MotionTableRow = motion.create(TableRow);
 
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

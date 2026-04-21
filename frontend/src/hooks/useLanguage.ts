@@ -24,7 +24,7 @@ export function useLanguage() {
 
       return response.updateMe;
     },
-    onSuccess: (updatedUser) => {
+    onSuccess: (updatedUser, _language) => {
       if (auth.user) {
         auth.setUser({
           ...auth.user,
@@ -52,21 +52,14 @@ export function useLanguage() {
       if (auth.user && auth.accessToken) {
         updateLanguageMutation.mutate(language);
       }
-    } catch (error) {
-      toast.error(t('language.changeError', { error: String(error) }));
-    }
-  };
-
-  const initializeLanguage = (userLanguage?: string) => {
-    if (userLanguage && userLanguage !== i18n.language) {
-      i18n.changeLanguage(userLanguage);
+    } catch (error: any) {
+      toast.error(t('language.changeError', { error: error.message }));
     }
   };
 
   return {
     currentLanguage: i18n.language,
     changeLanguage,
-    initializeLanguage,
     isUpdating: updateLanguageMutation.isPending,
   };
 }

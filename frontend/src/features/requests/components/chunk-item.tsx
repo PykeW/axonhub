@@ -5,14 +5,14 @@ import { JsonViewer } from '@/components/json-tree-view';
 import { Button } from '@/components/ui/button';
 
 interface ChunkItemProps {
-  chunk: any;
+  chunk: unknown;
   index: number;
 }
 
 export function ChunkItem({ chunk, index }: ChunkItemProps) {
   const { t } = useTranslation();
 
-  const formatJson = (data: any) => {
+  const formatJson = (data: unknown) => {
     if (!data) return '';
     try {
       return JSON.stringify(data, null, 2);

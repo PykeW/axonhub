@@ -34,7 +34,6 @@ export function ProjectGuard({ children, fallbackPath = '/projects', showNoProje
     if (showNoProjectPage) {
       return <NoProjectPage hasAnyProjects={hasAnyProjects} />;
     }
-
     return null;
   }
 
