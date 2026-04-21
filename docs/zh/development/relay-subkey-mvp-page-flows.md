@@ -735,3 +735,87 @@ Sub-Key 域：
 - 需要权限判断的 route，仍由 `route.tsx`、`AuthGuard`、`ProjectGuard` 控制，loader 不重复实现鉴权逻辑。
 - loader 只负责“首屏所需数据”和 search 参数归一化；真正的刷新、失效与重取仍交给 TanStack Query。
 - 若后续引入 TanStack Router action，可优先用于简单表单提交；当前 MVP 保持 mutation hook 驱动更贴近现有实现。
+
+### UI 状态与空态建议
+
+#### 列表页状态
+
+- `loading`：列表表格使用 skeleton 行，顶部筛选栏保持可见，避免用户误判页面空白。
+- `empty`：在无数据时给出明确 CTA，例如“创建产品”或“联系运营发放 Key”。
+- `filtered-empty`：当筛选后无结果时，保留筛选条件并提供“一键清空筛选”。
+- `error`：保留上次 search 参数，展示可重试提示，不自动清空当前筛选。
+
+#### 详情页状态
+
+- `loading`：头部卡片先渲染基础骨架，Tab 内容延迟加载。
+- `not-found`：产品或 Key 不存在时，跳转到列表页并带 toast 提示。
+- `forbidden`：权限不足时显示受限提示，而不是伪装成 404。
+- `partial-degraded`：当详情页主实体可读但关联 query 失败时，仅在对应区块内展示错误态，不阻塞整页。
+
+#### 操作反馈
+
+- `success`：创建、暂停、恢复、充值等操作统一使用 toast + 轻量局部刷新。
+- `submitting`：按钮进入 loading 态，同时禁用重复点击。
+- `failure`：优先展示后端返回的可解释错误，如余额不足、限额冲突、共享池不可用。
+
+### Query Invalidation 与刷新建议
+
+#### 产品域
+
+- 创建产品成功后：失效 `useRelayProductsQuery`。
+- 更新产品成功后：失效 `useRelayProductDetailQuery` 与 `useRelayProductsQuery`。
+- 渠道池绑定变更后：失效 `useRelayChannelPoolQuery`，必要时同时失效产品详情 query。
+
+#### Key 域
+
+- 创建 Key 成功后：失效 `useRelayKeysQuery`；如果创建在产品详情页内触发，同时失效产品关联 Key 列表。
+- 暂停 / 恢复 / 归档成功后：失效 `useRelayKeyDetailQuery` 与 `useRelayKeysQuery`。
+- 调整限额后：仅失效当前 Key 详情 query；如列表页展示限额摘要，可追加失效列表 query。
+
+#### 钱包与账务域
+
+- 充值 / 退款 / 人工调整成功后：失效 `useRelayWalletQuery`、`useRelayLedgerEntriesQuery`，并按需失效 Key 详情 query。
+- 若项目总览页展示余额聚合：额外失效 `useProjectRelayOverviewQuery`。
+
+#### 项目侧只读域
+
+- 项目总览与用量页默认按页面进入时加载，不做高频自动轮询。
+- 仅在用户停留于“最近请求 / 最近失败”Tab 时，才为该 Tab 局部启用短周期刷新。
+
+### 页面验收标准草案
+
+#### 运营产品列表页
+
+- 支持按状态、providerType、关键字筛选。
+- 列表数据与 URL search 参数保持一致，刷新页面后条件不丢失。
+- 创建产品成功后，返回列表可立即看到新产品。
+
+#### 运营产品详情页
+
+- 支持切换 `overview/pool/models/keys` Tab。
+- 渠道池绑定变更后，详情页与健康摘要同步刷新。
+- 当上游池完全不可用时，页面能明确提示不能切到 `active`。
+
+#### 运营 Key 列表与详情页
+
+- 能区分 `active/suspended/exhausted/archived` 四类持久化状态。
+- 能展示 `expired/low_balance/quota_reached/upstream_pool_degraded` 等派生 badge。
+- 暂停、恢复、归档操作后，列表与详情状态一致。
+
+#### 运营账务页
+
+- 余额卡片、流水表格、充值动作三者保持一致刷新。
+- 充值成功后无需手动刷新即可看到新余额与最新流水。
+- 失败时能展示后端返回原因，不出现静默失败。
+
+#### 项目总览 / Key 详情 / 接入说明页
+
+- 项目侧页面不暴露运营动作按钮。
+- 项目侧能稳定展示 Base URL、掩码 Key、推荐模型与最近失败原因。
+- 接入说明页切换 provider 示例时，URL search 参数和代码示例同步变化。
+
+### 文档与实现同步提醒
+
+- 若后续前端真实路由改为显式 `projects/:projectId/*` 结构，需要同步修正文档中的“项目上下文复用”说明。
+- 若后续全面引入 TanStack Router loader/action，应回补本节，把当前“mutation hook 驱动”的假设改成真实实现。
+- 若项目决定增加审批流或申请流，应把本篇中的资源中心式路由树拆分为申请、审批、绑定三条业务流并重写验收标准。

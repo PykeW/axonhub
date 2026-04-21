@@ -741,3 +741,87 @@ Potential future standalone routes:
 - Keep authorization in `route.tsx`, `AuthGuard`, and `ProjectGuard`; loaders should not duplicate access checks beyond assuming guarded context.
 - Let loaders focus on first-paint data and search normalization; ongoing invalidation and refetching still belong to TanStack Query.
 - If TanStack Router actions are introduced later, reserve them for simple form-submit flows; for the MVP, mutation hooks remain the closer fit to the current codebase.
+
+### UI States and Empty-State Guidance
+
+#### List pages
+
+- `loading`: render skeleton rows while keeping the filter bar visible so the page does not look blank.
+- `empty`: provide an explicit CTA such as `Create Product` or `Contact operator to issue a key`.
+- `filtered-empty`: preserve current filters and offer a one-click reset.
+- `error`: keep the last search params intact and show a retry affordance instead of resetting the page state.
+
+#### Detail pages
+
+- `loading`: render the header card skeleton first and lazy-load tab content.
+- `not-found`: if the product or key no longer exists, redirect back to the list page with a toast.
+- `forbidden`: show an explicit permission error rather than masking it as a 404.
+- `partial-degraded`: if the main entity loads but a secondary query fails, scope the error UI to that block instead of breaking the entire page.
+
+#### Action feedback
+
+- `success`: use toast plus lightweight local refresh after create, suspend, resume, recharge, or similar mutations.
+- `submitting`: set the active button to loading and prevent duplicate submission.
+- `failure`: surface backend-provided, explainable errors first, such as insufficient balance, quota conflict, or degraded shared pool state.
+
+### Query Invalidation and Refresh Guidance
+
+#### Product domain
+
+- After product creation: invalidate `useRelayProductsQuery`.
+- After product update: invalidate both `useRelayProductDetailQuery` and `useRelayProductsQuery`.
+- After channel-pool changes: invalidate `useRelayChannelPoolQuery`, and invalidate product detail as needed.
+
+#### Key domain
+
+- After key creation: invalidate `useRelayKeysQuery`; if creation happens inside product detail, also invalidate the assigned-key list there.
+- After suspend / resume / archive: invalidate `useRelayKeyDetailQuery` and `useRelayKeysQuery`.
+- After limit adjustment: invalidate only the current key detail query unless the list page also exposes limit summaries.
+
+#### Wallet and ledger domain
+
+- After recharge / refund / manual adjustment: invalidate `useRelayWalletQuery`, `useRelayLedgerEntriesQuery`, and, when needed, the related key detail query.
+- If the project overview shows aggregated balance, also invalidate `useProjectRelayOverviewQuery`.
+
+#### Project-side read-only domain
+
+- Project overview and usage pages should load on entry and avoid aggressive polling by default.
+- Only enable short-interval refresh for focused tabs such as `recent requests` or `recent failures` while the user is actively viewing them.
+
+### Draft Acceptance Criteria
+
+#### Operator product list page
+
+- Supports filtering by status, provider type, and keyword.
+- URL search params remain the source of truth, and refresh preserves the same list state.
+- A newly created product becomes visible in the list without manual hard refresh.
+
+#### Operator product detail page
+
+- Supports switching among `overview`, `pool`, `models`, and `keys` tabs.
+- Channel-pool edits refresh both detail content and health summary consistently.
+- If the full upstream pool is unavailable, the page clearly explains why the product cannot move to `active`.
+
+#### Operator key list and detail pages
+
+- Distinguishes all four persisted states: `active`, `suspended`, `exhausted`, and `archived`.
+- Exposes derived badges such as `expired`, `low_balance`, `quota_reached`, and `upstream_pool_degraded`.
+- Suspend, resume, and archive operations produce consistent list/detail state after completion.
+
+#### Operator billing page
+
+- Balance summary, ledger table, and recharge action refresh coherently.
+- After recharge, updated balance and the latest ledger row appear without manual reload.
+- Failures show backend explanations rather than failing silently.
+
+#### Project overview / key detail / getting-started pages
+
+- Project-facing pages do not expose operator-only actions.
+- Project users can reliably see Base URL, masked key, recommended models, and recent failure hints.
+- Switching provider examples on the getting-started page updates both search params and code examples consistently.
+
+### Documentation and Implementation Sync Notes
+
+- If frontend routing later moves to an explicit `projects/:projectId/*` structure, update the current notes about reusing project context.
+- If the app later adopts TanStack Router loader/action patterns more broadly, revise this section so the current “mutation-hook driven” assumption matches reality.
+- If approval or request workflows are introduced, the current resource-centric route tree should be refactored into explicit request, approval, and binding flows, and the acceptance criteria should be rewritten accordingly.
