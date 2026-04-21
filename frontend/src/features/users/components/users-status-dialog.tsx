@@ -1,7 +1,6 @@
 'use client';
+import { IconUserCheck, IconUserOff } from '@tabler/icons-react';
 
-import { useState } from 'react';
-import { IconUserCheck, IconUserOff } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/confirm-dialog';

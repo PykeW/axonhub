@@ -1,8 +1,6 @@
 import { Loader2, RefreshCw, Battery, BatteryLow, BatteryMedium, BatteryFull, BatteryWarning } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useProviderQuotaStatuses, ProviderQuotaChannel, checkProviderQuotas } from '@/features/system/data/quotas';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { useProviderQuotaStatuses, ProviderQuotaChannel } from '@/features/system/data/quotas';
 import { useTranslation } from 'react-i18next';
 
 const STATUS_COLORS = {
@@ -200,10 +198,9 @@ function QuotaRow({ channel }: { channel: ProviderQuotaChannel }) {
     </div>
   );
 }
-
-function QuotaBadgeTrigger({ channels }: { channels: ProviderQuotaChannel[] }) {
-  const { t } = useTranslation();
+function QuotaBadgeTrigger({ channels }: { channels: ProviderQuotaChannel[] }) {
   const highestUsed = Math.max(...channels.map(c => {
+
     const quota = c.quotaStatus;
     if (!quota) return 0;
     const quotaData = quota.quotaData as QuotaData;

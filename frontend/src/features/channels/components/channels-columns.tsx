@@ -11,7 +11,6 @@ import {
   IconArchive,
   IconTrash,
   IconCheck,
-  IconWeight,
   IconTransform,
   IconNetwork,
   IconAdjustments,

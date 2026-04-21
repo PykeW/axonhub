@@ -31,8 +31,8 @@ export function useErrorHandler() {
       const opts: ErrorHandlerOptions = typeof options === 'string' 
         ? { context: options } 
         : options || {};
-      
-      const { context, onDuplicate, onErrorCode, showToast = true } = opts;
+      const { onDuplicate, onErrorCode, showToast = true } = opts;
+
 
       // Handle Zod validation errors
       if (error instanceof ZodError) {

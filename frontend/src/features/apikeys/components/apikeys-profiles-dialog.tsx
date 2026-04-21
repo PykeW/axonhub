@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, type Resolver, type SubmitHandler, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { IconPlus, IconTrash, IconSettings, IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 import { format, type Locale } from 'date-fns';
@@ -78,7 +78,7 @@ export function ApiKeyProfilesDialog({ open, onOpenChange, onSubmit, loading = f
   const { selectedApiKey } = useApiKeysContext();
   const selectedProjectId = useSelectedProjectId();
   const { data: availableModels, mutateAsync: fetchModels } = useQueryModels();
-  // ç”¨äºŽè§£å†³ Dialog å†… Popover æ— æ³•æ»šåŠ¨çš„é—®é¢˜
+  // ÓÃÓÚ½â¾ö Dialog ÄÚ Popover ÎÞ·¨¹ö¶¯µÄÎÊÌâ
   const [dialogContent, setDialogContent] = useState<HTMLDivElement | null>(null);
   const locale = i18n.language === 'zh' ? zhCN : enUS;
   const apiKeyId = selectedApiKey?.id ?? '';
@@ -113,7 +113,7 @@ export function ApiKeyProfilesDialog({ open, onOpenChange, onSubmit, loading = f
   );
 
   const form = useForm<UpdateApiKeyProfilesInput>({
-    resolver: zodResolver(updateApiKeyProfilesInputSchemaFactory(t)),
+    resolver: zodResolver(updateApiKeyProfilesInputSchemaFactory(t)) as Resolver<UpdateApiKeyProfilesInput>,
     defaultValues,
   });
 
@@ -222,9 +222,8 @@ export function ApiKeyProfilesDialog({ open, onOpenChange, onSubmit, loading = f
     });
   }, [open, loading, profileFields, form]);
 
-  const handleSubmit = useCallback(
-    (data: UpdateApiKeyProfilesInput) => {
-      // Clear any previous form-level errors
+  const handleSubmit = useCallback<SubmitHandler<UpdateApiKeyProfilesInput>>(
+    (data) => {
       form.clearErrors('profiles');
       onSubmit(data);
     },
@@ -395,7 +394,7 @@ export function ApiKeyProfilesDialog({ open, onOpenChange, onSubmit, loading = f
 
 interface ProfileCardProps {
   profileIndex: number;
-  form: ReturnType<typeof useForm<UpdateApiKeyProfilesInput>>;
+  form: UseFormReturn<UpdateApiKeyProfilesInput>;
   onRemove: () => void;
   canRemove: boolean;
   availableModels: string[];
@@ -403,9 +402,9 @@ interface ProfileCardProps {
   locale: Locale;
   quotaUsageByProfileName: Map<string, ApiKeyProfileQuotaUsage>;
   defaultExpanded?: boolean;
-  /** Popover Portal å®¹å™¨å…ƒç´ ï¼Œè§£å†³ Dialog å†…æ— æ³•æ»šåŠ¨çš„é—®é¢˜ */
+  /** Popover Portal ÈÝÆ÷ÔªËØ£¬½â¾ö Dialog ÄÚÎÞ·¨¹ö¶¯µÄÎÊÌâ */
   portalContainer?: HTMLElement | null;
-  /** å½“å‰é€‰ä¸­çš„ project ID */
+  /** µ±Ç°Ñ¡ÖÐµÄ project ID */
   selectedProjectId?: string | null;
 }
 
@@ -428,7 +427,7 @@ function ProfileCard({
 
   const debouncedProfileName = useDebounce(localProfileName, 500);
 
-  // ä»Žæ‰€æœ‰æ¸ é“ä¸­æå–å”¯ä¸€æ ‡ç­¾
+  // ´ÓËùÓÐÇþµÀÖÐÌáÈ¡Î¨Ò»±êÇ©
   const allTags = useMemo(() => {
     const tagsSet = new Set<string>();
     channelsData?.edges?.forEach((edge) => {
@@ -774,19 +773,19 @@ function ProfileCard({
                       <div>
                         <div className='text-muted-foreground text-xs'>{t('apikeys.profiles.quotaRequests')}</div>
                         <div className='text-sm'>
-                          {quotaUsage.usage.requestCount}/{currentQuota?.requests ?? 'âˆž'}
+                          {quotaUsage.usage.requestCount}/{currentQuota?.requests ?? '¡Þ'}
                         </div>
                       </div>
                       <div>
                         <div className='text-muted-foreground text-xs'>{t('apikeys.profiles.quotaTotalTokens')}</div>
                         <div className='text-sm'>
-                          {quotaUsage.usage.totalTokens}/{currentQuota?.totalTokens ?? 'âˆž'}
+                          {quotaUsage.usage.totalTokens}/{currentQuota?.totalTokens ?? '¡Þ'}
                         </div>
                       </div>
                       <div>
                         <div className='text-muted-foreground text-xs'>{t('apikeys.profiles.quotaCost')}</div>
                         <div className='text-sm'>
-                          {(quotaUsage.usage.totalCost ?? 0).toLocaleString(undefined, { maximumFractionDigits: 6 })}/{currentQuota?.cost ?? 'âˆž'}
+                          {(quotaUsage.usage.totalCost ?? 0).toLocaleString(undefined, { maximumFractionDigits: 6 })}/{currentQuota?.cost ?? '¡Þ'}
                         </div>
                       </div>
                     </div>
@@ -999,11 +998,11 @@ function ProfileCard({
 interface MappingRowProps {
   profileIndex: number;
   mappingIndex: number;
-  form: ReturnType<typeof useForm<UpdateApiKeyProfilesInput>>;
+  form: UseFormReturn<UpdateApiKeyProfilesInput>;
   onRemove: () => void;
   availableModels: string[];
   t: (key: string) => string;
-  /** Popover Portal å®¹å™¨å…ƒç´ ï¼Œè§£å†³ Dialog å†…æ— æ³•æ»šåŠ¨çš„é—®é¢˜ */
+  /** Popover Portal ÈÝÆ÷ÔªËØ£¬½â¾ö Dialog ÄÚÎÞ·¨¹ö¶¯µÄÎÊÌâ */
   portalContainer?: HTMLElement | null;
 }
 
@@ -1061,7 +1060,7 @@ function MappingRow({ profileIndex, mappingIndex, form, onRemove, availableModel
           </FormItem>
         )}
       />
-      <span className='text-muted-foreground flex h-10 items-center'>â†’</span>
+      <span className='text-muted-foreground flex h-10 items-center'>¡ú</span>
       <FormField
         control={form.control}
         name={toFieldName}
@@ -1091,3 +1090,4 @@ function MappingRow({ profileIndex, mappingIndex, form, onRemove, availableModel
     </div>
   );
 }
+

@@ -10,7 +10,6 @@ export function useLanguage() {
   const auth = useAuthStore((state) => state.auth);
   const queryClient = useQueryClient();
 
-  // Mutation for updating user language preference
   const updateLanguageMutation = useMutation({
     mutationFn: async (language: string) => {
       if (!auth.user) {
@@ -22,10 +21,10 @@ export function useLanguage() {
           preferLanguage: language,
         },
       })) as { updateMe: any };
+
       return response.updateMe;
     },
-    onSuccess: (updatedUser, language) => {
-      // Update the auth store with new language preference
+    onSuccess: (updatedUser) => {
       if (auth.user) {
         auth.setUser({
           ...auth.user,
@@ -33,7 +32,6 @@ export function useLanguage() {
         });
       }
 
-      // Invalidate and refetch user data
       queryClient.invalidateQueries({ queryKey: ['me'] });
 
       const languageName = updatedUser.preferLanguage === 'en' ? 'English' : '中文';
@@ -41,7 +39,6 @@ export function useLanguage() {
     },
     onError: (error: any) => {
       toast.error(t('language.changeError', { error: error.message }));
-      // Revert i18n language on error
       if (auth.user?.preferLanguage) {
         i18n.changeLanguage(auth.user.preferLanguage);
       }
@@ -50,10 +47,8 @@ export function useLanguage() {
 
   const changeLanguage = async (language: string) => {
     try {
-      // Immediately change the UI language for better UX
       await i18n.changeLanguage(language);
 
-      // Update user preference in the backend if user is authenticated
       if (auth.user && auth.accessToken) {
         updateLanguageMutation.mutate(language);
       }

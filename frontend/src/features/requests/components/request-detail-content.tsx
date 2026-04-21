@@ -35,9 +35,8 @@ export function RequestDetailContent({ requestId, projectId, previewRequest, isP
 
   const [showResponseChunks, setShowResponseChunks] = useState(false);
   const [showExecutionChunks, setShowExecutionChunks] = useState(false);
-  const [selectedResponseChunks, setSelectedResponseChunks] = useState<any[]>([]);
   const [selectedExecutionChunks, setSelectedExecutionChunks] = useState<any[]>([]);
-  const [showCurlPreview, setShowCurlPreview] = useState(false);
+
   const [curlCommand, setCurlCommand] = useState('');
   const [isDownloadingVideo, setIsDownloadingVideo] = useState(false);
   const [responseView, setResponseView] = useState<'preview' | 'json'>('preview');
@@ -169,7 +168,6 @@ export function RequestDetailContent({ requestId, projectId, previewRequest, isP
 
   const showResponseChunksModal = useCallback(() => {
     if (request?.responseChunks) {
-      setSelectedResponseChunks(request.responseChunks);
       setShowResponseChunks(true);
     }
   }, [request]);

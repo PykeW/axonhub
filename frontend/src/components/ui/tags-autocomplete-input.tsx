@@ -1,8 +1,7 @@
 'use client';
 
-import { forwardRef, useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import { Check } from 'lucide-react';
-import { X } from 'lucide-react';
+import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
+import { Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TruncatedText } from '@/components/truncated-text';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
@@ -19,24 +18,24 @@ interface TagsAutocompleteInputProps {
 }
 
 export const TagsAutocompleteInput = forwardRef<HTMLDivElement, TagsAutocompleteInputProps>(
-  ({ value = [], onChange, placeholder, className, suggestions = [], isLoading }, ref) => {
+  ({ value = [], onChange, placeholder, className, suggestions = [], isLoading }, _ref) => {
     const [inputValue, setInputValue] = useState('');
     const [open, setOpen] = useState(false);
     const [isComposing, setIsComposing] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-
-    // Filter suggestions based on input and not already selected (capped for performance)
     const filteredSuggestions = useMemo(() => {
       const result: string[] = [];
       const q = inputValue.trim().toLowerCase();
-      for (const s of suggestions) {
-        if (value.includes(s)) continue;
-        if (q && !s.toLowerCase().includes(q)) continue;
-        result.push(s);
+
+      for (const suggestion of suggestions) {
+        if (value.includes(suggestion)) continue;
+        if (q && !suggestion.toLowerCase().includes(q)) continue;
+        result.push(suggestion);
         if (result.length >= MAX_DISPLAY) break;
       }
+
       return result;
     }, [inputValue, suggestions, value]);
 
@@ -90,7 +89,6 @@ export const TagsAutocompleteInput = forwardRef<HTMLDivElement, TagsAutocomplete
       setOpen(false);
     };
 
-    // Focus input when clicking on the container
     const handleContainerClick = () => {
       inputRef.current?.focus();
       if (suggestions.length > 0 && inputValue) {
@@ -98,7 +96,6 @@ export const TagsAutocompleteInput = forwardRef<HTMLDivElement, TagsAutocomplete
       }
     };
 
-    // Close popover when clicking outside
     useEffect(() => {
       const handleClickOutside = (e: MouseEvent) => {
         const target = e.target as HTMLElement;

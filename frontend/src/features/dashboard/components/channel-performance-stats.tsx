@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
 import { PerformanceChart } from './performance-chart';
-import type { PerformanceDataPoint } from './performance-chart';
 import { useChannelPerformanceStats } from '../data/dashboard';
 
 interface ChannelPerformanceStatsProps {

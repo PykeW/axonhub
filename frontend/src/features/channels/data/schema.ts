@@ -483,29 +483,26 @@ export const updateChannelInputSchema = z
   })
   .superRefine((data, ctx) => {
     const effectiveType = data.type;
-    const hasApiKey = data.credentials?.apiKey && data.credentials.apiKey.trim().length > 0;
+    const apiKey = data.credentials?.apiKey?.trim();
+    const hasApiKey = Boolean(apiKey);
 
     // For OAuth validation on updates: validate if type is OAuth, or if credentials.apiKey is provided
     // (which indicates OAuth credentials are being set)
-    const isOAuthType = effectiveType === 'codex' || effectiveType === 'claudecode' || effectiveType === 'antigravity' || effectiveType === 'github_copilot';
+    const isOAuthType =
+      effectiveType === 'codex' ||
+      effectiveType === 'claudecode' ||
+      effectiveType === 'antigravity' ||
+      effectiveType === 'github_copilot';
 
-    // Derive type from parent context if not available
-    let derivedType = effectiveType;
-    if (!derivedType && hasApiKey) {
-      // Try to get type from parent context
-      const parent = ctx.parent;
-      if (parent && typeof parent === 'object' && 'type' in parent) {
-        derivedType = (parent as { type?: string }).type;
-      }
-    }
+    const derivedType = effectiveType;
 
     // If we have an OAuth key but no type, check if it looks like Copilot credentials
-    const isCopilotKey = hasApiKey && data.credentials?.apiKey?.trim().startsWith('{');
+    const isCopilotKey = apiKey?.startsWith('{') ?? false;
 
-    if (isOAuthType || (derivedType === 'github_copilot') || isCopilotKey) {
+    if (isOAuthType || derivedType === 'github_copilot' || isCopilotKey) {
       if (isCopilotKey && !derivedType) {
         try {
-          const parsed = JSON.parse(data.credentials.apiKey);
+          const parsed = JSON.parse(apiKey);
           if (!parsed.access_token) {
             ctx.addIssue({
               code: 'custom',
@@ -522,7 +519,10 @@ export const updateChannelInputSchema = z
         }
         return;
       }
-      validateOAuthCredentials(derivedType, data.credentials?.apiKey, ctx);
+
+      if (derivedType && apiKey) {
+        validateOAuthCredentials(derivedType, apiKey, ctx);
+      }
     }
 
     // 如果是 anthropic_gcp 类型且提供了 credentials，GCP 字段必填（字段级报错）

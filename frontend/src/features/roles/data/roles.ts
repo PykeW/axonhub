@@ -6,7 +6,6 @@ import i18n from '@/lib/i18n';
 import { useErrorHandler } from '@/hooks/use-error-handler';
 import { Role, RoleConnection, CreateRoleInput, UpdateRoleInput, roleConnectionSchema, roleSchema } from './schema';
 
-// GraphQL queries and mutations
 const ROLES_QUERY = `
   query GetRoles($first: Int, $after: Cursor, $orderBy: RoleOrder, $where: RoleWhereInput) {
     roles(first: $first, after: $after, orderBy: $orderBy, where: $where) {
@@ -67,7 +66,6 @@ const BULK_DELETE_ROLES_MUTATION = `
   }
 `;
 
-// Query hooks
 export function useRoles(
   variables: {
     first?: number;
@@ -79,12 +77,11 @@ export function useRoles(
   const { handleError } = useErrorHandler();
   const { t } = useTranslation();
 
-  // Always filter for system-level roles only (not project-specific)
   const queryVariables = {
     ...variables,
     where: {
       ...variables.where,
-      projectID: 'gid://axonhub/Project/0', // Only system roles (projectID = 0)
+      projectID: 'gid://axonhub/Project/0',
     },
     orderBy: variables.orderBy || { field: 'CREATED_AT', direction: 'DESC' },
   };
@@ -126,7 +123,6 @@ export function useRole(id: string) {
   });
 }
 
-// Mutation hooks
 export function useCreateRole() {
   const queryClient = useQueryClient();
   const { handleError } = useErrorHandler();

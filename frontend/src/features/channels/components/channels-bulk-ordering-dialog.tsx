@@ -12,9 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { useAllChannelSummarys, useBulkUpdateChannelOrdering } from '../data/channels';
 import { ChannelSummary } from '../data/schema';
+const MIN_WEIGHT = 0;
 
-const WEIGHT_PRECISION = 0;
-const MIN_WEIGHT = 0;
 const MAX_WEIGHT = 100;
 
 const formatWeight = (value: number) => Math.round(value);

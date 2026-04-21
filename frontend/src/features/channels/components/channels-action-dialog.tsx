@@ -198,7 +198,7 @@ function getNextDuplicateName(name: string, existingNames: Set<string>) {
 // Providers that are always OAuth (no third-party API key mode)
 const alwaysOAuthProviderKeys = ['antigravity', 'github_copilot'];
 
-function isOfficialCodexChannel(channel: { credentials?: { apiKey?: string } }): boolean {
+function isOfficialCodexChannel(channel: { credentials?: { apiKey?: string | null } | null }): boolean {
   try {
     const apiKey = channel.credentials?.apiKey || '';
     const json = JSON.parse(apiKey);
@@ -208,7 +208,7 @@ function isOfficialCodexChannel(channel: { credentials?: { apiKey?: string } }):
   }
 }
 
-function isOfficialClaudeCodeChannel(channel: { credentials?: { apiKey?: string }; baseURL: string }): boolean {
+function isOfficialClaudeCodeChannel(channel: { credentials?: { apiKey?: string | null } | null; baseURL?: string | null }): boolean {
   const apiKey = channel.credentials?.apiKey || '';
   const defaultURL = getDefaultBaseURL('claudecode');
   return apiKey.includes('sk-ant-oat') || apiKey.includes('sk-ant-api03') || channel.baseURL === defaultURL;
@@ -253,15 +253,12 @@ export function ChannelsActionDialog({ currentRow, duplicateFromRow, open, onOpe
   const [selectedKeysToRemove, setSelectedKeysToRemove] = useState<Set<string>>(new Set());
   const [confirmRemoveSelectedOpen, setConfirmRemoveSelectedOpen] = useState(false);
   const [confirmRemoveKey, setConfirmRemoveKey] = useState<string | null>(null);
-  const [showGcpJsonData, setShowGcpJsonData] = useState(false);
   const [authMode, setAuthMode] = useState<'official' | 'third-party'>('official');
   const [patternError, setPatternError] = useState<string | null>(null);
-  const dialogContentRef = useRef<HTMLDivElement>(null);
 
   // Debounced search values for better performance
   const debouncedFetchedModelsSearch = useDebounce(fetchedModelsSearch, 300);
   const debouncedSupportedModelsSearch = useDebounce(supportedModelsSearch, 300);
-  const debouncedApiKeysSearch = useDebounce(apiKeysSearch, 300);
 
   // Refs for virtual scrolling
   const fetchedModelsParentRef = useRef<HTMLDivElement>(null);
@@ -500,7 +497,7 @@ export function ChannelsActionDialog({ currentRow, duplicateFromRow, open, onOpe
             tags: currentRow.tags || [],
             remark: currentRow.remark || '',
             credentials: {
-              // OAuth ç±»åž‹ (codex/claudecode/antigravity) çš„å‡­æ®å­˜å‚¨åœ¨ apiKey å­—æ®µï¼Œä¸æ”¾å…¥ apiKeys
+              // OAuth ÀàÐÍ (codex/claudecode/antigravity) µÄÆ¾¾Ý´æ´¢ÔÚ apiKey ×Ö¶Î£¬²»·ÅÈë apiKeys
               apiKey: currentRow.credentials?.apiKey || undefined,
               apiKeys: currentRow.credentials?.apiKeys || [],
               gcp: {
@@ -525,7 +522,7 @@ export function ChannelsActionDialog({ currentRow, duplicateFromRow, open, onOpe
               remark: duplicateFromRow.remark || '',
               settings: duplicateFromRow.settings ?? undefined,
               credentials: {
-                // OAuth ç±»åž‹ (codex/claudecode/antigravity) çš„å‡­æ®å­˜å‚¨åœ¨ apiKey å­—æ®µï¼Œä¸æ”¾å…¥ apiKeys
+                // OAuth ÀàÐÍ (codex/claudecode/antigravity) µÄÆ¾¾Ý´æ´¢ÔÚ apiKey ×Ö¶Î£¬²»·ÅÈë apiKeys
                 apiKey: duplicateFromRow.credentials?.apiKey || undefined,
                 apiKeys: duplicateFromRow.credentials?.apiKeys || [],
                 gcp: {
@@ -989,7 +986,7 @@ export function ChannelsActionDialog({ currentRow, duplicateFromRow, open, onOpe
     if (!raw) return;
 
     const models = raw
-      .split(/[,ï¼Œ]+/)
+      .split(/[,£¬]+/)
       .map((m) => m.trim())
       .filter((m) => m.length > 0);
 
@@ -2153,7 +2150,7 @@ export function ChannelsActionDialog({ currentRow, duplicateFromRow, open, onOpe
                                   data-testid={`quick-model-${model}`}
                                 >
                                   {model}
-                                  {selectedDefaultModels.includes(model) && <span className='ml-1'>âœ“</span>}
+                                  {selectedDefaultModels.includes(model) && <span className='ml-1'>?</span>}
                                 </Badge>
                               ))}
                             </div>
@@ -2682,3 +2679,4 @@ export function ChannelsActionDialog({ currentRow, duplicateFromRow, open, onOpe
     </>
   );
 }
+

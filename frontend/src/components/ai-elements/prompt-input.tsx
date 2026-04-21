@@ -922,7 +922,7 @@ export const PromptInputSpeechButton = ({ className, textareaRef, onTranscriptio
         }
       };
 
-      speechRecognition.onerror = (event) => {
+      speechRecognition.onerror = () => {
         setIsListening(false);
       };
 
@@ -1077,3 +1077,4 @@ export type PromptInputCommandSeparatorProps = ComponentProps<typeof CommandSepa
 export const PromptInputCommandSeparator = ({ className, ...props }: PromptInputCommandSeparatorProps) => (
   <CommandSeparator className={cn(className)} {...props} />
 );
+

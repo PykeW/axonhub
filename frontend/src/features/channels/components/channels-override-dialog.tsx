@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { z } from 'zod';
 import { useForm, useFieldArray, useWatch, Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Save, Download, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Loader2, Save, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -412,8 +412,8 @@ export function ChannelsOverrideDialog({ open, onOpenChange, currentRow }: Props
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [templateSearchOpen, setTemplateSearchOpen] = useState(false);
   const [templateSearchValue, setTemplateSearchValue] = useState('');
-  const debouncedTemplateSearchValue = useDebounce(templateSearchValue, 300);
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
+  const debouncedTemplateSearchValue = useDebounce(templateSearchValue, 300);
 
   const { data: templatesData } = useChannelOverrideTemplates(
     {
@@ -602,7 +602,6 @@ export function ChannelsOverrideDialog({ open, onOpenChange, currentRow }: Props
     },
     [selectedTemplateId, templates, form, replaceHeaders, replaceBodies, t]
   );
-
   const handleSaveAsTemplate = useCallback(
     async (name: string, description?: string) => {
       const headerOps = form.getValues('headerOverrideOperations') || [];

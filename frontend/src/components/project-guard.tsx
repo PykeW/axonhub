@@ -1,10 +1,9 @@
 import { useEffect } from 'react';
 import { useRouter } from '@tanstack/react-router';
-import { IconFolderOff, IconFolderPlus } from '@tabler/icons-react';
+import { IconFolderOff } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { useSelectedProjectId } from '@/stores/projectStore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 import { useMyProjects } from '@/features/projects/data/projects';
 
 interface ProjectGuardProps {
@@ -18,36 +17,31 @@ export function ProjectGuard({ children, fallbackPath = '/projects', showNoProje
   const selectedProjectId = useSelectedProjectId();
   const { data: myProjects, isLoading } = useMyProjects();
 
-  // 检查是否有选中的项目
   const hasSelectedProject = !!selectedProjectId;
-
-  // 检查用户是否有任何项目
-  const hasAnyProjects = !isLoading && myProjects && myProjects.length > 0;
+  const hasAnyProjects = !isLoading && !!myProjects && myProjects.length > 0;
 
   useEffect(() => {
-    // 如果没有选中项目且不显示提示页面，则重定向
     if (!hasSelectedProject && !showNoProjectPage && !isLoading) {
       router.navigate({ to: fallbackPath });
     }
   }, [hasSelectedProject, showNoProjectPage, fallbackPath, router, isLoading]);
 
-  // 加载中时不显示任何内容
   if (isLoading) {
     return null;
   }
 
-  // 如果没有选中项目
   if (!hasSelectedProject) {
     if (showNoProjectPage) {
-      return <NoProjectPage hasAnyProjects={!!hasAnyProjects} onGoToProjects={() => router.navigate({ to: fallbackPath })} />;
+      return <NoProjectPage hasAnyProjects={hasAnyProjects} />;
     }
-    return null; // 重定向中，不显示任何内容
+
+    return null;
   }
 
   return <>{children}</>;
 }
 
-function NoProjectPage({ hasAnyProjects, onGoToProjects }: { hasAnyProjects: boolean; onGoToProjects: () => void }) {
+function NoProjectPage({ hasAnyProjects }: { hasAnyProjects: boolean }) {
   const { t } = useTranslation();
 
   return (
@@ -64,14 +58,6 @@ function NoProjectPage({ hasAnyProjects, onGoToProjects }: { hasAnyProjects: boo
             {hasAnyProjects ? t('common.projectGuard.pleaseSelectProject') : t('common.projectGuard.pleaseJoinOrCreateProject')}
           </AlertDescription>
         </Alert>
-
-        {/* <Button onClick={onGoToProjects} className="gap-2">
-          <IconFolderPlus className="h-4 w-4" />
-          {hasAnyProjects 
-            ? t('common.projectGuard.goToProjects')
-            : t('common.projectGuard.createOrJoinProject')
-          }
-        </Button> */}
       </div>
     </div>
   );

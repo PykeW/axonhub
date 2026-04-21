@@ -350,7 +350,7 @@ export function ChannelsTable({
                               transition={{ duration: 0.2, ease: 'easeInOut' }}
                               className='overflow-hidden'
                             >
-                              <ChannelExpandedRow channel={channel} columnsLength={columns.length} getApiFormatLabel={getApiFormatLabel} />
+                              <ChannelExpandedRow channel={channel} getApiFormatLabel={getApiFormatLabel} />
                             </motion.div>
                           </TableCell>
                         </MotionExpandedRow>

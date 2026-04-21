@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import LongText from '@/components/long-text';
 import { useTestChannel, useUpdateChannel } from '../data/channels';
 import { Channel } from '../data/schema';
 import { ErrorDisplay } from '../utils/error-formatter';
