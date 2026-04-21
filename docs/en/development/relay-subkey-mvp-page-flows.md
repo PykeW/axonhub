@@ -825,3 +825,114 @@ Potential future standalone routes:
 - If frontend routing later moves to an explicit `projects/:projectId/*` structure, update the current notes about reusing project context.
 - If the app later adopts TanStack Router loader/action patterns more broadly, revise this section so the current “mutation-hook driven” assumption matches reality.
 - If approval or request workflows are introduced, the current resource-centric route tree should be refactored into explicit request, approval, and binding flows, and the acceptance criteria should be rewritten accordingly.
+
+### UI Copy Library
+
+#### Empty-state copy
+
+| Scenario                        | Title                                     | Supporting copy                                                                         | Primary action       |
+| ------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------- | -------------------- |
+| Product list is empty           | No shared-capacity products yet           | Create a product first, then bind upstream channels and issue sellable keys.            | Create Product       |
+| Key list is empty               | No sub-keys available yet                 | Buyers can only connect after at least one key has been created.                        | Create Sub-Key       |
+| Project has no visible products | No products are available to this project | Contact the platform operator to assign a product or verify project scope.              | Contact Operator     |
+| Filtered list is empty          | No matching results                       | No records match the current filters. Try clearing filters and searching again.         | Clear Filters        |
+| Recent requests is empty        | No request history yet                    | Recent requests and failure summaries will appear here after the first successful call. | View Getting Started |
+
+#### Toast copy
+
+| Scenario          | Success copy                           | Failure copy                                                   |
+| ----------------- | -------------------------------------- | -------------------------------------------------------------- |
+| Create product    | Product created successfully           | Failed to create product. Please try again.                    |
+| Update product    | Product settings saved                 | Failed to save product settings. Check input and retry.        |
+| Bind channel pool | Channel added to the shared pool       | Failed to bind channel. Verify channel status and permissions. |
+| Create key        | Sub-key created successfully           | Failed to create sub-key. Check project and product settings.  |
+| Suspend key       | Key suspended                          | Failed to suspend key. Please try again.                       |
+| Resume key        | Key resumed                            | Failed to resume key. Check current status and retry.          |
+| Archive key       | Key archived                           | Failed to archive key. Please try again.                       |
+| Recharge          | Recharge completed and balance updated | Recharge failed. Check amount or retry later.                  |
+| Copy Base URL     | Base URL copied                        | Copy failed. Please copy manually.                             |
+| Copy key          | Key copied                             | Copy failed. Please copy manually.                             |
+
+#### Error-message copy
+
+| Error type              | Suggested copy                                                                                     |
+| ----------------------- | -------------------------------------------------------------------------------------------------- |
+| Insufficient balance    | This key does not have enough balance. Please contact the operator to recharge it.                 |
+| Daily quota reached     | This key has reached its daily limit. Try again tomorrow or switch to another key.                 |
+| Key suspended           | This key is currently suspended. Please contact the platform operator for details.                 |
+| Key archived            | This key has been archived and can no longer accept new requests.                                  |
+| Shared pool unavailable | The shared pool is temporarily unavailable. Please retry later or ask the operator to investigate. |
+| Forbidden               | You do not have permission to view this page or perform this action.                               |
+| Not found               | The requested product or key could not be found. It may have been deleted or archived.             |
+| Load failed             | Failed to load data. Please try again later.                                                       |
+
+#### Dangerous-action confirmation copy
+
+| Action         | Title                | Confirmation copy                                                                                        | Confirm button |
+| -------------- | -------------------- | -------------------------------------------------------------------------------------------------------- | -------------- |
+| Suspend key    | Suspend this key?    | Once suspended, all new requests will be rejected immediately, while historical data remains available.  | Suspend Key    |
+| Resume key     | Resume this key?     | Once resumed, the key will participate in validation and routing again.                                  | Resume Key     |
+| Archive key    | Archive this key?    | Once archived, the key will disappear from default lists and no longer accept new requests.              | Archive Key    |
+| Remove channel | Remove this channel? | Removing the channel may reduce available capacity. Confirm that other channels are still healthy first. | Remove Channel |
+
+#### Skeleton / loading copy guidance
+
+- Product list: keep the filter bar visible and only skeletonize the table area.
+- Product detail: render the header card skeleton first, then lazy-load tab sections.
+- Key detail: show the status summary card first; load billing and failure blocks independently.
+- Project getting-started page: the code example area may show “Generating example configuration...” while loading.
+
+#### Empty / error interaction rules
+
+- Empty states should always suggest the next available action instead of stopping at “no data”.
+- Error states should preserve search params and user input whenever possible.
+- Never reuse the same copy for `forbidden` and `not-found`.
+- For shared-pool incidents, explain that the issue may be in the pool state, not necessarily in the current key itself.
+
+### Button Copy and Disabled-State Matrix
+
+#### Primary action buttons
+
+| Button         | Default copy   | Loading copy  | Disabled when                                                                          |
+| -------------- | -------------- | ------------- | -------------------------------------------------------------------------------------- |
+| Create Product | Create Product | Creating...   | Form validation fails, required fields are missing, or the user lacks write permission |
+| Save Settings  | Save Settings  | Saving...     | No changes exist, validation fails, or channel-pool config is invalid                  |
+| Create Sub-Key | Create Sub-Key | Creating...   | No project selected, no product bound, or key limit inputs are invalid                 |
+| Save Limits    | Save Limits    | Saving...     | Limits are unchanged or values are outside the allowed range                           |
+| Recharge Now   | Recharge Now   | Recharging... | Amount is empty, below the minimum amount, or the user lacks billing permission        |
+| Reload         | Reload         | Reloading...  | The same request is already in flight                                                  |
+
+#### Dangerous action buttons
+
+| Button         | Default copy   | Loading copy  | Disabled when                                                                 |
+| -------------- | -------------- | ------------- | ----------------------------------------------------------------------------- |
+| Suspend Key    | Suspend Key    | Suspending... | Key is already `suspended` or `archived`                                      |
+| Resume Key     | Resume Key     | Resuming...   | Key is not currently `suspended` or `exhausted`                               |
+| Archive Key    | Archive Key    | Archiving...  | Key is already `archived`                                                     |
+| Remove Channel | Remove Channel | Removing...   | The product only has one healthy channel left and no fallback capacity exists |
+
+#### Project-side read-only buttons
+
+| Button               | Default copy         | Loading copy | Disabled when                                                    |
+| -------------------- | -------------------- | ------------ | ---------------------------------------------------------------- |
+| Copy Base URL        | Copy Base URL        | Copying...   | Base URL is empty                                                |
+| Copy Key             | Copy Key             | Copying...   | The current page is not allowed to reveal or copy the key        |
+| View Getting Started | View Getting Started | Opening...   | Never                                                            |
+| Verify Integration   | Verify Integration   | Verifying... | No usable key exists or the shared pool is currently unavailable |
+
+#### Disabled-state interaction rules
+
+- Keep disabled buttons visible rather than hiding them, so users understand the action exists but is currently unavailable.
+- For permission-based disablement, prefer a tooltip such as `You do not have permission to perform this action`.
+- For state-based disablement, the tooltip should explain the concrete reason whenever possible, such as `This key is already archived` or `No removable channel is available`.
+- For incomplete form state, do not stop at a vague disabled state; explain the missing prerequisite, such as `Select a project and product first`.
+
+#### Secondary button copy suggestions
+
+- Back to list: `Back to List`
+- View details: `View Details`
+- Clear filters: `Clear Filters`
+- Expand all: `Expand All`
+- Collapse: `Collapse`
+- View recent failures: `View Recent Failures`
+- View ledger: `View Ledger`
