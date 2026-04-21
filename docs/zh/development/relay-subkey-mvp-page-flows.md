@@ -597,3 +597,141 @@ Sub-Key 域：
 - Key 批量管理页。
 - 项目级验证中心。
 - 自定义通知与告警页。
+
+### Page 级 loader / action / search 参数草案
+
+#### 运营产品列表页
+
+- 目标 route file：`frontend/src/routes/_authenticated/relay-subkeys/products/index.tsx`
+- `validateSearch`
+  - `status?: 'draft' | 'active' | 'archived'`
+  - `providerType?: string`
+  - `keyword?: string`
+  - `page?: number`
+  - `pageSize?: number`
+- loader
+  - 解析 search 参数并预取 `useRelayProductsQuery` 对应的列表数据。
+  - 返回当前筛选条件、默认分页配置、是否允许创建产品的权限信息。
+- action / mutation 触发点
+  - 页面级不定义 TanStack action，统一走按钮触发的 `useCreateRelayProductMutation` 或状态切换 mutation。
+  - 对批量上/下架建议保留为后续能力，MVP 只支持单条操作。
+
+#### 运营产品详情页
+
+- 目标 route file：`frontend/src/routes/_authenticated/relay-subkeys/products/$productId.tsx`
+- `validateSearch`
+  - `tab?: 'overview' | 'pool' | 'models' | 'keys'`
+  - `channelStatus?: 'active' | 'paused' | 'all'`
+- loader
+  - 按 `productId` 预取 `useRelayProductDetailQuery` 与 `useRelayChannelPoolQuery`。
+  - 如果 `tab === 'keys'`，可额外预取关联 Key 列表。
+- action / mutation 触发点
+  - `useUpdateRelayProductMutation`
+  - `useBindRelayChannelMutation`
+  - 渠道优先级调整可走独立排序 mutation，但首版也可先只支持保存整表。
+
+#### 运营 Key 列表页
+
+- 目标 route file：`frontend/src/routes/_authenticated/relay-subkeys/keys/index.tsx`
+- `validateSearch`
+  - `status?: 'active' | 'suspended' | 'exhausted' | 'archived'`
+  - `productId?: string`
+  - `projectId?: string`
+  - `lowBalanceOnly?: boolean`
+  - `expiredOnly?: boolean`
+  - `page?: number`
+  - `pageSize?: number`
+- loader
+  - 预取 `useRelayKeysQuery`，并把 search 条件标准化到页面。
+  - 可同步预取产品下拉与项目筛选项。
+- action / mutation 触发点
+  - 页面按钮触发 `useCreateRelayKeyMutation`。
+  - 批量冻结/恢复留待后续，不放首版。
+
+#### 运营 Key 详情页
+
+- 目标 route file：`frontend/src/routes/_authenticated/relay-subkeys/keys/$keyId.tsx`
+- `validateSearch`
+  - `tab?: 'overview' | 'limits' | 'failures'`
+  - `range?: '24h' | '7d' | '30d'`
+- loader
+  - 预取 `useRelayKeyDetailQuery` 与 `useRelayWalletQuery`。
+  - 当 `tab === 'failures'` 时可预取最近失败请求摘要。
+- action / mutation 触发点
+  - `useSuspendRelayKeyMutation`
+  - `useResumeRelayKeyMutation`
+  - `useArchiveRelayKeyMutation`
+  - `useAdjustRelayKeyLimitMutation`
+- 说明
+  - 一次性明文 Key 不应由 loader 返回，而应由“创建成功后的本地状态或 dialog”处理。
+
+#### 运营账务页
+
+- 目标 route file：`frontend/src/routes/_authenticated/relay-subkeys/keys/$keyId.billing.tsx`
+- `validateSearch`
+  - `scene?: 'all' | 'recharge' | 'consume' | 'refund' | 'manual_adjust'`
+  - `page?: number`
+  - `pageSize?: number`
+- loader
+  - 预取 `useRelayWalletQuery` 与 `useRelayLedgerEntriesQuery`。
+- action / mutation 触发点
+  - `useRechargeRelayWalletMutation`
+  - 退款和人工调整如 MVP 已开放，则各自作为独立 mutation。
+
+#### 运营请求排障页
+
+- 目标 route file：`frontend/src/routes/_authenticated/relay-subkeys/requests/index.tsx`
+- `validateSearch`
+  - `productId?: string`
+  - `keyId?: string`
+  - `channelId?: string`
+  - `status?: 'failed' | 'completed' | 'all'`
+  - `timeRange?: '1h' | '24h' | '7d'`
+  - `page?: number`
+- loader
+  - 预取 `useRelayRequestTraceQuery`。
+  - 根据筛选条件预取产品、Key、渠道下拉数据。
+- action / mutation 触发点
+  - 无首版页面级 action；详情 Drawer 中如需重试/冻结，建议跳转到对应 Key 或产品页面处理。
+
+#### 项目总览页
+
+- 目标 route file：`frontend/src/routes/_authenticated/project/relay-subkeys/overview.tsx`
+- `validateSearch`
+  - `tab?: 'overview' | 'products' | 'keys'`
+  - `range?: '24h' | '7d' | '30d'`
+- loader
+  - 在 `ProjectGuard` 通过后预取 `useProjectRelayOverviewQuery`。
+  - 如当前项目上下文由上层 route 提供，则直接读取 project context，不在 URL 中重复携带项目标识。
+- action / mutation 触发点
+  - 无；该页以只读汇总为主。
+
+#### 项目 Key 详情页
+
+- 目标 route file：`frontend/src/routes/_authenticated/project/relay-subkeys/keys/$keyId.tsx`
+- `validateSearch`
+  - `tab?: 'access' | 'usage' | 'failures'`
+  - `range?: '24h' | '7d' | '30d'`
+- loader
+  - 预取 `getProjectRelayKeyDetail`。
+  - 若 `tab === 'usage'`，可追加预取最近账务或 token 聚合。
+- action / mutation 触发点
+  - 项目侧首版不建议开放写操作；复制 Key、复制 Base URL、验证接入由本地 UI 行为完成。
+
+#### 项目接入说明页
+
+- 目标 route file：`frontend/src/routes/_authenticated/project/relay-subkeys/get-started.tsx`
+- `validateSearch`
+  - `provider?: 'openai' | 'anthropic' | 'codex'`
+  - `keyId?: string`
+- loader
+  - 预取项目侧可见产品、默认推荐 Key、SDK 示例所需元数据。
+- action / mutation 触发点
+  - 无；如提供“验证接入”按钮，应跳到 verify 页或触发一次轻量校验 mutation。
+
+#### 统一实现说明
+
+- 所有 search 参数优先使用 `validateSearch` 标准化，并通过 `Route.useSearch()` 驱动列表筛选、Tab 和分页。
+- 需要权限判断的 route，仍由 `route.tsx`、`AuthGuard`、`ProjectGuard` 控制，loader 不重复实现鉴权逻辑。
+- loader 只负责“首屏所需数据”和 search 参数归一化；真正的刷新、失效与重取仍交给 TanStack Query。
+- 若后续引入 TanStack Router action，可优先用于简单表单提交；当前 MVP 保持 mutation hook 驱动更贴近现有实现。
