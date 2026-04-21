@@ -34,9 +34,18 @@ type ToolUIPartApproval =
     }
   | undefined;
 
+type ConfirmationState =
+  | ToolUIPart['state']
+  | 'input-streaming'
+  | 'input-available'
+  | 'approval-requested'
+  | 'approval-responded'
+  | 'output-available'
+  | 'output-denied';
+
 type ConfirmationContextValue = {
   approval: ToolUIPartApproval;
-  state: ToolUIPart['state'];
+  state: ConfirmationState;
 };
 
 const ConfirmationContext = createContext<ConfirmationContextValue | null>(null);
@@ -53,7 +62,7 @@ const useConfirmation = () => {
 
 export type ConfirmationProps = ComponentProps<typeof Alert> & {
   approval?: ToolUIPartApproval;
-  state: ToolUIPart['state'];
+  state: ConfirmationState;
 };
 
 export const Confirmation = ({ className, approval, state, ...props }: ConfirmationProps) => {
@@ -81,7 +90,6 @@ export type ConfirmationRequestProps = {
 export const ConfirmationRequest = ({ children }: ConfirmationRequestProps) => {
   const { state } = useConfirmation();
 
-  // Only show when approval is requested
   if (state !== 'approval-requested') {
     return null;
   }
@@ -96,7 +104,6 @@ export type ConfirmationAcceptedProps = {
 export const ConfirmationAccepted = ({ children }: ConfirmationAcceptedProps) => {
   const { approval, state } = useConfirmation();
 
-  // Only show when approved and in response states
   if (!approval?.approved || (state !== 'approval-responded' && state !== 'output-denied' && state !== 'output-available')) {
     return null;
   }
@@ -111,7 +118,6 @@ export type ConfirmationRejectedProps = {
 export const ConfirmationRejected = ({ children }: ConfirmationRejectedProps) => {
   const { approval, state } = useConfirmation();
 
-  // Only show when rejected and in response states
   if (approval?.approved !== false || (state !== 'approval-responded' && state !== 'output-denied' && state !== 'output-available')) {
     return null;
   }
@@ -124,7 +130,6 @@ export type ConfirmationActionsProps = ComponentProps<'div'>;
 export const ConfirmationActions = ({ className, ...props }: ConfirmationActionsProps) => {
   const { state } = useConfirmation();
 
-  // Only show when approval is requested
   if (state !== 'approval-requested') {
     return null;
   }
