@@ -22,12 +22,12 @@ Paired with the backend design document, the page layer should revolve around th
 
 ## Roles and Permission Boundaries
 
-| Role | Typical Identity | Main Pages | Core Actions | Not in MVP |
-| --- | --- | --- | --- | --- |
-| Platform operator | Relay owner, admin | Product pages, channel pool pages, sub-key list, billing pages, request troubleshooting pages | Create products, bind channels, issue/freeze/archive keys, recharge, refund, inspect requests | Automated pricing experiments, reseller settlement |
-| Project admin | Buyer team owner | Project product access page, sub-key detail, usage and billing page | View available products, copy access credentials, rename keys, inspect balance, limits, and expiry | Bind raw upstream provider credentials |
-| Developer | Engineer calling the relay API | Getting started page, key detail page, request log snippets | Copy base URL and API key, diagnose recent failures | Change billing policy, manage the shared pool |
-| Support / risk ops | Operator support role | Key detail, ledger page, request trace page | Manually freeze, add notes, refund, explain failures | Separate approval workflow |
+| Role               | Typical Identity               | Main Pages                                                                                    | Core Actions                                                                                       | Not in MVP                                         |
+| ------------------ | ------------------------------ | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Platform operator  | Relay owner, admin             | Product pages, channel pool pages, sub-key list, billing pages, request troubleshooting pages | Create products, bind channels, issue/freeze/archive keys, recharge, refund, inspect requests      | Automated pricing experiments, reseller settlement |
+| Project admin      | Buyer team owner               | Project product access page, sub-key detail, usage and billing page                           | View available products, copy access credentials, rename keys, inspect balance, limits, and expiry | Bind raw upstream provider credentials             |
+| Developer          | Engineer calling the relay API | Getting started page, key detail page, request log snippets                                   | Copy base URL and API key, diagnose recent failures                                                | Change billing policy, manage the shared pool      |
+| Support / risk ops | Operator support role          | Key detail, ledger page, request trace page                                                   | Manually freeze, add notes, refund, explain failures                                               | Separate approval workflow                         |
 
 Implementation note: for the MVP, reuse the existing `project_id` isolation and current admin role model first. Add page-level action guards instead of designing a brand-new ACL system.
 
@@ -37,24 +37,24 @@ Implementation note: for the MVP, reuse the existing `project_id` isolation and 
 
 `relay_keys.status` should use the four persisted states defined in the backend design:
 
-| State | UI meaning | Request behavior | Allowed actions |
-| --- | --- | --- | --- |
-| `active` | Normal and usable | Request continues after synchronous checks pass | Recharge, rename, suspend, archive |
-| `suspended` | Manually paused | Request is rejected immediately | Resume, archive, add note |
-| `exhausted` | Depleted | Rejected because balance or hard quota is exhausted | Recharge to recover, adjust limits, archive |
-| `archived` | Archived | Permanently rejected and hidden from default lists | View history only |
+| State       | UI meaning        | Request behavior                                    | Allowed actions                             |
+| ----------- | ----------------- | --------------------------------------------------- | ------------------------------------------- |
+| `active`    | Normal and usable | Request continues after synchronous checks pass     | Recharge, rename, suspend, archive          |
+| `suspended` | Manually paused   | Request is rejected immediately                     | Resume, archive, add note                   |
+| `exhausted` | Depleted          | Rejected because balance or hard quota is exhausted | Recharge to recover, adjust limits, archive |
+| `archived`  | Archived          | Permanently rejected and hidden from default lists  | View history only                           |
 
 ### Runtime-derived states
 
 These may not require separate persistence, but they must appear as clear badges in the UI:
 
-| Derived state | Source | UI purpose |
-| --- | --- | --- |
-| `expired` | `expires_at < now()` | Show that the key must be renewed or reissued |
-| `low_balance` | `relay_wallets.available_amount` under threshold | Warn before the key becomes unusable |
-| `quota_reached` | `relay_daily_usage_summaries` or monthly aggregates exceed limits | Explain why the key entered `exhausted` |
-| `concurrency_blocked` | Current in-flight usage exceeds `concurrency_limit` | Explain request failures caused by concurrent demand |
-| `upstream_pool_degraded` | The product's candidate pool is too small or fully unhealthy | Show that the problem is in shared upstream capacity, not the buyer's own balance |
+| Derived state            | Source                                                            | UI purpose                                                                        |
+| ------------------------ | ----------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `expired`                | `expires_at < now()`                                              | Show that the key must be renewed or reissued                                     |
+| `low_balance`            | `relay_wallets.available_amount` under threshold                  | Warn before the key becomes unusable                                              |
+| `quota_reached`          | `relay_daily_usage_summaries` or monthly aggregates exceed limits | Explain why the key entered `exhausted`                                           |
+| `concurrency_blocked`    | Current in-flight usage exceeds `concurrency_limit`               | Explain request failures caused by concurrent demand                              |
+| `upstream_pool_degraded` | The product's candidate pool is too small or fully unhealthy      | Show that the problem is in shared upstream capacity, not the buyer's own balance |
 
 Implementation note: the list page should show both persisted status and derived badges. This prevents upstream pool problems from being mistaken for customer balance issues.
 
@@ -62,25 +62,25 @@ Implementation note: the list page should show both persisted status and derived
 
 ### Operator-side pages
 
-| Page | Suggested Route | Main Role | Data Dependencies | Core Actions |
-| --- | --- | --- | --- | --- |
-| Shared-capacity product list | `/console/relay/products` | Platform operator | `relay_products` | Inspect status, activate/archive, open details |
-| Product detail and channel pool config | `/console/relay/products/:id` | Platform operator | `relay_products`, `relay_product_channels`, `channels`, `provider_quota_status` | Edit product info, bind/unbind channels, reorder priority and weight, constrain models |
-| Sub-key list | `/console/relay/keys` | Platform operator, support | `relay_keys`, `relay_wallets`, project info | Filter by status, search project, spot low-balance and expired keys |
-| Sub-key detail | `/console/relay/keys/:id` | Platform operator, support | `relay_keys`, `relay_wallets`, `relay_daily_usage_summaries`, recent `requests` | Suspend, resume, archive, rename, adjust expiry |
-| Recharge and ledger page | `/console/relay/keys/:id/billing` | Platform operator, support | `relay_wallets`, `relay_wallet_ledger_entries` | Recharge, refund, manual adjustment, inspect accounting evidence |
-| Request trace page | `/console/relay/requests` | Platform operator, support | `requests`, `request_executions`, `usage_logs` | Troubleshoot failures by key, product, or channel, inspect settlement outcome |
-| Channel pool health dashboard | `/console/relay/channel-pool-health` | Platform operator | `relay_product_channels`, `channels`, `provider_quota_status` | Detect shared upstream capacity risk by product |
+| Page                                   | Suggested Route                      | Main Role                  | Data Dependencies                                                               | Core Actions                                                                           |
+| -------------------------------------- | ------------------------------------ | -------------------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Shared-capacity product list           | `/console/relay/products`            | Platform operator          | `relay_products`                                                                | Inspect status, activate/archive, open details                                         |
+| Product detail and channel pool config | `/console/relay/products/:id`        | Platform operator          | `relay_products`, `relay_product_channels`, `channels`, `provider_quota_status` | Edit product info, bind/unbind channels, reorder priority and weight, constrain models |
+| Sub-key list                           | `/console/relay/keys`                | Platform operator, support | `relay_keys`, `relay_wallets`, project info                                     | Filter by status, search project, spot low-balance and expired keys                    |
+| Sub-key detail                         | `/console/relay/keys/:id`            | Platform operator, support | `relay_keys`, `relay_wallets`, `relay_daily_usage_summaries`, recent `requests` | Suspend, resume, archive, rename, adjust expiry                                        |
+| Recharge and ledger page               | `/console/relay/keys/:id/billing`    | Platform operator, support | `relay_wallets`, `relay_wallet_ledger_entries`                                  | Recharge, refund, manual adjustment, inspect accounting evidence                       |
+| Request trace page                     | `/console/relay/requests`            | Platform operator, support | `requests`, `request_executions`, `usage_logs`                                  | Troubleshoot failures by key, product, or channel, inspect settlement outcome          |
+| Channel pool health dashboard          | `/console/relay/channel-pool-health` | Platform operator          | `relay_product_channels`, `channels`, `provider_quota_status`                   | Detect shared upstream capacity risk by product                                        |
 
 ### Buyer project pages
 
-| Page | Suggested Route | Main Role | Data Dependencies | Core Actions |
-| --- | --- | --- | --- | --- |
-| Product access page | `/projects/:projectId/relay/products` | Project admin | Project-visible products, product description, model scope | Understand what products are available and navigate to key management |
-| Project sub-key list | `/projects/:projectId/relay/keys` | Project admin | `relay_keys`, `relay_wallets` | View usable keys and copy access info |
-| Project sub-key detail | `/projects/:projectId/relay/keys/:id` | Project admin, developer | `relay_keys`, wallet snapshot, recent requests, SDK examples | Copy API key and base URL, inspect status, see recent failures |
-| Usage and billing page | `/projects/:projectId/relay/usage` | Project admin | `relay_daily_usage_summaries`, `relay_wallet_ledger_entries`, aggregated `usage_logs` | Inspect balance, consumption trend, and recent charges |
-| Getting started page | `/projects/:projectId/relay/get-started` | Developer | Allowed models, request samples, error-code explanations | Integrate quickly and understand the shared-capacity model |
+| Page                   | Suggested Route                          | Main Role                | Data Dependencies                                                                     | Core Actions                                                          |
+| ---------------------- | ---------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Product access page    | `/projects/:projectId/relay/products`    | Project admin            | Project-visible products, product description, model scope                            | Understand what products are available and navigate to key management |
+| Project sub-key list   | `/projects/:projectId/relay/keys`        | Project admin            | `relay_keys`, `relay_wallets`                                                         | View usable keys and copy access info                                 |
+| Project sub-key detail | `/projects/:projectId/relay/keys/:id`    | Project admin, developer | `relay_keys`, wallet snapshot, recent requests, SDK examples                          | Copy API key and base URL, inspect status, see recent failures        |
+| Usage and billing page | `/projects/:projectId/relay/usage`       | Project admin            | `relay_daily_usage_summaries`, `relay_wallet_ledger_entries`, aggregated `usage_logs` | Inspect balance, consumption trend, and recent charges                |
+| Getting started page   | `/projects/:projectId/relay/get-started` | Developer                | Allowed models, request samples, error-code explanations                              | Integrate quickly and understand the shared-capacity model            |
 
 ### Page composition guidance
 
@@ -193,15 +193,15 @@ Implementation note: the UI needs both `problem by key` and `problem by product 
 
 ## Suggested State Transitions
 
-| Trigger | From | To | Main UI Entry |
-| --- | --- | --- | --- |
-| Create key | None | `active` or `suspended` | Create sub-key dialog |
-| Balance exhausted | `active` | `exhausted` | Automatic, no manual UI step |
-| Recharge recovery | `exhausted` | `active` | Balance and Ledger tab |
-| Manual suspension | `active` / `exhausted` | `suspended` | Key detail page |
-| Resume usage | `suspended` | `active` | Key detail page |
-| Archive | Any non-archived state | `archived` | Key detail page |
-| Renew after expiry | `active` + `expired` badge | `active` | Key detail page expiry edit |
+| Trigger            | From                       | To                      | Main UI Entry                |
+| ------------------ | -------------------------- | ----------------------- | ---------------------------- |
+| Create key         | None                       | `active` or `suspended` | Create sub-key dialog        |
+| Balance exhausted  | `active`                   | `exhausted`             | Automatic, no manual UI step |
+| Recharge recovery  | `exhausted`                | `active`                | Balance and Ledger tab       |
+| Manual suspension  | `active` / `exhausted`     | `suspended`             | Key detail page              |
+| Resume usage       | `suspended`                | `active`                | Key detail page              |
+| Archive            | Any non-archived state     | `archived`              | Key detail page              |
+| Renew after expiry | `active` + `expired` badge | `active`                | Key detail page expiry edit  |
 
 ## Out of Scope for the MVP UI
 
@@ -268,73 +268,88 @@ The visible URL information architecture should be organized around two main tra
 ```
 
 Notes:
+
 - The `operator` track serves platform operators, support, and risk-control roles.
 - The `projects/:projectId/relay-subkey` track serves buyer-side project admins and developers.
 - If the MVP needs additional scope control, only `products`, `keys`, `overview`, and `get-started` need to become standalone routes first; the remaining capabilities can live in tabs.
 
 ### File-Based Route Naming Guidance
 
-The documentation should explicitly distinguish two layers:
-- `URL route tree / information architecture`: user-facing navigation and page responsibility.
-- `file-based route naming`: the implementation that hangs under the existing `__root`, `_auth`, operator layout, and project layout structure.
+The current repo is closer to a “directory + `route.tsx` / `index.tsx`” TanStack Router file-based style than to flattening an entire path into a dotted filename. The docs should distinguish these layers clearly:
 
-A reasonable implementation-oriented naming example:
+- `URL route tree / information architecture`: user-facing navigation and page responsibility.
+- Actual `frontend/src/routes` implementation: stay close to the existing `__root`, `_authenticated`, and `_authenticated/project` structure.
+- If project context continues to come from `ProjectGuard` and the active project selection, project-side pages can live under `_authenticated/project/relay-subkeys/**` first instead of introducing a real `$projectId` segment during the MVP.
+
+A practical implementation-oriented naming example:
 
 ```text
 frontend/src/routes/
   __root.tsx
-  _auth.operator.relay-subkeys.products.index.tsx
-  _auth.operator.relay-subkeys.products.create.tsx
-  _auth.operator.relay-subkeys.products.$productId.index.tsx
-  _auth.operator.relay-subkeys.keys.index.tsx
-  _auth.operator.relay-subkeys.keys.create.tsx
-  _auth.operator.relay-subkeys.keys.$keyId.index.tsx
-  _auth.operator.relay-subkeys.keys.$keyId.billing.tsx
-  _auth.operator.relay-subkeys.requests.tsx
-  _auth.operator.relay-subkeys.channel-pool-health.tsx
+  _authenticated/
+    relay-subkeys/
+      route.tsx
+      products/
+        index.tsx
+        create.tsx
+        $productId.tsx
+      keys/
+        index.tsx
+        create.tsx
+        $keyId.tsx
+        $keyId.billing.tsx
+      requests/
+        index.tsx
+      channel-pool-health/
+        index.tsx
 
-  _auth.projects.$projectId.relay-subkey.overview.tsx
-  _auth.projects.$projectId.relay-subkey.products.tsx
-  _auth.projects.$projectId.relay-subkey.keys.tsx
-  _auth.projects.$projectId.relay-subkey.keys.$keyId.tsx
-  _auth.projects.$projectId.relay-subkey.usage.tsx
-  _auth.projects.$projectId.relay-subkey.get-started.tsx
-  _auth.projects.$projectId.relay-subkey.verify.tsx
+    project/
+      relay-subkeys/
+        route.tsx
+        overview.tsx
+        products.tsx
+        keys/
+          index.tsx
+          $keyId.tsx
+        usage.tsx
+        get-started.tsx
+        verify.tsx
 ```
 
 ### Page Responsibility and Flow Mapping
 
 #### Operator-side pages
 
-| Page | Route | Related Flow | Core Responsibility |
-| --- | --- | --- | --- |
-| Product list | `/operator/relay-subkeys/products` | Operator creates shared-capacity products | Inspect status, filter, activate/archive, open details |
-| Product create | `/operator/relay-subkeys/products/create` | Operator creates shared-capacity products | Enter product code, name, provider type, and model scope |
-| Product detail | `/operator/relay-subkeys/products/:productId` | Product detail and channel-pool configuration | Manage pool binding, priority, weight, and model filter |
-| Sub-key list | `/operator/relay-subkeys/keys` | Operator issues sub-keys to projects | View all keys, filter states, identify low-balance and expired keys |
-| Sub-key create | `/operator/relay-subkeys/keys/create` | Operator issues sub-keys to projects | Pick project, product, balance mode, expiry, and hard limits |
-| Sub-key detail | `/operator/relay-subkeys/keys/:keyId` | Key lifecycle management | Inspect overview, recent failures, and execute management actions |
-| Billing page | `/operator/relay-subkeys/keys/:keyId/billing` | Recharge and ledger flow | Recharge, refund, manually adjust, inspect accounting evidence |
-| Request trace page | `/operator/relay-subkeys/requests` | Shared-pool troubleshooting | Search failures by key, product, or channel |
-| Channel pool health dashboard | `/operator/relay-subkeys/channel-pool-health` | Shared-pool troubleshooting | Inspect product-pool health and upstream capacity risk |
+| Page                          | Route                                         | Related Flow                                  | Core Responsibility                                                 |
+| ----------------------------- | --------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------- |
+| Product list                  | `/operator/relay-subkeys/products`            | Operator creates shared-capacity products     | Inspect status, filter, activate/archive, open details              |
+| Product create                | `/operator/relay-subkeys/products/create`     | Operator creates shared-capacity products     | Enter product code, name, provider type, and model scope            |
+| Product detail                | `/operator/relay-subkeys/products/:productId` | Product detail and channel-pool configuration | Manage pool binding, priority, weight, and model filter             |
+| Sub-key list                  | `/operator/relay-subkeys/keys`                | Operator issues sub-keys to projects          | View all keys, filter states, identify low-balance and expired keys |
+| Sub-key create                | `/operator/relay-subkeys/keys/create`         | Operator issues sub-keys to projects          | Pick project, product, balance mode, expiry, and hard limits        |
+| Sub-key detail                | `/operator/relay-subkeys/keys/:keyId`         | Key lifecycle management                      | Inspect overview, recent failures, and execute management actions   |
+| Billing page                  | `/operator/relay-subkeys/keys/:keyId/billing` | Recharge and ledger flow                      | Recharge, refund, manually adjust, inspect accounting evidence      |
+| Request trace page            | `/operator/relay-subkeys/requests`            | Shared-pool troubleshooting                   | Search failures by key, product, or channel                         |
+| Channel pool health dashboard | `/operator/relay-subkeys/channel-pool-health` | Shared-pool troubleshooting                   | Inspect product-pool health and upstream capacity risk              |
 
 #### Project-side pages
 
-| Page | Route | Related Flow | Core Responsibility |
-| --- | --- | --- | --- |
-| Overview | `/projects/:projectId/relay-subkey/overview` | Project admin inspects and adopts the key | Summarize products, keys, balances, and recent failures |
-| Product access page | `/projects/:projectId/relay-subkey/products` | Project admin reviews product scope | Show project-visible products and model descriptions |
-| Key list | `/projects/:projectId/relay-subkey/keys` | Project admin inspects and adopts the key | View usable keys and copy access info |
-| Key detail | `/projects/:projectId/relay-subkey/keys/:keyId` | Project admin inspects and adopts the key | Copy API key and base URL, inspect status and recent failures |
-| Usage page | `/projects/:projectId/relay-subkey/usage` | Request succeeds and settlement completes | Inspect balance, consumption trend, and recent charges |
+| Page                 | Route                                           | Related Flow                              | Core Responsibility                                                 |
+| -------------------- | ----------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------- |
+| Overview             | `/projects/:projectId/relay-subkey/overview`    | Project admin inspects and adopts the key | Summarize products, keys, balances, and recent failures             |
+| Product access page  | `/projects/:projectId/relay-subkey/products`    | Project admin reviews product scope       | Show project-visible products and model descriptions                |
+| Key list             | `/projects/:projectId/relay-subkey/keys`        | Project admin inspects and adopts the key | View usable keys and copy access info                               |
+| Key detail           | `/projects/:projectId/relay-subkey/keys/:keyId` | Project admin inspects and adopts the key | Copy API key and base URL, inspect status and recent failures       |
+| Usage page           | `/projects/:projectId/relay-subkey/usage`       | Request succeeds and settlement completes | Inspect balance, consumption trend, and recent charges              |
 | Getting started page | `/projects/:projectId/relay-subkey/get-started` | Project admin inspects and adopts the key | Provide SDK examples, error-code explanations, and onboarding hints |
-| Verify page | `/projects/:projectId/relay-subkey/verify` | Integration verification | Run lightweight verification and show recent verification results |
+| Verify page          | `/projects/:projectId/relay-subkey/verify`      | Integration verification                  | Run lightweight verification and show recent verification results   |
 
 ### Page and Component Decomposition
 
 #### Page-level components
 
 Operator-side:
+
 - `RelayProductListPage`
 - `RelayProductCreatePage`
 - `RelayProductDetailPage`
@@ -346,6 +361,7 @@ Operator-side:
 - `RelayChannelPoolHealthPage`
 
 Project-side:
+
 - `ProjectRelayOverviewPage`
 - `ProjectRelayProductAccessPage`
 - `ProjectRelayKeyListPage`
@@ -357,6 +373,7 @@ Project-side:
 #### Shared business components
 
 Product-related:
+
 - `RelayProductTable`
 - `RelayProductStatusBadge`
 - `RelayProductForm`
@@ -366,6 +383,7 @@ Product-related:
 - `AllowedModelList`
 
 Key-related:
+
 - `RelayKeyTable`
 - `RelayKeyStatusBadge`
 - `RelayKeyCreateForm`
@@ -375,6 +393,7 @@ Key-related:
 - `RelayKeyDerivedStateBadges`
 
 Billing and usage:
+
 - `RelayWalletSummaryCard`
 - `RelayLedgerTable`
 - `RelayRechargeDialog`
@@ -383,6 +402,7 @@ Billing and usage:
 - `RelayChargeResultBadge`
 
 Request troubleshooting:
+
 - `RelayRequestTable`
 - `RelayRequestFilters`
 - `RelayExecutionTimeline`
@@ -390,6 +410,7 @@ Request troubleshooting:
 - `RelayRequestDetailDrawer`
 
 Project onboarding:
+
 - `RelaySdkExampleCard`
 - `RelayBaseUrlCard`
 - `RelayVerifyPanel`
@@ -415,15 +436,55 @@ Project onboarding:
   - `ProjectRelayKeyUsageTab`
   - `ProjectRelayKeyRecentFailuresTab`
 
+### Practical Frontend Follow-up
+
+#### Suggested `frontend/src/routes` File Map
+
+| Page                             | Suggested route file                                                       | Purpose                                                      |
+| -------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Operator product list            | `frontend/src/routes/_authenticated/relay-subkeys/products/index.tsx`      | List filters and status-change entry point                   |
+| Operator product detail          | `frontend/src/routes/_authenticated/relay-subkeys/products/$productId.tsx` | Product header plus channel-pool / model / assigned-key tabs |
+| Operator key list                | `frontend/src/routes/_authenticated/relay-subkeys/keys/index.tsx`          | Central place for status, balance, and expiry filters        |
+| Operator key detail              | `frontend/src/routes/_authenticated/relay-subkeys/keys/$keyId.tsx`         | Overview, limits, recent failures, and management actions    |
+| Operator billing page            | `frontend/src/routes/_authenticated/relay-subkeys/keys/$keyId.billing.tsx` | Recharge, refund, and ledger details                         |
+| Operator request troubleshooting | `frontend/src/routes/_authenticated/relay-subkeys/requests/index.tsx`      | Filter requests by product, key, and channel                 |
+| Project overview                 | `frontend/src/routes/_authenticated/project/relay-subkeys/overview.tsx`    | Summarize products, keys, balances, and failure highlights   |
+| Project key detail               | `frontend/src/routes/_authenticated/project/relay-subkeys/keys/$keyId.tsx` | Access info, recent calls, and failure explanations          |
+
+#### Page-Level Query / Mutation Matrix
+
+| Page                        | Primary queries                                            | Primary mutations                                                                                                         |
+| --------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Product list / create       | `useRelayProductsQuery`                                    | `useCreateRelayProductMutation`                                                                                           |
+| Product detail              | `useRelayProductDetailQuery`, `useRelayChannelPoolQuery`   | `useUpdateRelayProductMutation`, `useBindRelayChannelMutation`                                                            |
+| Key list / create           | `useRelayKeysQuery`                                        | `useCreateRelayKeyMutation`                                                                                               |
+| Key detail                  | `useRelayKeyDetailQuery`, `useRelayWalletQuery`            | `useSuspendRelayKeyMutation`, `useResumeRelayKeyMutation`, `useArchiveRelayKeyMutation`, `useAdjustRelayKeyLimitMutation` |
+| Key billing page            | `useRelayWalletQuery`, `useRelayLedgerEntriesQuery`        | `useRechargeRelayWalletMutation`                                                                                          |
+| Request troubleshooting     | `useRelayRequestTraceQuery`                                | `-`                                                                                                                       |
+| Channel-pool health         | `useRelayChannelPoolHealthQuery`                           | `-`                                                                                                                       |
+| Project overview / products | `useProjectRelayOverviewQuery`, `listProjectRelayProducts` | `-`                                                                                                                       |
+| Project key list / detail   | `listProjectRelayKeys`, `getProjectRelayKeyDetail`         | `-`                                                                                                                       |
+| Project usage / onboarding  | `getProjectRelayUsageSummary`                              | `-`                                                                                                                       |
+
+#### Implementation Notes Aligned with Current TanStack Router Style
+
+- Let `route.tsx` own section-level layout, `AuthGuard` / `ProjectGuard` wrapping, and shared page chrome; keep leaf route files thin and import the matching feature entry.
+- Put list filters, tabs, and pagination in `validateSearch` plus `Route.useSearch()`, matching the current pattern used in `frontend/src/routes/_authenticated/system/index.tsx`.
+- Prefer the existing `/project/*` context pattern on project-facing pages first; only promote `:projectId` from documentation semantics into a real path segment after the repo introduces explicit project URL routing.
+- After mutations, invalidate only the nearest list/detail queries; show the one-time plaintext key via local page state or a post-create dialog instead of a long-lived store.
+- Keep the real page implementations in `frontend/src/features/relay-subkeys/**`; route files should mainly handle guards, search-param parsing, and feature mounting.
+
 ### Data Loading and State Management Guidance
 
 Recommended usage:
+
 - Page-level remote data: TanStack Query
 - Lightweight cross-page UI state: Zustand
 - Forms: React Hook Form plus Zod
 - Table filters: URL search params
 
 Suggested query hooks:
+
 - `useRelayProductsQuery`
 - `useRelayProductDetailQuery`
 - `useRelayChannelPoolQuery`
@@ -437,6 +498,7 @@ Suggested query hooks:
 - `useProjectRelayUsageQuery`
 
 Suggested mutation hooks:
+
 - `useCreateRelayProductMutation`
 - `useUpdateRelayProductMutation`
 - `useBindRelayChannelMutation`
@@ -448,6 +510,7 @@ Suggested mutation hooks:
 - `useAdjustRelayKeyLimitMutation`
 
 Suggested Zustand stores:
+
 - `useRelayProductFilterStore`
 - `useRelayKeyFilterStore`
 - `useRelayRequestTraceFilterStore`
@@ -460,6 +523,7 @@ Guidance: business truth should stay in query results; stores should hold UI sta
 The relay management console should continue to prefer a GraphQL-first boundary. Suggested domain grouping:
 
 Product domain:
+
 - `listRelayProducts`
 - `getRelayProduct`
 - `createRelayProduct`
@@ -467,12 +531,14 @@ Product domain:
 - `archiveRelayProduct`
 
 Channel-pool domain:
+
 - `listRelayProductChannels`
 - `bindRelayProductChannel`
 - `unbindRelayProductChannel`
 - `reorderRelayProductChannels`
 
 Sub-key domain:
+
 - `listRelayKeys`
 - `getRelayKey`
 - `createRelayKey`
@@ -482,6 +548,7 @@ Sub-key domain:
 - `renewRelayKey`
 
 Wallet domain:
+
 - `getRelayWallet`
 - `listRelayLedgerEntries`
 - `rechargeRelayWallet`
@@ -489,11 +556,13 @@ Wallet domain:
 - `adjustRelayWallet`
 
 Troubleshooting domain:
+
 - `listRelayRequests`
 - `getRelayRequestDetail`
 - `listRelayChannelPoolHealth`
 
 Project-side domain:
+
 - `getProjectRelayOverview`
 - `listProjectRelayProducts`
 - `listProjectRelayKeys`
@@ -505,17 +574,20 @@ Project-side domain:
 In the first release, only the following pages need to become standalone routes; the rest can remain tabs or drawers:
 
 Operator-side:
+
 - `/operator/relay-subkeys/products`
 - `/operator/relay-subkeys/products/:productId`
 - `/operator/relay-subkeys/keys`
 - `/operator/relay-subkeys/keys/:keyId`
 
 Project-side:
+
 - `/projects/:projectId/relay-subkey/overview`
 - `/projects/:projectId/relay-subkey/keys/:keyId`
 - `/projects/:projectId/relay-subkey/get-started`
 
 Benefits:
+
 - Small route count.
 - Simpler permission checks.
 - Faster MVP delivery.
@@ -524,6 +596,7 @@ Benefits:
 ### Post-MVP Expansion Directions
 
 Potential future standalone routes:
+
 - Richer request troubleshooting views.
 - A dedicated channel-pool health dashboard.
 - Product approval and publishing flows.
