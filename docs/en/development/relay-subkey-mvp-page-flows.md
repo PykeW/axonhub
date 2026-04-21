@@ -936,3 +936,72 @@ Potential future standalone routes:
 - Collapse: `Collapse`
 - View recent failures: `View Recent Failures`
 - View ledger: `View Ledger`
+
+### Table Column Titles and Tooltip Copy Library
+
+#### Product list table
+
+| Column title        | Tooltip copy                                                                                                        |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Product Name        | The display name used to identify a shared-capacity product across operator and project views.                      |
+| Provider Type       | Identifies the provider or protocol family served by the product, such as Codex, Claude Code, or OpenAI-compatible. |
+| Status              | Shows whether the product is currently in draft, active, or archived state.                                         |
+| Allowed Model Count | The number of models currently enabled for this product.                                                            |
+| Pool Health         | A summary of the bound channel pool's current availability, used for quick shared-pool triage.                      |
+| Last Updated        | The latest time when product configuration was changed.                                                             |
+
+#### Key list table
+
+| Column title      | Tooltip copy                                                                              |
+| ----------------- | ----------------------------------------------------------------------------------------- |
+| Key Name          | The display name of the sub-key, used to distinguish keys by project or purpose.          |
+| Project           | The project context that owns the current key.                                            |
+| Bound Product     | The shared-capacity product currently attached to the key.                                |
+| Status            | The persisted lifecycle state, such as `active`, `suspended`, `exhausted`, or `archived`. |
+| Available Balance | The balance currently available for settlement, excluding any frozen amount.              |
+| Expiry Time       | The time when the key becomes invalid and should trigger renewal or warning behavior.     |
+| Last Used         | The most recent time when the key entered the request path successfully.                  |
+| Derived State     | Runtime badges such as `expired`, `low_balance`, or `upstream_pool_degraded`.             |
+
+#### Ledger table
+
+| Column title    | Tooltip copy                                                                              |
+| --------------- | ----------------------------------------------------------------------------------------- |
+| Ledger Time     | The timestamp when this ledger entry was recorded.                                        |
+| Type            | Indicates whether the entry is a recharge, charge, refund, or manual adjustment.          |
+| Amount          | The amount changed by this entry; interpret direction together with the entry type.       |
+| Balance After   | The balance snapshot after this entry was applied.                                        |
+| Related Request | If this entry came from request settlement, this field links back to the related request. |
+| Operator        | The operator account that triggered a manual accounting action.                           |
+| Remark          | A human-written or system-generated note explaining the entry.                            |
+
+#### Request troubleshooting table
+
+| Column title    | Tooltip copy                                                                                      |
+| --------------- | ------------------------------------------------------------------------------------------------- |
+| Request Time    | The time when the request entered the platform request pipeline.                                  |
+| Product         | The shared-capacity product associated with the request.                                          |
+| Key             | The sub-key used by the request.                                                                  |
+| Target Model    | The model identifier requested by the user.                                                       |
+| Routed Channel  | The upstream channel that actually executed the request.                                          |
+| Response Status | The final outcome of the request, such as success, failed, or rejected.                           |
+| Failure Stage   | If failed, indicates whether the failure happened during auth, routing, execution, or settlement. |
+| Charge Result   | Whether charging completed successfully for this request.                                         |
+| Trace ID        | The unique identifier used to connect tracing, troubleshooting, and log lookup.                   |
+
+#### Project-side usage table
+
+| Column title       | Tooltip copy                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------------ |
+| Date               | The aggregation date for the current usage record.                                         |
+| Request Count      | Total request count in the current aggregation window.                                     |
+| Token Usage        | Total settled token count, used to observe consumption trends.                             |
+| Balance Change     | Net balance change during the selected time window.                                        |
+| Top Failure Reason | The most common failure summary in the current period, helping buyer-side troubleshooting. |
+
+#### Tooltip usage rules
+
+- Tooltips should explain field meaning first, not repeat the column title.
+- If a value is already fully self-explanatory, tooltip text can be omitted to reduce hover noise.
+- For state columns, prioritize explaining both the meaning and user impact.
+- For accounting columns, prioritize explaining the amount definition and whether the value already reflects frozen or post-settlement state.
