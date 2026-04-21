@@ -44,7 +44,7 @@ export type ProviderQuotaChannel = {
 };
 
 export function useProviderQuotaStatuses() {
-  const { data, error } = useQuery({
+  const { data } = useQuery({
     queryKey: ['provider-quotas'],
     queryFn: async () => {
       const input = {

@@ -39,11 +39,11 @@ export function DataTableToolbar<TData>({
   onDateRangeChange,
   onRefresh,
   showRefresh = false,
-  apiKeyFilter,
-  onApiKeyFilterChange,
-  sourceFilter,
-  onSourceFilterChange,
-  autoRefresh = false,
+  apiKeyFilter: _apiKeyFilter,
+  onApiKeyFilterChange: _onApiKeyFilterChange,
+  sourceFilter: _sourceFilter,
+  onSourceFilterChange: _onSourceFilterChange,
+
   onAutoRefreshChange,
 }: DataTableToolbarProps<TData>) {
   const { t } = useTranslation();

@@ -1,7 +1,6 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { formatNumber } from '@/utils/format-number';
 import { FastestPerformersCard } from './fastest-performers-card';
 import { useFastestChannels } from '../data/fastest-performers';
 import type { FastestChannel } from '../data/fastest-performers';
@@ -12,7 +11,12 @@ export function FastestChannelsCard() {
   return (
     <FastestPerformersCard<FastestChannel>
       title={t('dashboard.cards.fastestPerformers.channels')}
-      description={(totalRequests) => t('dashboard.cards.fastestPerformers.description', { type: t('dashboard.cards.fastestPerformers.channelType'), count: formatNumber(totalRequests) })}
+      description={(totalRequests) =>
+        t('dashboard.cards.fastestPerformers.description', {
+          type: t('dashboard.cards.fastestPerformers.channelType'),
+          count: totalRequests,
+        })
+      }
       noDataLabel={t('dashboard.cards.fastestPerformers.noData')}
       useData={useFastestChannels}
       getName={(item) => item.channelName}

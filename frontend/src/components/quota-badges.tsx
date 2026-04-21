@@ -1,9 +1,7 @@
-import { Loader2, RefreshCw, Battery, BatteryLow, BatteryMedium, BatteryFull, BatteryWarning } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useProviderQuotaStatuses, ProviderQuotaChannel, checkProviderQuotas } from '@/features/system/data/quotas';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { Battery, BatteryFull, BatteryLow, BatteryMedium, BatteryWarning, Loader2, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ProviderQuotaChannel, useProviderQuotaStatuses } from '@/features/system/data/quotas';
 
 const STATUS_COLORS = {
   available: 'bg-green-500 hover:bg-green-600 text-white',
@@ -61,15 +59,17 @@ function getBatteryLevel(percentage: number, status: string): BatteryLevel {
 }
 
 function getChannelPercentage(channel: ProviderQuotaChannel, quotaData: QuotaData): number {
-  let percentage = 0;
   if (channel.type === 'claudecode') {
     const util5h = quotaData.windows?.['5h']?.utilization || 0;
     const util7d = quotaData.windows?.['7d']?.utilization || 0;
-    percentage = Math.max(util5h, util7d) * 100;
-  } else if (channel.type === 'codex') {
-    percentage = quotaData.rate_limit?.primary_window?.used_percent || 0;
+    return Math.max(util5h, util7d) * 100;
   }
-  return percentage;
+
+  if (channel.type === 'codex') {
+    return quotaData.rate_limit?.primary_window?.used_percent || 0;
+  }
+
+  return 0;
 }
 
 function QuotaRow({ channel }: { channel: ProviderQuotaChannel }) {
@@ -81,7 +81,6 @@ function QuotaRow({ channel }: { channel: ProviderQuotaChannel }) {
   const colorClass = STATUS_COLORS[status as keyof typeof STATUS_COLORS] || STATUS_COLORS.unknown;
   const statusLabel = t(STATUS_LABELS[status as keyof typeof STATUS_LABELS]);
   const quotaData = quota.quotaData as QuotaData;
-
   const percentage = getChannelPercentage(channel, quotaData);
   const batteryLevel = getBatteryLevel(percentage, status);
   const BatteryIcon = getBatteryIcon(batteryLevel);
@@ -109,43 +108,43 @@ function QuotaRow({ channel }: { channel: ProviderQuotaChannel }) {
   };
 
   return (
-    <div className="space-y-2 text-sm py-3 first:pt-0 border-b last:border-0 last:pb-0 pb-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <BatteryIcon className={`w-4 h-4 ${status === 'exhausted' ? 'text-red-500' : status === 'warning' ? 'text-yellow-500' : 'text-muted-foreground'}`} />
-          <span className="font-medium">{channel.name}</span>
+    <div className='space-y-2 border-b py-3 pb-3 text-sm first:pt-0 last:border-0 last:pb-0'>
+      <div className='flex items-center justify-between'>
+        <div className='flex items-center gap-2'>
+          <BatteryIcon className={`h-4 w-4 ${status === 'exhausted' ? 'text-red-500' : status === 'warning' ? 'text-yellow-500' : 'text-muted-foreground'}`} />
+          <span className='font-medium'>{channel.name}</span>
         </div>
-        <span className={`text-xs px-2 py-0.5 rounded ${colorClass}`}>{statusLabel}</span>
+        <span className={`rounded px-2 py-0.5 text-xs ${colorClass}`}>{statusLabel}</span>
       </div>
 
       {quotaData.error && (
-        <div className="ml-6 text-xs text-red-500 break-words">
-          <span className="font-medium">{t('quota.label.error')}:</span> {quotaData.error}
+        <div className='ml-6 break-words text-xs text-red-500'>
+          <span className='font-medium'>{t('quota.label.error')}:</span> {quotaData.error}
         </div>
       )}
 
       {channel.type === 'claudecode' && (
-        <div className="ml-6 mt-2">
-          <div className="space-y-1.5 text-xs">
-            <div className="flex justify-between items-center text-muted-foreground">
+        <div className='ml-6 mt-2'>
+          <div className='space-y-1.5 text-xs'>
+            <div className='flex items-center justify-between text-muted-foreground'>
               <span>{t('quota.label.used')}</span>
               <span className={`font-medium ${batteryLevel === 'warning' || batteryLevel === 'low' ? 'text-red-500' : 'text-foreground'}`}>{displayPercentage}%</span>
             </div>
-            <div className="flex justify-between items-center text-muted-foreground">
+            <div className='flex items-center justify-between text-muted-foreground'>
               <span>{t('quota.window.5h')}</span>
-              <span className="font-medium">{Math.round((quotaData.windows?.['5h']?.utilization || 0) * 100)}%</span>
+              <span className='font-medium'>{Math.round((quotaData.windows?.['5h']?.utilization || 0) * 100)}%</span>
             </div>
-            <div className="flex justify-between items-center text-muted-foreground">
+            <div className='flex items-center justify-between text-muted-foreground'>
               <span>{t('quota.window.7d')}</span>
-              <span className="font-medium">{Math.round((quotaData.windows?.['7d']?.utilization || 0) * 100)}%</span>
+              <span className='font-medium'>{Math.round((quotaData.windows?.['7d']?.utilization || 0) * 100)}%</span>
             </div>
             {quotaData.representative_claim && (
-              <div className="flex justify-between items-center text-muted-foreground">
+              <div className='flex items-center justify-between text-muted-foreground'>
                 <span>{t('quota.label.limiting_bucket')}</span>
                 <span>{quotaData.representative_claim === 'five_hour' ? '5h' : '7d'}</span>
               </div>
             )}
-            <div className="flex justify-between items-center text-muted-foreground">
+            <div className='flex items-center justify-between text-muted-foreground'>
               <span>{t('quota.label.reset_in')}</span>
               <span>{formatTimeToReset(quota.nextResetAt)}</span>
             </div>
@@ -154,45 +153,31 @@ function QuotaRow({ channel }: { channel: ProviderQuotaChannel }) {
       )}
 
       {channel.type === 'codex' && (
-        <div className="ml-6 mt-2">
-          <div className="space-y-1.5 text-xs">
-            <div className="flex justify-between items-center text-muted-foreground">
+        <div className='ml-6 mt-2'>
+          <div className='space-y-1.5 text-xs'>
+            <div className='flex items-center justify-between text-muted-foreground'>
               <span>{t('quota.label.used')}</span>
               <span className={`font-medium ${batteryLevel === 'warning' || batteryLevel === 'low' ? 'text-red-500' : 'text-foreground'}`}>{displayPercentage}%</span>
             </div>
-            <div className="flex justify-between items-center text-muted-foreground">
+            <div className='flex items-center justify-between text-muted-foreground'>
               <span>{t('quota.label.primary_window')}</span>
-              <span className="font-medium">{Math.round(quotaData.rate_limit?.primary_window?.used_percent || 0)}%</span>
+              <span className='font-medium'>{Math.round(quotaData.rate_limit?.primary_window?.used_percent || 0)}%</span>
             </div>
-            <div className="flex justify-between items-center text-muted-foreground">
+            <div className='flex items-center justify-between text-muted-foreground'>
               <span>{t('quota.label.primary_duration')}</span>
               <span>{formatWindowDuration(quotaData.rate_limit?.primary_window?.limit_window_seconds)}</span>
             </div>
             {quotaData.rate_limit?.primary_window?.reset_at && (
-              <div className="flex justify-between items-center text-muted-foreground">
+              <div className='flex items-center justify-between text-muted-foreground'>
                 <span>{t('quota.label.resets_at')}</span>
                 <span>{new Date(quotaData.rate_limit.primary_window.reset_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
               </div>
             )}
             {quotaData.plan_type && (
-              <div className="flex justify-between items-center text-muted-foreground">
+              <div className='flex items-center justify-between text-muted-foreground'>
                 <span>{t('quota.label.plan')}</span>
                 <span>{quotaData.plan_type}</span>
               </div>
-            )}
-            {quotaData.rate_limit?.secondary_window?.used_percent !== undefined && (
-              <>
-                <div className="flex justify-between items-center text-muted-foreground">
-                  <span>{t('quota.label.secondary_window')}</span>
-                  <span className="font-medium">{Math.round(quotaData.rate_limit.secondary_window.used_percent)}%</span>
-                </div>
-                {quotaData.rate_limit?.secondary_window?.limit_window_seconds && (
-                  <div className="flex justify-between items-center text-muted-foreground">
-                    <span>{t('quota.label.secondary_duration')}</span>
-                    <span>{formatWindowDuration(quotaData.rate_limit.secondary_window.limit_window_seconds)}</span>
-                  </div>
-                )}
-              </>
             )}
           </div>
         </div>
@@ -202,16 +187,17 @@ function QuotaRow({ channel }: { channel: ProviderQuotaChannel }) {
 }
 
 function QuotaBadgeTrigger({ channels }: { channels: ProviderQuotaChannel[] }) {
-  const { t } = useTranslation();
-  const highestUsed = Math.max(...channels.map(c => {
-    const quota = c.quotaStatus;
-    if (!quota) return 0;
-    const quotaData = quota.quotaData as QuotaData;
-    return getChannelPercentage(c, quotaData);
-  }));
+  const highestUsed = Math.max(
+    ...channels.map((channel) => {
+      const quota = channel.quotaStatus;
+      if (!quota) return 0;
+      const quotaData = quota.quotaData as QuotaData;
+      return getChannelPercentage(channel, quotaData);
+    })
+  );
 
-  const hasExhausted = channels.some(c => c.quotaStatus?.status === 'exhausted');
-  const hasWarning = channels.some(c => c.quotaStatus?.status === 'warning');
+  const hasExhausted = channels.some((channel) => channel.quotaStatus?.status === 'exhausted');
+  const hasWarning = channels.some((channel) => channel.quotaStatus?.status === 'warning');
 
   let level: BatteryLevel = 'full';
   if (hasExhausted) level = 'warning';
@@ -219,12 +205,9 @@ function QuotaBadgeTrigger({ channels }: { channels: ProviderQuotaChannel[] }) {
   else level = getBatteryLevel(highestUsed, 'available');
 
   const BatteryIcon = getBatteryIcon(level);
-  const isWarning = level === 'warning';
-  const textColor = isWarning ? 'text-red-500' : level === 'low' ? 'text-yellow-500' : 'text-muted-foreground';
+  const textColor = level === 'warning' ? 'text-red-500' : level === 'low' ? 'text-yellow-500' : 'text-muted-foreground';
 
-  return (
-    <BatteryIcon className={`w-5 h-5 ${textColor} transition-colors`} />
-  );
+  return <BatteryIcon className={`h-5 w-5 ${textColor} transition-colors`} />;
 }
 
 export function QuotaBadges({ isRefreshing, onRefresh }: { isRefreshing: boolean; onRefresh: () => void }) {
@@ -236,31 +219,22 @@ export function QuotaBadges({ isRefreshing, onRefresh }: { isRefreshing: boolean
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button type="button" className="p-2 hover:bg-muted rounded-md transition-colors relative">
+        <button type='button' className='relative rounded-md p-2 transition-colors hover:bg-muted'>
           <QuotaBadgeTrigger channels={channels} />
         </button>
       </PopoverTrigger>
-      <PopoverContent className={channels.length > 4 ? "w-[640px]" : "w-80"} align="end">
-        <div className="space-y-1">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+      <PopoverContent className={channels.length > 4 ? 'w-[640px]' : 'w-80'} align='end'>
+        <div className='space-y-1'>
+          <div className='mb-2 flex items-center justify-between'>
+            <div className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
               {t('system.providerQuota.title')}
             </div>
-            <button
-              onClick={onRefresh}
-              disabled={isRefreshing}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Refresh quotas"
-            >
-              {isRefreshing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <RefreshCw className="w-4 h-4" />
-              )}
+            <button onClick={onRefresh} disabled={isRefreshing} className='text-muted-foreground transition-colors hover:text-foreground' aria-label='Refresh quotas'>
+              {isRefreshing ? <Loader2 className='h-4 w-4 animate-spin' /> : <RefreshCw className='h-4 w-4' />}
             </button>
           </div>
           <div className={`max-h-[60vh] overflow-y-auto ${channels.length > 4 ? 'grid grid-cols-2 gap-x-4' : ''}`}>
-            {channels.map((channel: ProviderQuotaChannel) => (
+            {channels.map((channel) => (
               <QuotaRow key={channel.id} channel={channel} />
             ))}
           </div>

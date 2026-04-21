@@ -101,11 +101,11 @@ export default function DashboardPage() {
   const [apiKeyTokensTimePeriod, setApiKeyTokensTimePeriod] = useState<TimePeriod>('allTime');
 
   const modelPerformanceDescription = useMemo(() => {
-    return t('dashboard.charts.performanceDescription', { count: formatNumber(modelTotalRequests) });
+    return t('dashboard.charts.performanceDescription', { count: modelTotalRequests });
   }, [t, modelTotalRequests]);
 
   const channelPerformanceDescription = useMemo(() => {
-    return t('dashboard.charts.performanceDescription', { count: formatNumber(channelTotalRequests) });
+    return t('dashboard.charts.performanceDescription', { count: channelTotalRequests });
   }, [t, channelTotalRequests]);
 
   if (isLoading) {

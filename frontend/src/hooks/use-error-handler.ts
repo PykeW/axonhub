@@ -28,13 +28,12 @@ export function useErrorHandler() {
   const handleError = useCallback(
     (error: unknown, options?: string | ErrorHandlerOptions) => {
       // Normalize options
-      const opts: ErrorHandlerOptions = typeof options === 'string' 
-        ? { context: options } 
+      const opts: ErrorHandlerOptions = typeof options === 'string'
+        ? { context: options }
         : options || {};
-      
-      const { context, onDuplicate, onErrorCode, showToast = true } = opts;
 
-      // Handle Zod validation errors
+      const { onDuplicate, onErrorCode, showToast = true } = opts;
+
       if (error instanceof ZodError) {
         const fieldErrors =
           error.issues

@@ -1,8 +1,7 @@
 'use client';
 
-import { forwardRef, useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import { Check } from 'lucide-react';
-import { X } from 'lucide-react';
+import { forwardRef, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
+import { Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TruncatedText } from '@/components/truncated-text';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
@@ -19,50 +18,48 @@ interface TagsAutocompleteInputProps {
 }
 
 export const TagsAutocompleteInput = forwardRef<HTMLDivElement, TagsAutocompleteInputProps>(
-  ({ value = [], onChange, placeholder, className, suggestions = [], isLoading }, ref) => {
+  ({ value = [], onChange, placeholder, className, suggestions = [], isLoading }, _ref) => {
     const [inputValue, setInputValue] = useState('');
     const [open, setOpen] = useState(false);
     const [isComposing, setIsComposing] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-
-    // Filter suggestions based on input and not already selected (capped for performance)
     const filteredSuggestions = useMemo(() => {
       const result: string[] = [];
       const q = inputValue.trim().toLowerCase();
-      for (const s of suggestions) {
-        if (value.includes(s)) continue;
-        if (q && !s.toLowerCase().includes(q)) continue;
-        result.push(s);
+      for (const suggestion of suggestions) {
+        if (value.includes(suggestion)) continue;
+        if (q && !suggestion.toLowerCase().includes(q)) continue;
+        result.push(suggestion);
         if (result.length >= MAX_DISPLAY) break;
       }
       return result;
     }, [inputValue, suggestions, value]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setInputValue(e.target.value);
-      if (e.target.value && !open && suggestions.length > 0) {
+    const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+      setInputValue(event.target.value);
+      if (event.target.value && !open && suggestions.length > 0) {
         setOpen(true);
-      } else if (!e.target.value) {
+      } else if (!event.target.value) {
         setOpen(false);
       }
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
       if (isComposing) return;
 
-      if (e.key === 'Enter' || e.key === ',') {
-        e.preventDefault();
+      if (event.key === 'Enter' || event.key === ',') {
+        event.preventDefault();
         const newTag = inputValue.trim();
         if (newTag && !value.includes(newTag)) {
           onChange([...value, newTag]);
         }
         setInputValue('');
         setOpen(false);
-      } else if (e.key === 'Backspace' && !inputValue && value.length > 0) {
+      } else if (event.key === 'Backspace' && !inputValue && value.length > 0) {
         onChange(value.slice(0, -1));
-      } else if (e.key === 'Escape') {
+      } else if (event.key === 'Escape') {
         setOpen(false);
       }
     };
@@ -90,7 +87,6 @@ export const TagsAutocompleteInput = forwardRef<HTMLDivElement, TagsAutocomplete
       setOpen(false);
     };
 
-    // Focus input when clicking on the container
     const handleContainerClick = () => {
       inputRef.current?.focus();
       if (suggestions.length > 0 && inputValue) {
@@ -98,10 +94,9 @@ export const TagsAutocompleteInput = forwardRef<HTMLDivElement, TagsAutocomplete
       }
     };
 
-    // Close popover when clicking outside
     useEffect(() => {
-      const handleClickOutside = (e: MouseEvent) => {
-        const target = e.target as HTMLElement;
+      const handleClickOutside = (event: MouseEvent) => {
+        const target = event.target as HTMLElement;
         if (!target.closest('[data-tags-input-container]')) {
           setOpen(false);
         }
@@ -158,7 +153,7 @@ export const TagsAutocompleteInput = forwardRef<HTMLDivElement, TagsAutocomplete
             <PopoverContent
               className='w-[var(--radix-popover-trigger-width)] max-w-[var(--radix-popover-trigger-width)] p-0'
               align='start'
-              onOpenAutoFocus={(e) => e.preventDefault()}
+              onOpenAutoFocus={(event) => event.preventDefault()}
               container={containerRef.current ?? undefined}
             >
               <div className='max-h-[200px] overflow-y-auto p-1'>
@@ -169,8 +164,8 @@ export const TagsAutocompleteInput = forwardRef<HTMLDivElement, TagsAutocomplete
                     <div
                       key={suggestion}
                       className='hover:bg-accent flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm'
-                      onMouseDown={(e) => {
-                        e.preventDefault();
+                      onMouseDown={(event) => {
+                        event.preventDefault();
                         handleSelectSuggestion(suggestion);
                       }}
                     >
