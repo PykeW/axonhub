@@ -1005,3 +1005,48 @@ Potential future standalone routes:
 - If a value is already fully self-explanatory, tooltip text can be omitted to reduce hover noise.
 - For state columns, prioritize explaining both the meaning and user impact.
 - For accounting columns, prioritize explaining the amount definition and whether the value already reflects frozen or post-settlement state.
+
+### SDK Integration Feedback Copy
+
+#### Copy feedback messages
+
+| Scenario               | Success copy             | Failure copy                                         |
+| ---------------------- | ------------------------ | ---------------------------------------------------- |
+| Copy Base URL          | Base URL copied          | Failed to copy Base URL. Please copy it manually.    |
+| Copy API Key           | API Key copied           | Failed to copy API Key. Please copy it manually.     |
+| Copy OpenAI example    | OpenAI example copied    | Failed to copy the example. Please copy it manually. |
+| Copy Anthropic example | Anthropic example copied | Failed to copy the example. Please copy it manually. |
+| Copy Codex example     | Codex example copied     | Failed to copy the example. Please copy it manually. |
+
+#### Integration verification messages
+
+| Scenario                                | Copy                                                                                       |
+| --------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Verification started                    | Verifying the current integration settings. Please wait...                                 |
+| Verification succeeded                  | Integration succeeded. This key can access the shared-capacity service normally.           |
+| Verification failed (auth)              | Integration failed: please check whether the API key is correct or expired.                |
+| Verification failed (pool unavailable)  | Integration failed: the shared pool is temporarily unavailable. Please retry later.        |
+| Verification failed (model unavailable) | Integration failed: the selected model is not enabled for this product. Try another model. |
+| Verification failed (network)           | Integration failed: the request did not complete. Check your network and retry later.      |
+
+#### Integration guidance copy
+
+- Always use the AxonHub downstream sub-key, not the upstream provider's native credential.
+- If requests still fail after copying the values, first verify that Base URL, API Key, and model name match the example shown on the page.
+- When the product pool is degraded, a failed verification does not always mean the current key itself is invalid.
+- If verification keeps failing, contact the platform operator and provide the latest request time and Trace ID.
+
+#### Example-switching copy
+
+- OpenAI Example
+- Anthropic Example
+- Codex Example
+- Copy Current Example
+- Switched to {provider} example
+
+#### SDK page empty/error-state suggestions
+
+- No usable key: no key is currently available for this project. Contact the operator to issue one.
+- No available model: no model is currently available for this product. Refresh later or confirm with the operator.
+- Example generation failed: failed to load example configuration. Please try again later.
+- No verification history: the latest verification result will appear here after the first successful verification.
