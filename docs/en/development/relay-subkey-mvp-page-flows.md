@@ -603,3 +603,141 @@ Potential future standalone routes:
 - Bulk key management pages.
 - Project-level verification center.
 - Custom notification and alert pages.
+
+### Page-Level loader / action / search Param Drafts
+
+#### Operator product list page
+
+- Target route file: `frontend/src/routes/_authenticated/relay-subkeys/products/index.tsx`
+- `validateSearch`
+  - `status?: 'draft' | 'active' | 'archived'`
+  - `providerType?: string`
+  - `keyword?: string`
+  - `page?: number`
+  - `pageSize?: number`
+- loader
+  - Parse search params and prefetch the list data behind `useRelayProductsQuery`.
+  - Return normalized filters, default pagination config, and permission hints for product creation.
+- action / mutation entry points
+  - Do not define a TanStack action in the page for MVP; trigger `useCreateRelayProductMutation` or status-switch mutations from buttons.
+  - Bulk activation / archival can remain deferred.
+
+#### Operator product detail page
+
+- Target route file: `frontend/src/routes/_authenticated/relay-subkeys/products/$productId.tsx`
+- `validateSearch`
+  - `tab?: 'overview' | 'pool' | 'models' | 'keys'`
+  - `channelStatus?: 'active' | 'paused' | 'all'`
+- loader
+  - Prefetch `useRelayProductDetailQuery` and `useRelayChannelPoolQuery` by `productId`.
+  - If `tab === 'keys'`, optionally prefetch the assigned-key list as well.
+- action / mutation entry points
+  - `useUpdateRelayProductMutation`
+  - `useBindRelayChannelMutation`
+  - Reordering can either use a dedicated mutation or a full-table save in the first release.
+
+#### Operator key list page
+
+- Target route file: `frontend/src/routes/_authenticated/relay-subkeys/keys/index.tsx`
+- `validateSearch`
+  - `status?: 'active' | 'suspended' | 'exhausted' | 'archived'`
+  - `productId?: string`
+  - `projectId?: string`
+  - `lowBalanceOnly?: boolean`
+  - `expiredOnly?: boolean`
+  - `page?: number`
+  - `pageSize?: number`
+- loader
+  - Prefetch `useRelayKeysQuery` and normalize filter values for the page.
+  - Optionally prefetch product and project selector options.
+- action / mutation entry points
+  - Create flow triggers `useCreateRelayKeyMutation`.
+  - Bulk suspend / resume should remain out of MVP.
+
+#### Operator key detail page
+
+- Target route file: `frontend/src/routes/_authenticated/relay-subkeys/keys/$keyId.tsx`
+- `validateSearch`
+  - `tab?: 'overview' | 'limits' | 'failures'`
+  - `range?: '24h' | '7d' | '30d'`
+- loader
+  - Prefetch `useRelayKeyDetailQuery` and `useRelayWalletQuery`.
+  - When `tab === 'failures'`, optionally prefetch a recent failed-request summary.
+- action / mutation entry points
+  - `useSuspendRelayKeyMutation`
+  - `useResumeRelayKeyMutation`
+  - `useArchiveRelayKeyMutation`
+  - `useAdjustRelayKeyLimitMutation`
+- note
+  - The one-time plaintext key should not come back from a normal loader. It should be handled by local page state or a post-create dialog only.
+
+#### Operator billing page
+
+- Target route file: `frontend/src/routes/_authenticated/relay-subkeys/keys/$keyId.billing.tsx`
+- `validateSearch`
+  - `scene?: 'all' | 'recharge' | 'consume' | 'refund' | 'manual_adjust'`
+  - `page?: number`
+  - `pageSize?: number`
+- loader
+  - Prefetch `useRelayWalletQuery` and `useRelayLedgerEntriesQuery`.
+- action / mutation entry points
+  - `useRechargeRelayWalletMutation`
+  - If refunds and manual adjustments are open in MVP, expose them as separate mutations.
+
+#### Operator request troubleshooting page
+
+- Target route file: `frontend/src/routes/_authenticated/relay-subkeys/requests/index.tsx`
+- `validateSearch`
+  - `productId?: string`
+  - `keyId?: string`
+  - `channelId?: string`
+  - `status?: 'failed' | 'completed' | 'all'`
+  - `timeRange?: '1h' | '24h' | '7d'`
+  - `page?: number`
+- loader
+  - Prefetch `useRelayRequestTraceQuery`.
+  - Prefetch product, key, and channel selector options from the same search context.
+- action / mutation entry points
+  - No MVP page-level action; retry, suspend, or archive should redirect to the owning key or product screens.
+
+#### Project overview page
+
+- Target route file: `frontend/src/routes/_authenticated/project/relay-subkeys/overview.tsx`
+- `validateSearch`
+  - `tab?: 'overview' | 'products' | 'keys'`
+  - `range?: '24h' | '7d' | '30d'`
+- loader
+  - After `ProjectGuard` passes, prefetch `useProjectRelayOverviewQuery`.
+  - If the current project comes from route context, reuse that context instead of duplicating a project identifier in search params.
+- action / mutation entry points
+  - None; this page stays read-only in the first release.
+
+#### Project key detail page
+
+- Target route file: `frontend/src/routes/_authenticated/project/relay-subkeys/keys/$keyId.tsx`
+- `validateSearch`
+  - `tab?: 'access' | 'usage' | 'failures'`
+  - `range?: '24h' | '7d' | '30d'`
+- loader
+  - Prefetch `getProjectRelayKeyDetail`.
+  - If `tab === 'usage'`, optionally prefetch recent ledger or token-aggregate data.
+- action / mutation entry points
+  - Do not expose write mutations on the project side in MVP; copying the key, copying the base URL, and running verification remain local UI actions.
+
+#### Project getting-started page
+
+- Target route file: `frontend/src/routes/_authenticated/project/relay-subkeys/get-started.tsx`
+- `validateSearch`
+  - `provider?: 'openai' | 'anthropic' | 'codex'`
+  - `keyId?: string`
+- loader
+  - Prefetch visible products, the recommended default key, and SDK-example metadata.
+- action / mutation entry points
+  - None; if a `verify integration` button exists, it should navigate to the verify page or trigger a lightweight verification mutation.
+
+#### Unified implementation guidance
+
+- Standardize all search params through `validateSearch`, then drive filters, tabs, and pagination via `Route.useSearch()`.
+- Keep authorization in `route.tsx`, `AuthGuard`, and `ProjectGuard`; loaders should not duplicate access checks beyond assuming guarded context.
+- Let loaders focus on first-paint data and search normalization; ongoing invalidation and refetching still belong to TanStack Query.
+- If TanStack Router actions are introduced later, reserve them for simple form-submit flows; for the MVP, mutation hooks remain the closer fit to the current codebase.
