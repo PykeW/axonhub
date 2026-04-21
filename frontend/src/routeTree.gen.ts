@@ -22,10 +22,12 @@ import { Route as authSignInRouteImport } from './routes/(auth)/sign-in'
 import { Route as authInitializationRouteImport } from './routes/(auth)/initialization'
 import { Route as authForgotPasswordRouteImport } from './routes/(auth)/forgot-password'
 import { Route as AuthenticatedSettingsRouteRouteImport } from './routes/_authenticated/settings/route'
+import { Route as AuthenticatedRelaySubkeysRouteRouteImport } from './routes/_authenticated/relay-subkeys/route'
 import { Route as AuthenticatedUsersIndexRouteImport } from './routes/_authenticated/users/index'
 import { Route as AuthenticatedSystemIndexRouteImport } from './routes/_authenticated/system/index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedRolesIndexRouteImport } from './routes/_authenticated/roles/index'
+import { Route as AuthenticatedRelaySubkeysIndexRouteImport } from './routes/_authenticated/relay-subkeys/index'
 import { Route as AuthenticatedPromptProtectionRulesIndexRouteImport } from './routes/_authenticated/prompt-protection-rules/index'
 import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects/index'
 import { Route as AuthenticatedPermissionDemoIndexRouteImport } from './routes/_authenticated/permission-demo/index'
@@ -40,17 +42,32 @@ import { Route as AuthenticatedSettingsNotificationsRouteImport } from './routes
 import { Route as AuthenticatedSettingsDisplayRouteImport } from './routes/_authenticated/settings/display'
 import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings/appearance'
 import { Route as AuthenticatedRequestsRequestIdRouteImport } from './routes/_authenticated/requests/$requestId'
+import { Route as AuthenticatedRelaySubkeysRequestsIndexRouteImport } from './routes/_authenticated/relay-subkeys/requests/index'
+import { Route as AuthenticatedRelaySubkeysProductsIndexRouteImport } from './routes/_authenticated/relay-subkeys/products/index'
+import { Route as AuthenticatedRelaySubkeysKeysIndexRouteImport } from './routes/_authenticated/relay-subkeys/keys/index'
+import { Route as AuthenticatedRelaySubkeysChannelPoolHealthIndexRouteImport } from './routes/_authenticated/relay-subkeys/channel-pool-health/index'
 import { Route as AuthenticatedProjectUsersIndexRouteImport } from './routes/_authenticated/project/users/index'
 import { Route as AuthenticatedProjectTracesIndexRouteImport } from './routes/_authenticated/project/traces/index'
 import { Route as AuthenticatedProjectThreadsIndexRouteImport } from './routes/_authenticated/project/threads/index'
 import { Route as AuthenticatedProjectRolesIndexRouteImport } from './routes/_authenticated/project/roles/index'
 import { Route as AuthenticatedProjectRequestsIndexRouteImport } from './routes/_authenticated/project/requests/index'
+import { Route as AuthenticatedProjectRelaySubkeysIndexRouteImport } from './routes/_authenticated/project/relay-subkeys/index'
 import { Route as AuthenticatedProjectPromptsIndexRouteImport } from './routes/_authenticated/project/prompts/index'
 import { Route as AuthenticatedProjectPlaygroundIndexRouteImport } from './routes/_authenticated/project/playground/index'
 import { Route as AuthenticatedProjectApiKeysIndexRouteImport } from './routes/_authenticated/project/api-keys/index'
+import { Route as AuthenticatedRelaySubkeysProductsCreateRouteImport } from './routes/_authenticated/relay-subkeys/products/create'
+import { Route as AuthenticatedRelaySubkeysProductsProductIdRouteImport } from './routes/_authenticated/relay-subkeys/products/$productId'
+import { Route as AuthenticatedRelaySubkeysKeysCreateRouteImport } from './routes/_authenticated/relay-subkeys/keys/create'
+import { Route as AuthenticatedRelaySubkeysKeysKeyIdRouteImport } from './routes/_authenticated/relay-subkeys/keys/$keyId'
 import { Route as AuthenticatedProjectTracesTraceIdRouteImport } from './routes/_authenticated/project/traces/$traceId'
 import { Route as AuthenticatedProjectThreadsThreadIdRouteImport } from './routes/_authenticated/project/threads/$threadId'
 import { Route as AuthenticatedProjectRequestsRequestIdRouteImport } from './routes/_authenticated/project/requests/$requestId'
+import { Route as AuthenticatedProjectRelaySubkeysVerifyRouteImport } from './routes/_authenticated/project/relay-subkeys/verify'
+import { Route as AuthenticatedProjectRelaySubkeysUsageRouteImport } from './routes/_authenticated/project/relay-subkeys/usage'
+import { Route as AuthenticatedProjectRelaySubkeysProductsRouteImport } from './routes/_authenticated/project/relay-subkeys/products'
+import { Route as AuthenticatedProjectRelaySubkeysGetStartedRouteImport } from './routes/_authenticated/project/relay-subkeys/get-started'
+import { Route as AuthenticatedProjectRelaySubkeysKeysIndexRouteImport } from './routes/_authenticated/project/relay-subkeys/keys/index'
+import { Route as AuthenticatedProjectRelaySubkeysKeysKeyIdRouteImport } from './routes/_authenticated/project/relay-subkeys/keys/$keyId'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -117,6 +134,12 @@ const AuthenticatedSettingsRouteRoute =
     path: '/settings',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRelaySubkeysRouteRoute =
+  AuthenticatedRelaySubkeysRouteRouteImport.update({
+    id: '/relay-subkeys',
+    path: '/relay-subkeys',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedUsersIndexRoute = AuthenticatedUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -139,6 +162,12 @@ const AuthenticatedRolesIndexRoute = AuthenticatedRolesIndexRouteImport.update({
   path: '/roles/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRelaySubkeysIndexRoute =
+  AuthenticatedRelaySubkeysIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedRelaySubkeysRouteRoute,
+  } as any)
 const AuthenticatedPromptProtectionRulesIndexRoute =
   AuthenticatedPromptProtectionRulesIndexRouteImport.update({
     id: '/prompt-protection-rules/',
@@ -222,6 +251,30 @@ const AuthenticatedRequestsRequestIdRoute =
     path: '/requests/$requestId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRelaySubkeysRequestsIndexRoute =
+  AuthenticatedRelaySubkeysRequestsIndexRouteImport.update({
+    id: '/requests/',
+    path: '/requests/',
+    getParentRoute: () => AuthenticatedRelaySubkeysRouteRoute,
+  } as any)
+const AuthenticatedRelaySubkeysProductsIndexRoute =
+  AuthenticatedRelaySubkeysProductsIndexRouteImport.update({
+    id: '/products/',
+    path: '/products/',
+    getParentRoute: () => AuthenticatedRelaySubkeysRouteRoute,
+  } as any)
+const AuthenticatedRelaySubkeysKeysIndexRoute =
+  AuthenticatedRelaySubkeysKeysIndexRouteImport.update({
+    id: '/keys/',
+    path: '/keys/',
+    getParentRoute: () => AuthenticatedRelaySubkeysRouteRoute,
+  } as any)
+const AuthenticatedRelaySubkeysChannelPoolHealthIndexRoute =
+  AuthenticatedRelaySubkeysChannelPoolHealthIndexRouteImport.update({
+    id: '/channel-pool-health/',
+    path: '/channel-pool-health/',
+    getParentRoute: () => AuthenticatedRelaySubkeysRouteRoute,
+  } as any)
 const AuthenticatedProjectUsersIndexRoute =
   AuthenticatedProjectUsersIndexRouteImport.update({
     id: '/project/users/',
@@ -252,6 +305,12 @@ const AuthenticatedProjectRequestsIndexRoute =
     path: '/project/requests/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedProjectRelaySubkeysIndexRoute =
+  AuthenticatedProjectRelaySubkeysIndexRouteImport.update({
+    id: '/project/relay-subkeys/',
+    path: '/project/relay-subkeys/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProjectPromptsIndexRoute =
   AuthenticatedProjectPromptsIndexRouteImport.update({
     id: '/project/prompts/',
@@ -269,6 +328,30 @@ const AuthenticatedProjectApiKeysIndexRoute =
     id: '/project/api-keys/',
     path: '/project/api-keys/',
     getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedRelaySubkeysProductsCreateRoute =
+  AuthenticatedRelaySubkeysProductsCreateRouteImport.update({
+    id: '/products/create',
+    path: '/products/create',
+    getParentRoute: () => AuthenticatedRelaySubkeysRouteRoute,
+  } as any)
+const AuthenticatedRelaySubkeysProductsProductIdRoute =
+  AuthenticatedRelaySubkeysProductsProductIdRouteImport.update({
+    id: '/products/$productId',
+    path: '/products/$productId',
+    getParentRoute: () => AuthenticatedRelaySubkeysRouteRoute,
+  } as any)
+const AuthenticatedRelaySubkeysKeysCreateRoute =
+  AuthenticatedRelaySubkeysKeysCreateRouteImport.update({
+    id: '/keys/create',
+    path: '/keys/create',
+    getParentRoute: () => AuthenticatedRelaySubkeysRouteRoute,
+  } as any)
+const AuthenticatedRelaySubkeysKeysKeyIdRoute =
+  AuthenticatedRelaySubkeysKeysKeyIdRouteImport.update({
+    id: '/keys/$keyId',
+    path: '/keys/$keyId',
+    getParentRoute: () => AuthenticatedRelaySubkeysRouteRoute,
   } as any)
 const AuthenticatedProjectTracesTraceIdRoute =
   AuthenticatedProjectTracesTraceIdRouteImport.update({
@@ -288,9 +371,46 @@ const AuthenticatedProjectRequestsRequestIdRoute =
     path: '/project/requests/$requestId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedProjectRelaySubkeysVerifyRoute =
+  AuthenticatedProjectRelaySubkeysVerifyRouteImport.update({
+    id: '/project/relay-subkeys/verify',
+    path: '/project/relay-subkeys/verify',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedProjectRelaySubkeysUsageRoute =
+  AuthenticatedProjectRelaySubkeysUsageRouteImport.update({
+    id: '/project/relay-subkeys/usage',
+    path: '/project/relay-subkeys/usage',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedProjectRelaySubkeysProductsRoute =
+  AuthenticatedProjectRelaySubkeysProductsRouteImport.update({
+    id: '/project/relay-subkeys/products',
+    path: '/project/relay-subkeys/products',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedProjectRelaySubkeysGetStartedRoute =
+  AuthenticatedProjectRelaySubkeysGetStartedRouteImport.update({
+    id: '/project/relay-subkeys/get-started',
+    path: '/project/relay-subkeys/get-started',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedProjectRelaySubkeysKeysIndexRoute =
+  AuthenticatedProjectRelaySubkeysKeysIndexRouteImport.update({
+    id: '/project/relay-subkeys/keys/',
+    path: '/project/relay-subkeys/keys/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedProjectRelaySubkeysKeysKeyIdRoute =
+  AuthenticatedProjectRelaySubkeysKeysKeyIdRouteImport.update({
+    id: '/project/relay-subkeys/keys/$keyId',
+    path: '/project/relay-subkeys/keys/$keyId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
+  '/relay-subkeys': typeof AuthenticatedRelaySubkeysRouteRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRouteRouteWithChildren
   '/forgot-password': typeof authForgotPasswordRoute
   '/initialization': typeof authInitializationRoute
@@ -316,21 +436,37 @@ export interface FileRoutesByFullPath {
   '/permission-demo/': typeof AuthenticatedPermissionDemoIndexRoute
   '/projects/': typeof AuthenticatedProjectsIndexRoute
   '/prompt-protection-rules/': typeof AuthenticatedPromptProtectionRulesIndexRoute
+  '/relay-subkeys/': typeof AuthenticatedRelaySubkeysIndexRoute
   '/roles/': typeof AuthenticatedRolesIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/system/': typeof AuthenticatedSystemIndexRoute
   '/users/': typeof AuthenticatedUsersIndexRoute
+  '/project/relay-subkeys/get-started': typeof AuthenticatedProjectRelaySubkeysGetStartedRoute
+  '/project/relay-subkeys/products': typeof AuthenticatedProjectRelaySubkeysProductsRoute
+  '/project/relay-subkeys/usage': typeof AuthenticatedProjectRelaySubkeysUsageRoute
+  '/project/relay-subkeys/verify': typeof AuthenticatedProjectRelaySubkeysVerifyRoute
   '/project/requests/$requestId': typeof AuthenticatedProjectRequestsRequestIdRoute
   '/project/threads/$threadId': typeof AuthenticatedProjectThreadsThreadIdRoute
   '/project/traces/$traceId': typeof AuthenticatedProjectTracesTraceIdRoute
+  '/relay-subkeys/keys/$keyId': typeof AuthenticatedRelaySubkeysKeysKeyIdRoute
+  '/relay-subkeys/keys/create': typeof AuthenticatedRelaySubkeysKeysCreateRoute
+  '/relay-subkeys/products/$productId': typeof AuthenticatedRelaySubkeysProductsProductIdRoute
+  '/relay-subkeys/products/create': typeof AuthenticatedRelaySubkeysProductsCreateRoute
   '/project/api-keys/': typeof AuthenticatedProjectApiKeysIndexRoute
   '/project/playground/': typeof AuthenticatedProjectPlaygroundIndexRoute
   '/project/prompts/': typeof AuthenticatedProjectPromptsIndexRoute
+  '/project/relay-subkeys/': typeof AuthenticatedProjectRelaySubkeysIndexRoute
   '/project/requests/': typeof AuthenticatedProjectRequestsIndexRoute
   '/project/roles/': typeof AuthenticatedProjectRolesIndexRoute
   '/project/threads/': typeof AuthenticatedProjectThreadsIndexRoute
   '/project/traces/': typeof AuthenticatedProjectTracesIndexRoute
   '/project/users/': typeof AuthenticatedProjectUsersIndexRoute
+  '/relay-subkeys/channel-pool-health/': typeof AuthenticatedRelaySubkeysChannelPoolHealthIndexRoute
+  '/relay-subkeys/keys/': typeof AuthenticatedRelaySubkeysKeysIndexRoute
+  '/relay-subkeys/products/': typeof AuthenticatedRelaySubkeysProductsIndexRoute
+  '/relay-subkeys/requests/': typeof AuthenticatedRelaySubkeysRequestsIndexRoute
+  '/project/relay-subkeys/keys/$keyId': typeof AuthenticatedProjectRelaySubkeysKeysKeyIdRoute
+  '/project/relay-subkeys/keys/': typeof AuthenticatedProjectRelaySubkeysKeysIndexRoute
 }
 export interface FileRoutesByTo {
   '/forgot-password': typeof authForgotPasswordRoute
@@ -358,25 +494,42 @@ export interface FileRoutesByTo {
   '/permission-demo': typeof AuthenticatedPermissionDemoIndexRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
   '/prompt-protection-rules': typeof AuthenticatedPromptProtectionRulesIndexRoute
+  '/relay-subkeys': typeof AuthenticatedRelaySubkeysIndexRoute
   '/roles': typeof AuthenticatedRolesIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/system': typeof AuthenticatedSystemIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
+  '/project/relay-subkeys/get-started': typeof AuthenticatedProjectRelaySubkeysGetStartedRoute
+  '/project/relay-subkeys/products': typeof AuthenticatedProjectRelaySubkeysProductsRoute
+  '/project/relay-subkeys/usage': typeof AuthenticatedProjectRelaySubkeysUsageRoute
+  '/project/relay-subkeys/verify': typeof AuthenticatedProjectRelaySubkeysVerifyRoute
   '/project/requests/$requestId': typeof AuthenticatedProjectRequestsRequestIdRoute
   '/project/threads/$threadId': typeof AuthenticatedProjectThreadsThreadIdRoute
   '/project/traces/$traceId': typeof AuthenticatedProjectTracesTraceIdRoute
+  '/relay-subkeys/keys/$keyId': typeof AuthenticatedRelaySubkeysKeysKeyIdRoute
+  '/relay-subkeys/keys/create': typeof AuthenticatedRelaySubkeysKeysCreateRoute
+  '/relay-subkeys/products/$productId': typeof AuthenticatedRelaySubkeysProductsProductIdRoute
+  '/relay-subkeys/products/create': typeof AuthenticatedRelaySubkeysProductsCreateRoute
   '/project/api-keys': typeof AuthenticatedProjectApiKeysIndexRoute
   '/project/playground': typeof AuthenticatedProjectPlaygroundIndexRoute
   '/project/prompts': typeof AuthenticatedProjectPromptsIndexRoute
+  '/project/relay-subkeys': typeof AuthenticatedProjectRelaySubkeysIndexRoute
   '/project/requests': typeof AuthenticatedProjectRequestsIndexRoute
   '/project/roles': typeof AuthenticatedProjectRolesIndexRoute
   '/project/threads': typeof AuthenticatedProjectThreadsIndexRoute
   '/project/traces': typeof AuthenticatedProjectTracesIndexRoute
   '/project/users': typeof AuthenticatedProjectUsersIndexRoute
+  '/relay-subkeys/channel-pool-health': typeof AuthenticatedRelaySubkeysChannelPoolHealthIndexRoute
+  '/relay-subkeys/keys': typeof AuthenticatedRelaySubkeysKeysIndexRoute
+  '/relay-subkeys/products': typeof AuthenticatedRelaySubkeysProductsIndexRoute
+  '/relay-subkeys/requests': typeof AuthenticatedRelaySubkeysRequestsIndexRoute
+  '/project/relay-subkeys/keys/$keyId': typeof AuthenticatedProjectRelaySubkeysKeysKeyIdRoute
+  '/project/relay-subkeys/keys': typeof AuthenticatedProjectRelaySubkeysKeysIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/_authenticated/relay-subkeys': typeof AuthenticatedRelaySubkeysRouteRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteRouteWithChildren
   '/(auth)/forgot-password': typeof authForgotPasswordRoute
   '/(auth)/initialization': typeof authInitializationRoute
@@ -403,26 +556,43 @@ export interface FileRoutesById {
   '/_authenticated/permission-demo/': typeof AuthenticatedPermissionDemoIndexRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
   '/_authenticated/prompt-protection-rules/': typeof AuthenticatedPromptProtectionRulesIndexRoute
+  '/_authenticated/relay-subkeys/': typeof AuthenticatedRelaySubkeysIndexRoute
   '/_authenticated/roles/': typeof AuthenticatedRolesIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/system/': typeof AuthenticatedSystemIndexRoute
   '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
+  '/_authenticated/project/relay-subkeys/get-started': typeof AuthenticatedProjectRelaySubkeysGetStartedRoute
+  '/_authenticated/project/relay-subkeys/products': typeof AuthenticatedProjectRelaySubkeysProductsRoute
+  '/_authenticated/project/relay-subkeys/usage': typeof AuthenticatedProjectRelaySubkeysUsageRoute
+  '/_authenticated/project/relay-subkeys/verify': typeof AuthenticatedProjectRelaySubkeysVerifyRoute
   '/_authenticated/project/requests/$requestId': typeof AuthenticatedProjectRequestsRequestIdRoute
   '/_authenticated/project/threads/$threadId': typeof AuthenticatedProjectThreadsThreadIdRoute
   '/_authenticated/project/traces/$traceId': typeof AuthenticatedProjectTracesTraceIdRoute
+  '/_authenticated/relay-subkeys/keys/$keyId': typeof AuthenticatedRelaySubkeysKeysKeyIdRoute
+  '/_authenticated/relay-subkeys/keys/create': typeof AuthenticatedRelaySubkeysKeysCreateRoute
+  '/_authenticated/relay-subkeys/products/$productId': typeof AuthenticatedRelaySubkeysProductsProductIdRoute
+  '/_authenticated/relay-subkeys/products/create': typeof AuthenticatedRelaySubkeysProductsCreateRoute
   '/_authenticated/project/api-keys/': typeof AuthenticatedProjectApiKeysIndexRoute
   '/_authenticated/project/playground/': typeof AuthenticatedProjectPlaygroundIndexRoute
   '/_authenticated/project/prompts/': typeof AuthenticatedProjectPromptsIndexRoute
+  '/_authenticated/project/relay-subkeys/': typeof AuthenticatedProjectRelaySubkeysIndexRoute
   '/_authenticated/project/requests/': typeof AuthenticatedProjectRequestsIndexRoute
   '/_authenticated/project/roles/': typeof AuthenticatedProjectRolesIndexRoute
   '/_authenticated/project/threads/': typeof AuthenticatedProjectThreadsIndexRoute
   '/_authenticated/project/traces/': typeof AuthenticatedProjectTracesIndexRoute
   '/_authenticated/project/users/': typeof AuthenticatedProjectUsersIndexRoute
+  '/_authenticated/relay-subkeys/channel-pool-health/': typeof AuthenticatedRelaySubkeysChannelPoolHealthIndexRoute
+  '/_authenticated/relay-subkeys/keys/': typeof AuthenticatedRelaySubkeysKeysIndexRoute
+  '/_authenticated/relay-subkeys/products/': typeof AuthenticatedRelaySubkeysProductsIndexRoute
+  '/_authenticated/relay-subkeys/requests/': typeof AuthenticatedRelaySubkeysRequestsIndexRoute
+  '/_authenticated/project/relay-subkeys/keys/$keyId': typeof AuthenticatedProjectRelaySubkeysKeysKeyIdRoute
+  '/_authenticated/project/relay-subkeys/keys/': typeof AuthenticatedProjectRelaySubkeysKeysIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/relay-subkeys'
     | '/settings'
     | '/forgot-password'
     | '/initialization'
@@ -448,21 +618,37 @@ export interface FileRouteTypes {
     | '/permission-demo/'
     | '/projects/'
     | '/prompt-protection-rules/'
+    | '/relay-subkeys/'
     | '/roles/'
     | '/settings/'
     | '/system/'
     | '/users/'
+    | '/project/relay-subkeys/get-started'
+    | '/project/relay-subkeys/products'
+    | '/project/relay-subkeys/usage'
+    | '/project/relay-subkeys/verify'
     | '/project/requests/$requestId'
     | '/project/threads/$threadId'
     | '/project/traces/$traceId'
+    | '/relay-subkeys/keys/$keyId'
+    | '/relay-subkeys/keys/create'
+    | '/relay-subkeys/products/$productId'
+    | '/relay-subkeys/products/create'
     | '/project/api-keys/'
     | '/project/playground/'
     | '/project/prompts/'
+    | '/project/relay-subkeys/'
     | '/project/requests/'
     | '/project/roles/'
     | '/project/threads/'
     | '/project/traces/'
     | '/project/users/'
+    | '/relay-subkeys/channel-pool-health/'
+    | '/relay-subkeys/keys/'
+    | '/relay-subkeys/products/'
+    | '/relay-subkeys/requests/'
+    | '/project/relay-subkeys/keys/$keyId'
+    | '/project/relay-subkeys/keys/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/forgot-password'
@@ -490,24 +676,41 @@ export interface FileRouteTypes {
     | '/permission-demo'
     | '/projects'
     | '/prompt-protection-rules'
+    | '/relay-subkeys'
     | '/roles'
     | '/settings'
     | '/system'
     | '/users'
+    | '/project/relay-subkeys/get-started'
+    | '/project/relay-subkeys/products'
+    | '/project/relay-subkeys/usage'
+    | '/project/relay-subkeys/verify'
     | '/project/requests/$requestId'
     | '/project/threads/$threadId'
     | '/project/traces/$traceId'
+    | '/relay-subkeys/keys/$keyId'
+    | '/relay-subkeys/keys/create'
+    | '/relay-subkeys/products/$productId'
+    | '/relay-subkeys/products/create'
     | '/project/api-keys'
     | '/project/playground'
     | '/project/prompts'
+    | '/project/relay-subkeys'
     | '/project/requests'
     | '/project/roles'
     | '/project/threads'
     | '/project/traces'
     | '/project/users'
+    | '/relay-subkeys/channel-pool-health'
+    | '/relay-subkeys/keys'
+    | '/relay-subkeys/products'
+    | '/relay-subkeys/requests'
+    | '/project/relay-subkeys/keys/$keyId'
+    | '/project/relay-subkeys/keys'
   id:
     | '__root__'
     | '/_authenticated'
+    | '/_authenticated/relay-subkeys'
     | '/_authenticated/settings'
     | '/(auth)/forgot-password'
     | '/(auth)/initialization'
@@ -534,21 +737,37 @@ export interface FileRouteTypes {
     | '/_authenticated/permission-demo/'
     | '/_authenticated/projects/'
     | '/_authenticated/prompt-protection-rules/'
+    | '/_authenticated/relay-subkeys/'
     | '/_authenticated/roles/'
     | '/_authenticated/settings/'
     | '/_authenticated/system/'
     | '/_authenticated/users/'
+    | '/_authenticated/project/relay-subkeys/get-started'
+    | '/_authenticated/project/relay-subkeys/products'
+    | '/_authenticated/project/relay-subkeys/usage'
+    | '/_authenticated/project/relay-subkeys/verify'
     | '/_authenticated/project/requests/$requestId'
     | '/_authenticated/project/threads/$threadId'
     | '/_authenticated/project/traces/$traceId'
+    | '/_authenticated/relay-subkeys/keys/$keyId'
+    | '/_authenticated/relay-subkeys/keys/create'
+    | '/_authenticated/relay-subkeys/products/$productId'
+    | '/_authenticated/relay-subkeys/products/create'
     | '/_authenticated/project/api-keys/'
     | '/_authenticated/project/playground/'
     | '/_authenticated/project/prompts/'
+    | '/_authenticated/project/relay-subkeys/'
     | '/_authenticated/project/requests/'
     | '/_authenticated/project/roles/'
     | '/_authenticated/project/threads/'
     | '/_authenticated/project/traces/'
     | '/_authenticated/project/users/'
+    | '/_authenticated/relay-subkeys/channel-pool-health/'
+    | '/_authenticated/relay-subkeys/keys/'
+    | '/_authenticated/relay-subkeys/products/'
+    | '/_authenticated/relay-subkeys/requests/'
+    | '/_authenticated/project/relay-subkeys/keys/$keyId'
+    | '/_authenticated/project/relay-subkeys/keys/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -657,6 +876,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/relay-subkeys': {
+      id: '/_authenticated/relay-subkeys'
+      path: '/relay-subkeys'
+      fullPath: '/relay-subkeys'
+      preLoaderRoute: typeof AuthenticatedRelaySubkeysRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/users/': {
       id: '/_authenticated/users/'
       path: '/users'
@@ -684,6 +910,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/roles/'
       preLoaderRoute: typeof AuthenticatedRolesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/relay-subkeys/': {
+      id: '/_authenticated/relay-subkeys/'
+      path: '/'
+      fullPath: '/relay-subkeys/'
+      preLoaderRoute: typeof AuthenticatedRelaySubkeysIndexRouteImport
+      parentRoute: typeof AuthenticatedRelaySubkeysRouteRoute
     }
     '/_authenticated/prompt-protection-rules/': {
       id: '/_authenticated/prompt-protection-rules/'
@@ -783,6 +1016,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRequestsRequestIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/relay-subkeys/requests/': {
+      id: '/_authenticated/relay-subkeys/requests/'
+      path: '/requests'
+      fullPath: '/relay-subkeys/requests/'
+      preLoaderRoute: typeof AuthenticatedRelaySubkeysRequestsIndexRouteImport
+      parentRoute: typeof AuthenticatedRelaySubkeysRouteRoute
+    }
+    '/_authenticated/relay-subkeys/products/': {
+      id: '/_authenticated/relay-subkeys/products/'
+      path: '/products'
+      fullPath: '/relay-subkeys/products/'
+      preLoaderRoute: typeof AuthenticatedRelaySubkeysProductsIndexRouteImport
+      parentRoute: typeof AuthenticatedRelaySubkeysRouteRoute
+    }
+    '/_authenticated/relay-subkeys/keys/': {
+      id: '/_authenticated/relay-subkeys/keys/'
+      path: '/keys'
+      fullPath: '/relay-subkeys/keys/'
+      preLoaderRoute: typeof AuthenticatedRelaySubkeysKeysIndexRouteImport
+      parentRoute: typeof AuthenticatedRelaySubkeysRouteRoute
+    }
+    '/_authenticated/relay-subkeys/channel-pool-health/': {
+      id: '/_authenticated/relay-subkeys/channel-pool-health/'
+      path: '/channel-pool-health'
+      fullPath: '/relay-subkeys/channel-pool-health/'
+      preLoaderRoute: typeof AuthenticatedRelaySubkeysChannelPoolHealthIndexRouteImport
+      parentRoute: typeof AuthenticatedRelaySubkeysRouteRoute
+    }
     '/_authenticated/project/users/': {
       id: '/_authenticated/project/users/'
       path: '/project/users'
@@ -818,6 +1079,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectRequestsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/project/relay-subkeys/': {
+      id: '/_authenticated/project/relay-subkeys/'
+      path: '/project/relay-subkeys'
+      fullPath: '/project/relay-subkeys/'
+      preLoaderRoute: typeof AuthenticatedProjectRelaySubkeysIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/project/prompts/': {
       id: '/_authenticated/project/prompts/'
       path: '/project/prompts'
@@ -838,6 +1106,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/project/api-keys/'
       preLoaderRoute: typeof AuthenticatedProjectApiKeysIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/relay-subkeys/products/create': {
+      id: '/_authenticated/relay-subkeys/products/create'
+      path: '/products/create'
+      fullPath: '/relay-subkeys/products/create'
+      preLoaderRoute: typeof AuthenticatedRelaySubkeysProductsCreateRouteImport
+      parentRoute: typeof AuthenticatedRelaySubkeysRouteRoute
+    }
+    '/_authenticated/relay-subkeys/products/$productId': {
+      id: '/_authenticated/relay-subkeys/products/$productId'
+      path: '/products/$productId'
+      fullPath: '/relay-subkeys/products/$productId'
+      preLoaderRoute: typeof AuthenticatedRelaySubkeysProductsProductIdRouteImport
+      parentRoute: typeof AuthenticatedRelaySubkeysRouteRoute
+    }
+    '/_authenticated/relay-subkeys/keys/create': {
+      id: '/_authenticated/relay-subkeys/keys/create'
+      path: '/keys/create'
+      fullPath: '/relay-subkeys/keys/create'
+      preLoaderRoute: typeof AuthenticatedRelaySubkeysKeysCreateRouteImport
+      parentRoute: typeof AuthenticatedRelaySubkeysRouteRoute
+    }
+    '/_authenticated/relay-subkeys/keys/$keyId': {
+      id: '/_authenticated/relay-subkeys/keys/$keyId'
+      path: '/keys/$keyId'
+      fullPath: '/relay-subkeys/keys/$keyId'
+      preLoaderRoute: typeof AuthenticatedRelaySubkeysKeysKeyIdRouteImport
+      parentRoute: typeof AuthenticatedRelaySubkeysRouteRoute
     }
     '/_authenticated/project/traces/$traceId': {
       id: '/_authenticated/project/traces/$traceId'
@@ -860,8 +1156,88 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectRequestsRequestIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/project/relay-subkeys/verify': {
+      id: '/_authenticated/project/relay-subkeys/verify'
+      path: '/project/relay-subkeys/verify'
+      fullPath: '/project/relay-subkeys/verify'
+      preLoaderRoute: typeof AuthenticatedProjectRelaySubkeysVerifyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/project/relay-subkeys/usage': {
+      id: '/_authenticated/project/relay-subkeys/usage'
+      path: '/project/relay-subkeys/usage'
+      fullPath: '/project/relay-subkeys/usage'
+      preLoaderRoute: typeof AuthenticatedProjectRelaySubkeysUsageRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/project/relay-subkeys/products': {
+      id: '/_authenticated/project/relay-subkeys/products'
+      path: '/project/relay-subkeys/products'
+      fullPath: '/project/relay-subkeys/products'
+      preLoaderRoute: typeof AuthenticatedProjectRelaySubkeysProductsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/project/relay-subkeys/get-started': {
+      id: '/_authenticated/project/relay-subkeys/get-started'
+      path: '/project/relay-subkeys/get-started'
+      fullPath: '/project/relay-subkeys/get-started'
+      preLoaderRoute: typeof AuthenticatedProjectRelaySubkeysGetStartedRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/project/relay-subkeys/keys/': {
+      id: '/_authenticated/project/relay-subkeys/keys/'
+      path: '/project/relay-subkeys/keys'
+      fullPath: '/project/relay-subkeys/keys/'
+      preLoaderRoute: typeof AuthenticatedProjectRelaySubkeysKeysIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/project/relay-subkeys/keys/$keyId': {
+      id: '/_authenticated/project/relay-subkeys/keys/$keyId'
+      path: '/project/relay-subkeys/keys/$keyId'
+      fullPath: '/project/relay-subkeys/keys/$keyId'
+      preLoaderRoute: typeof AuthenticatedProjectRelaySubkeysKeysKeyIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
+
+interface AuthenticatedRelaySubkeysRouteRouteChildren {
+  AuthenticatedRelaySubkeysIndexRoute: typeof AuthenticatedRelaySubkeysIndexRoute
+  AuthenticatedRelaySubkeysKeysKeyIdRoute: typeof AuthenticatedRelaySubkeysKeysKeyIdRoute
+  AuthenticatedRelaySubkeysKeysCreateRoute: typeof AuthenticatedRelaySubkeysKeysCreateRoute
+  AuthenticatedRelaySubkeysProductsProductIdRoute: typeof AuthenticatedRelaySubkeysProductsProductIdRoute
+  AuthenticatedRelaySubkeysProductsCreateRoute: typeof AuthenticatedRelaySubkeysProductsCreateRoute
+  AuthenticatedRelaySubkeysChannelPoolHealthIndexRoute: typeof AuthenticatedRelaySubkeysChannelPoolHealthIndexRoute
+  AuthenticatedRelaySubkeysKeysIndexRoute: typeof AuthenticatedRelaySubkeysKeysIndexRoute
+  AuthenticatedRelaySubkeysProductsIndexRoute: typeof AuthenticatedRelaySubkeysProductsIndexRoute
+  AuthenticatedRelaySubkeysRequestsIndexRoute: typeof AuthenticatedRelaySubkeysRequestsIndexRoute
+}
+
+const AuthenticatedRelaySubkeysRouteRouteChildren: AuthenticatedRelaySubkeysRouteRouteChildren =
+  {
+    AuthenticatedRelaySubkeysIndexRoute: AuthenticatedRelaySubkeysIndexRoute,
+    AuthenticatedRelaySubkeysKeysKeyIdRoute:
+      AuthenticatedRelaySubkeysKeysKeyIdRoute,
+    AuthenticatedRelaySubkeysKeysCreateRoute:
+      AuthenticatedRelaySubkeysKeysCreateRoute,
+    AuthenticatedRelaySubkeysProductsProductIdRoute:
+      AuthenticatedRelaySubkeysProductsProductIdRoute,
+    AuthenticatedRelaySubkeysProductsCreateRoute:
+      AuthenticatedRelaySubkeysProductsCreateRoute,
+    AuthenticatedRelaySubkeysChannelPoolHealthIndexRoute:
+      AuthenticatedRelaySubkeysChannelPoolHealthIndexRoute,
+    AuthenticatedRelaySubkeysKeysIndexRoute:
+      AuthenticatedRelaySubkeysKeysIndexRoute,
+    AuthenticatedRelaySubkeysProductsIndexRoute:
+      AuthenticatedRelaySubkeysProductsIndexRoute,
+    AuthenticatedRelaySubkeysRequestsIndexRoute:
+      AuthenticatedRelaySubkeysRequestsIndexRoute,
+  }
+
+const AuthenticatedRelaySubkeysRouteRouteWithChildren =
+  AuthenticatedRelaySubkeysRouteRoute._addFileChildren(
+    AuthenticatedRelaySubkeysRouteRouteChildren,
+  )
 
 interface AuthenticatedSettingsRouteRouteChildren {
   AuthenticatedSettingsAppearanceRoute: typeof AuthenticatedSettingsAppearanceRoute
@@ -887,6 +1263,7 @@ const AuthenticatedSettingsRouteRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedRelaySubkeysRouteRoute: typeof AuthenticatedRelaySubkeysRouteRouteWithChildren
   AuthenticatedSettingsRouteRoute: typeof AuthenticatedSettingsRouteRouteWithChildren
   AuthenticatedPermissionRoute: typeof AuthenticatedPermissionRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -903,20 +1280,29 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRolesIndexRoute: typeof AuthenticatedRolesIndexRoute
   AuthenticatedSystemIndexRoute: typeof AuthenticatedSystemIndexRoute
   AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute
+  AuthenticatedProjectRelaySubkeysGetStartedRoute: typeof AuthenticatedProjectRelaySubkeysGetStartedRoute
+  AuthenticatedProjectRelaySubkeysProductsRoute: typeof AuthenticatedProjectRelaySubkeysProductsRoute
+  AuthenticatedProjectRelaySubkeysUsageRoute: typeof AuthenticatedProjectRelaySubkeysUsageRoute
+  AuthenticatedProjectRelaySubkeysVerifyRoute: typeof AuthenticatedProjectRelaySubkeysVerifyRoute
   AuthenticatedProjectRequestsRequestIdRoute: typeof AuthenticatedProjectRequestsRequestIdRoute
   AuthenticatedProjectThreadsThreadIdRoute: typeof AuthenticatedProjectThreadsThreadIdRoute
   AuthenticatedProjectTracesTraceIdRoute: typeof AuthenticatedProjectTracesTraceIdRoute
   AuthenticatedProjectApiKeysIndexRoute: typeof AuthenticatedProjectApiKeysIndexRoute
   AuthenticatedProjectPlaygroundIndexRoute: typeof AuthenticatedProjectPlaygroundIndexRoute
   AuthenticatedProjectPromptsIndexRoute: typeof AuthenticatedProjectPromptsIndexRoute
+  AuthenticatedProjectRelaySubkeysIndexRoute: typeof AuthenticatedProjectRelaySubkeysIndexRoute
   AuthenticatedProjectRequestsIndexRoute: typeof AuthenticatedProjectRequestsIndexRoute
   AuthenticatedProjectRolesIndexRoute: typeof AuthenticatedProjectRolesIndexRoute
   AuthenticatedProjectThreadsIndexRoute: typeof AuthenticatedProjectThreadsIndexRoute
   AuthenticatedProjectTracesIndexRoute: typeof AuthenticatedProjectTracesIndexRoute
   AuthenticatedProjectUsersIndexRoute: typeof AuthenticatedProjectUsersIndexRoute
+  AuthenticatedProjectRelaySubkeysKeysKeyIdRoute: typeof AuthenticatedProjectRelaySubkeysKeysKeyIdRoute
+  AuthenticatedProjectRelaySubkeysKeysIndexRoute: typeof AuthenticatedProjectRelaySubkeysKeysIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedRelaySubkeysRouteRoute:
+    AuthenticatedRelaySubkeysRouteRouteWithChildren,
   AuthenticatedSettingsRouteRoute: AuthenticatedSettingsRouteRouteWithChildren,
   AuthenticatedPermissionRoute: AuthenticatedPermissionRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
@@ -934,6 +1320,14 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRolesIndexRoute: AuthenticatedRolesIndexRoute,
   AuthenticatedSystemIndexRoute: AuthenticatedSystemIndexRoute,
   AuthenticatedUsersIndexRoute: AuthenticatedUsersIndexRoute,
+  AuthenticatedProjectRelaySubkeysGetStartedRoute:
+    AuthenticatedProjectRelaySubkeysGetStartedRoute,
+  AuthenticatedProjectRelaySubkeysProductsRoute:
+    AuthenticatedProjectRelaySubkeysProductsRoute,
+  AuthenticatedProjectRelaySubkeysUsageRoute:
+    AuthenticatedProjectRelaySubkeysUsageRoute,
+  AuthenticatedProjectRelaySubkeysVerifyRoute:
+    AuthenticatedProjectRelaySubkeysVerifyRoute,
   AuthenticatedProjectRequestsRequestIdRoute:
     AuthenticatedProjectRequestsRequestIdRoute,
   AuthenticatedProjectThreadsThreadIdRoute:
@@ -944,12 +1338,18 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProjectPlaygroundIndexRoute:
     AuthenticatedProjectPlaygroundIndexRoute,
   AuthenticatedProjectPromptsIndexRoute: AuthenticatedProjectPromptsIndexRoute,
+  AuthenticatedProjectRelaySubkeysIndexRoute:
+    AuthenticatedProjectRelaySubkeysIndexRoute,
   AuthenticatedProjectRequestsIndexRoute:
     AuthenticatedProjectRequestsIndexRoute,
   AuthenticatedProjectRolesIndexRoute: AuthenticatedProjectRolesIndexRoute,
   AuthenticatedProjectThreadsIndexRoute: AuthenticatedProjectThreadsIndexRoute,
   AuthenticatedProjectTracesIndexRoute: AuthenticatedProjectTracesIndexRoute,
   AuthenticatedProjectUsersIndexRoute: AuthenticatedProjectUsersIndexRoute,
+  AuthenticatedProjectRelaySubkeysKeysKeyIdRoute:
+    AuthenticatedProjectRelaySubkeysKeysKeyIdRoute,
+  AuthenticatedProjectRelaySubkeysKeysIndexRoute:
+    AuthenticatedProjectRelaySubkeysKeysIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
