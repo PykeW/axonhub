@@ -1010,31 +1010,37 @@ Potential future standalone routes:
 
 #### Copy feedback messages
 
-| Scenario               | Success copy             | Failure copy                                         |
-| ---------------------- | ------------------------ | ---------------------------------------------------- |
-| Copy Base URL          | Base URL copied          | Failed to copy Base URL. Please copy it manually.    |
-| Copy API Key           | API Key copied           | Failed to copy API Key. Please copy it manually.     |
-| Copy OpenAI example    | OpenAI example copied    | Failed to copy the example. Please copy it manually. |
-| Copy Anthropic example | Anthropic example copied | Failed to copy the example. Please copy it manually. |
-| Copy Codex example     | Codex example copied     | Failed to copy the example. Please copy it manually. |
+| Scenario                    | Success copy                      | Failure copy                                                 |
+| --------------------------- | --------------------------------- | ------------------------------------------------------------ |
+| Copy Base URL               | Base URL copied                   | Failed to copy Base URL. Please copy it manually.            |
+| Copy Sub-Key                | Sub-Key copied                    | Failed to copy the Sub-Key. Please copy it manually.         |
+| Copy current example        | Example copied                    | Failed to copy the current example. Please copy it manually. |
+| Switch to OpenAI example    | Switched to the OpenAI example    | Failed to load the OpenAI example. Please try again.         |
+| Switch to Anthropic example | Switched to the Anthropic example | Failed to load the Anthropic example. Please try again.      |
+| Switch to Codex example     | Switched to the Codex example     | Failed to load the Codex example. Please try again.          |
 
-#### Integration verification messages
+#### Integration validation and test-request messages
 
-| Scenario                                | Copy                                                                                       |
-| --------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Verification started                    | Verifying the current integration settings. Please wait...                                 |
-| Verification succeeded                  | Integration succeeded. This key can access the shared-capacity service normally.           |
-| Verification failed (auth)              | Integration failed: please check whether the API key is correct or expired.                |
-| Verification failed (pool unavailable)  | Integration failed: the shared pool is temporarily unavailable. Please retry later.        |
-| Verification failed (model unavailable) | Integration failed: the selected model is not enabled for this product. Try another model. |
-| Verification failed (network)           | Integration failed: the request did not complete. Check your network and retry later.      |
+| Scenario                                    | Copy                                                                                              |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Validation started                          | Validating the current integration settings. Please wait...                                       |
+| Validation succeeded                        | Validation succeeded. This Sub-Key can access the shared-capacity service normally.               |
+| Validation failed (Sub-Key auth)            | Validation failed: check whether the Sub-Key is correct, active, and not expired.                 |
+| Validation failed (missing config)          | Validation failed: Base URL, Sub-Key, or model is missing. Fill in the required fields and retry. |
+| Validation failed (insufficient permission) | Validation failed: you do not have permission to verify this key or view its full configuration.  |
+| Validation failed (model unavailable)       | Validation failed: the selected model is not enabled for this product. Try another model.         |
+| Validation failed (network)                 | Validation failed: the request did not complete. Check your network and retry later.              |
+| Test request in progress                    | Sending a test request through the shared pool. This may take a few seconds...                    |
+| Test request succeeded                      | Test request succeeded. The relay accepted the Sub-Key and returned a valid response.             |
+| Test request failed (pool unavailable)      | Test request failed: the shared pool is temporarily unavailable. Please retry later.              |
+| Test request degraded (fallback route used) | Test request completed through a fallback route because the primary relay pool is degraded.       |
 
 #### Integration guidance copy
 
-- Always use the AxonHub downstream sub-key, not the upstream provider's native credential.
-- If requests still fail after copying the values, first verify that Base URL, API Key, and model name match the example shown on the page.
-- When the product pool is degraded, a failed verification does not always mean the current key itself is invalid.
-- If verification keeps failing, contact the platform operator and provide the latest request time and Trace ID.
+- Always use the AxonHub downstream Sub-Key, not the upstream provider's native credential.
+- If validation or the test request fails after copying the values, first verify that Base URL, Sub-Key, and model name match the example shown on the page.
+- When the relay pool is degraded, show whether the request failed because the pool is unavailable or succeeded through fallback capacity.
+- If validation keeps failing, contact the platform operator and provide the latest request time and Trace ID.
 
 #### Example-switching copy
 
@@ -1042,11 +1048,15 @@ Potential future standalone routes:
 - Anthropic Example
 - Codex Example
 - Copy Current Example
-- Switched to {provider} example
+- Switched to the {provider} example
+- Failed to switch examples. Please try again.
 
 #### SDK page empty/error-state suggestions
 
-- No usable key: no key is currently available for this project. Contact the operator to issue one.
+- No usable Sub-Key: no Sub-Key is currently available for this project. Contact the operator to issue one.
+- Missing configuration: the current key, Base URL, or model configuration is incomplete. Refresh the page or contact the operator.
 - No available model: no model is currently available for this product. Refresh later or confirm with the operator.
 - Example generation failed: failed to load example configuration. Please try again later.
-- No verification history: the latest verification result will appear here after the first successful verification.
+- Insufficient permission: you do not have permission to view this key's full SDK configuration.
+- Relay pool degraded: the shared relay pool is degraded. Requests may fail over to backup capacity or return temporary errors.
+- No verification history: the latest validation result will appear here after the first successful verification.
