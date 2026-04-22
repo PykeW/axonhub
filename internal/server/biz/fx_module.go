@@ -27,8 +27,10 @@ var Module = fx.Module("biz",
 	fx.Provide(NewChannelProbeService),
 	fx.Provide(NewPromptService),
 	fx.Provide(NewPromptProtectionRuleService),
+	fx.Provide(NewRelayProductService),
 	fx.Provide(NewQuotaService),
 	fx.Provide(NewProviderQuotaService),
+
 	fx.Invoke(func(lc fx.Lifecycle, svc *ProviderQuotaService) {
 		lc.Append(fx.Hook{
 			OnStart: func(ctx context.Context) error {

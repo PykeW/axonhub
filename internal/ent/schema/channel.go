@@ -164,7 +164,7 @@ func (Channel) Edges() []ent.Edge {
 			Annotations(
 				entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),
 			),
-		edge.To("relay_product_channels", RelayProductChannel.Type).
+		edge.To("relay_product_bindings", RelayProductChannel.Type).
 			Annotations(
 				entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),
 				entgql.RelayConnection(),
@@ -191,11 +191,11 @@ func (Channel) Policy() ent.Policy {
 	return scopes.Policy{
 		Query: scopes.QueryPolicy{
 			scopes.APIKeyScopeQueryRule(scopes.ScopeReadChannels),
-			scopes.OwnerRule(), // owner 用户可以访问所有渠道
+			scopes.OwnerRule(),              // owner 用户可以访问所有渠道
 			scopes.UserReadScopeRule(scopes.ScopeReadChannels), // 需要 channels 读取权限
 		},
 		Mutation: scopes.MutationPolicy{
-			scopes.OwnerRule(), // owner 用户可以修改所有渠道
+			scopes.OwnerRule(),               // owner 用户可以修改所有渠道
 			scopes.UserWriteScopeRule(scopes.ScopeWriteChannels), // 需要 channels 写入权限
 		},
 	}

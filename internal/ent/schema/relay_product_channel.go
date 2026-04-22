@@ -11,7 +11,6 @@ import (
 	"github.com/looplj/axonhub/internal/scopes"
 )
 
-// RelayProductChannel binds a relay product to a concrete upstream channel.
 type RelayProductChannel struct {
 	ent.Schema
 }
@@ -34,37 +33,53 @@ func (RelayProductChannel) Indexes() []ent.Index {
 
 func (RelayProductChannel) Fields() []ent.Field {
 	return []ent.Field{
-		field.Int("product_id").Immutable(),
-		field.Int("channel_id").Immutable(),
-		field.Int("priority").Default(100),
-		field.Int("weight").Default(100),
+		field.Int("product_id").
+			Immutable().
+			Comment("Owning relay product id"),
+		field.Int("channel_id").
+			Immutable().
+			Comment("Bound upstream channel id"),
+		field.Int("priority").
+			Default(0).
+			Comment("Lower values are selected first during pool candidate ordering"),
+		field.Int("weight").
+			Default(100).
+			Comment("Relative weight when multiple bindings share the same priority"),
 		field.Enum("status").
 			Values("active", "paused").
-			Default("active"),
-		field.Bool("allow_fallback").Default(true),
+			Default("active").
+			Comment("Binding-level availability inside the product pool").
+			Annotations(entgql.OrderField("STATUS")),
+		field.Bool("allow_fallback").
+			Default(true).
+			Comment("Whether routing may continue to lower-priority bindings when this binding is unsuitable"),
 		field.JSON("model_filter", map[string]any{}).
+			Default(map[string]any{}).
 			Optional().
-			Default(map[string]any{}),
-		field.Int("max_inflight").Default(0),
+			Comment("Opaque per-binding model filter rules for future router matching"),
+		field.Int("max_inflight").
+			Optional().
+			Nillable().
+			Comment("Optional per-binding inflight cap before routing falls back to another candidate"),
 	}
 }
 
 func (RelayProductChannel) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("product", RelayProduct.Type).
-			Ref("product_channels").
+			Ref("channel_bindings").
 			Field("product_id").
 			Required().
 			Immutable().
 			Unique(),
 		edge.From("channel", Channel.Type).
-			Ref("relay_product_channels").
+			Ref("relay_product_bindings").
 			Field("channel_id").
 			Required().
 			Immutable().
 			Unique().
 			Annotations(
-				entgql.Directives(forceResolver()),
+				entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),
 			),
 	}
 }
