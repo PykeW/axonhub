@@ -76,10 +76,6 @@
 - [DeepWiki 文档](https://deepwiki.com/looplj/axonhub)
 - [Zread AI](https://zread.ai/looplj/axonhub)
 
-## 🌐 多语言文档
-
-- [English Documentation](../en/index.md)
-
 ---
 
 > 💡 **提示**: 如果您是新用户，建议从[快速入门指南](getting-started/quick-start.md)开始，然后阅读[渠道管理](guides/channel-management.md)和[模型管理](guides/model-management.md)来了解核心功能。
