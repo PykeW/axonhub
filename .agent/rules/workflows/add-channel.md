@@ -1,5 +1,5 @@
 ---
-description: "Workflow to add a new channel by following docs/en/guides/development.md"
+description: "Workflow to add a new channel by following docs/zh/development/development.md"
 ---
 
 # Adding a New AI Provider Channel
@@ -11,4 +11,4 @@ description: "Workflow to add a new channel by following docs/en/guides/developm
    - Channel configuration in `frontend/src/features/channels/data/constants.ts`
    - Internationalization in `frontend/src/locales/en.json` and `frontend/src/locales/zh.json`
 4. Run `make generate` to regenerate code.
-5. Follow the full guide: [docs/en/guides/development.md](../../../docs/en/guides/development.md)
+5. Follow the full guide: [docs/zh/development/development.md](../../../docs/zh/development/development.md)
