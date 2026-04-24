@@ -10,7 +10,8 @@ import (
 // PersistenceState holds shared state with channel management and retry capabilities.
 // TODO: move the dependencies out of the state to make it a real state.
 type PersistenceState struct {
-	APIKey *ent.APIKey
+	APIKey           *ent.APIKey
+	RelayAuthContext *biz.RelayAuthContext
 
 	RequestService      *biz.RequestService
 	UsageLogService     *biz.UsageLogService

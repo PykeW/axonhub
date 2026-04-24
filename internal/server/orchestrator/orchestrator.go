@@ -144,6 +144,7 @@ func (processor *ChatCompletionOrchestrator) Process(ctx context.Context, reques
 	ctx = authz.WithSystemBypass(ctx, "process-chat-completion")
 
 	apiKey, _ := contexts.GetAPIKey(ctx)
+	relayAuthContext, _ := contexts.GetRelayAuthContext(ctx)
 
 	// Get retry policy from system settings
 	retryPolicy := processor.SystemService.RetryPolicyOrDefault(ctx)
@@ -174,6 +175,7 @@ func (processor *ChatCompletionOrchestrator) Process(ctx context.Context, reques
 
 	state := &PersistenceState{
 		APIKey:                apiKey,
+		RelayAuthContext:      asRelayAuthContext(relayAuthContext),
 		RequestService:        processor.RequestService,
 		UsageLogService:       processor.UsageLogService,
 		ChannelService:        processor.ChannelService,

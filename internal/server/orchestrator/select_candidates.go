@@ -23,6 +23,9 @@ func selectCandidates(inbound *PersistentInboundTransformer) pipeline.Middleware
 		}
 
 		selector := inbound.state.CandidateSelector
+		if relayAuthContext := inbound.state.RelayAuthContext; relayAuthContext != nil && relayAuthContext.HasRoutingConstraints() {
+			selector = WithSelectedChannelsSelector(selector, relayAuthContext.AllowedChannelIDs)
+		}
 
 		// Project-level profile filtering (upper boundary)
 		if inbound.state.APIKey != nil {
