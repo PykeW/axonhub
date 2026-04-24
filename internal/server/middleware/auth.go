@@ -21,7 +21,6 @@ func WithAPIKeyAuth(auth *biz.AuthService) gin.HandlerFunc {
 	return WithAPIKeyConfig(auth, nil)
 }
 
-// WithAPIKeyConfig 中间件用于验证 API key，支持自定义配置.
 func WithAPIKeyConfig(auth *biz.AuthService, config *APIKeyConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		key, err := ExtractAPIKeyFromRequest(c.Request, config)
@@ -58,6 +57,11 @@ func WithAPIKeyConfig(auth *biz.AuthService, config *APIKeyConfig) gin.HandlerFu
 		ctx, err = withAPIKeyPrincipal(ctx, apiKey)
 		if err != nil {
 			AbortWithError(c, http.StatusUnauthorized, errors.New("Invalid authentication context"))
+			return
+		}
+
+		ctx, ok := attachRelayAuthContext(c, auth, ctx, apiKey)
+		if !ok {
 			return
 		}
 
