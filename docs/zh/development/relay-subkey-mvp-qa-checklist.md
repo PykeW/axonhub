@@ -9,6 +9,17 @@
 - 渠道池绑定校验：`product_id`、`channel_id`、`weight`、`status`、`max_inflight` 必须先做硬校验，归档渠道不能加入共享池。
 - 文档引用：`docs/zh/development/development.md` 必须持续指向后端设计、页面流程和本 QA 清单。
 
+## 契约夹具
+
+后端契约测试会将面向运营配置的 Relay 产品常量固定到 `internal/server/biz/testdata/relay_product_contract.json`：
+
+- Provider 类型：`claudecode`、`codex`、`openai_compatible`
+- 访问模式：`shared_capacity`
+- 计费模式：`prepaid`、`quota_only`
+- 产品状态：`draft`、`active`、`archived`
+- 渠道绑定状态：`active`、`paused`
+- 默认值：`USD`、`shared_capacity`、`prepaid`、`draft`、超时 `600`、绑定权重 `100`
+
 ## 后端数据基础合并后补测
 
 - Ent schema：确认 `relay_products` 与 `relay_product_channels` 字段、枚举、索引、边和隐私策略与设计文档一致。
@@ -26,8 +37,11 @@
 ## 轻量验证命令
 
 ```bash
-go test ./internal/server/biz -run RelayProduct
+gofmt -w internal/server/biz/relay_product.go internal/server/biz/relay_product_test.go internal/server/biz/relay_product_contract_test.go
+GOTOOLCHAIN=local go test ./internal/server/biz -run RelayProduct -count=1
 ```
+
+如果本地 Go 版本低于 `go.mod` 要求，记录准确的 toolchain 阻塞，不要在当前工作树里强制下载工具链。
 
 后端/runtime 合并完成后再追加：
 
@@ -35,3 +49,9 @@ go test ./internal/server/biz -run RelayProduct
 go test ./internal/server/biz -run 'Relay(Product|Key|Wallet|Access|Router|Settlement)'
 go test ./internal/server/api -run Relay
 ```
+
+## Runtime 协作约束
+
+- data/QA 切片避免直接改 runtime hook 文件，除非 runtime 队友明确协调。
+- 产品/渠道池常量需要与后端设计文档和页面流程文档同步更新。
+- 契约夹具漂移应视为前端选项列表和 API 文档的 review blocker。

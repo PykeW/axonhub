@@ -1,9 +1,25 @@
 {
-  "providerTypes": ["claudecode", "codex", "openai_compatible"],
-  "accessModes": ["shared_capacity"],
-  "billingModes": ["prepaid", "quota_only"],
-  "statuses": ["draft", "active", "archived"],
-  "bindingStatus": ["active", "paused"],
+  "providerTypes": [
+    "claudecode",
+    "codex",
+    "openai_compatible"
+  ],
+  "accessModes": [
+    "shared_capacity"
+  ],
+  "billingModes": [
+    "prepaid",
+    "quota_only"
+  ],
+  "statuses": [
+    "draft",
+    "active",
+    "archived"
+  ],
+  "bindingStatus": [
+    "active",
+    "paused"
+  ],
   "defaults": {
     "currency": "USD",
     "accessMode": "shared_capacity",
