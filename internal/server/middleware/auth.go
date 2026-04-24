@@ -54,14 +54,18 @@ func WithAPIKeyConfig(auth *biz.AuthService, config *APIKeyConfig) gin.HandlerFu
 			ctx = contexts.WithProjectID(ctx, apiKey.Edges.Project.ID)
 		}
 
+		relayAuthContext, err := auth.AuthenticateRelayAPIKey(ctx, apiKey)
+		if err != nil {
+			AbortWithError(c, http.StatusUnauthorized, errors.New("Invalid relay authentication context"))
+			return
+		}
+		if relayAuthContext != nil {
+			ctx = contexts.WithRelayAuthContext(ctx, relayAuthContext)
+		}
+
 		ctx, err = withAPIKeyPrincipal(ctx, apiKey)
 		if err != nil {
 			AbortWithError(c, http.StatusUnauthorized, errors.New("Invalid authentication context"))
-			return
-		}
-
-		ctx, ok := attachRelayAuthContext(c, auth, ctx, apiKey)
-		if !ok {
 			return
 		}
 

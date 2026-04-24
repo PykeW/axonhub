@@ -62,6 +62,7 @@ type RelaySettlementRecorder interface {
 	RecordRelayUsage(ctx context.Context, relay *RelayAuthContext, input RelayUsageSettlementInput) error
 }
 
+// RelayAuthContext carries request-scoped Relay/Sub-Key auth and routing metadata.
 type RelayAuthContext struct {
 	RelayKeyID   int
 	APIKeyID     int
@@ -165,11 +166,12 @@ func (s *RelayRuntimeService) ResolveAndCheckAccess(ctx context.Context, apiKey 
 		relay.ProjectID = apiKey.ProjectID
 	}
 
-	decision := s.defaultAccessDecision(relay, time.Now())
+	now := time.Now()
+	decision := s.defaultAccessDecision(relay, now)
 	if s.access != nil {
 		decision, err = s.access.CheckRelayAccess(ctx, relay, RelayAccessCheckInput{
 			APIKey: apiKey,
-			Now:    time.Now(),
+			Now:    now,
 		})
 		if err != nil {
 			return relay, nil, err
@@ -270,6 +272,21 @@ func (c *RelayAuthContext) PoolEntry(channelID int) (RelayChannelPoolEntry, bool
 		}
 	}
 	return RelayChannelPoolEntry{}, false
+}
+
+func (c *RelayAuthContext) HasRoutingConstraints() bool {
+	return c != nil && len(c.AllowedChannelIDs()) > 0
+}
+
+// AuthenticateRelayAPIKey is the post-API-key-auth Relay hook.
+// It is intentionally a no-op until relay_keys code generation lands; callers can
+// already consume a RelayAuthContext without coupling contexts to biz.
+func (s *AuthService) AuthenticateRelayAPIKey(_ context.Context, apiKey *ent.APIKey) (*RelayAuthContext, error) {
+	if apiKey == nil {
+		return nil, nil
+	}
+
+	return nil, nil
 }
 
 func matchRelayModelPatterns(patterns []string, model string) bool {

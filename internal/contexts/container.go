@@ -15,7 +15,6 @@ type contextContainer struct {
 	RequestID     *string
 	OperationName *string
 	APIKey        *ent.APIKey
-	RelayAuth     any
 	User          *ent.User
 	Source        *request.Source
 	Thread        *ent.Thread
@@ -25,6 +24,9 @@ type contextContainer struct {
 
 	// ChannelAPIKey stores the API key used for the channel request (not the user's API key)
 	ChannelAPIKey *string
+
+	// RelayAuthContext intentionally stays untyped here to avoid a contexts -> biz import cycle.
+	RelayAuthContext any
 }
 
 // getContainer retrieves the existing container from context, or creates a new one and stores it in the context if it doesn't exist.
