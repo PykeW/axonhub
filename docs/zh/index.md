@@ -13,17 +13,18 @@
 
 ### 📖 使用指南
 
-| 文档                                                | 描述                        |
-| --------------------------------------------------- | --------------------------- |
-| [渠道管理](guides/channel-management.md)            | 配置和管理 AI 提供商渠道    |
-| [模型管理](guides/model-management.md)              | 模型映射、关联和优先级配置  |
-| [API Key 配置文件](guides/api-key-profiles.md)      | 创建和管理 API Key 配置文件 |
-| [权限管理](guides/permissions.md)                   | 企业级 RBAC 访问控制配置    |
-| [负载均衡](guides/load-balance.md)                  | 智能路由和故障转移设置      |
-| [成本追踪](guides/cost-tracking.md)                 | 实时监控和用量分析          |
-| [请求追踪](guides/tracing.md)                       | 完整的请求链路追踪          |
-| [请求覆盖](guides/request-override.md)              | 动态修改请求参数            |
-| [提示词保护规则](guides/prompt-protection-rules.md) | 敏感信息过滤和保护          |
+| 文档                                                | 描述                            |
+| --------------------------------------------------- | ------------------------------- |
+| [渠道管理](guides/channel-management.md)            | 配置和管理 AI 提供商渠道        |
+| [Antigravity 集成](guides/antigravity.md)           | 配置 Antigravity 渠道与端点回退 |
+| [模型管理](guides/model-management.md)              | 模型映射、关联和优先级配置      |
+| [API Key 配置文件](guides/api-key-profiles.md)      | 创建和管理 API Key 配置文件     |
+| [权限管理](guides/permissions.md)                   | 企业级 RBAC 访问控制配置        |
+| [负载均衡](guides/load-balance.md)                  | 智能路由和故障转移设置          |
+| [成本追踪](guides/cost-tracking.md)                 | 实时监控和用量分析              |
+| [请求追踪](guides/tracing.md)                       | 完整的请求链路追踪              |
+| [请求覆盖](guides/request-override.md)              | 动态修改请求参数                |
+| [提示词保护规则](guides/prompt-protection-rules.md) | 敏感信息过滤和保护              |
 
 ### 🤖 AI 编程工具集成
 
@@ -46,9 +47,9 @@
 
 ### 🚀 部署指南
 
-| 文档                                    | 描述                               |
-| --------------------------------------- | ---------------------------------- |
-| [配置详解](deployment/configuration.md) | 详细的配置选项说明                 |
+| 文档                                    | 描述               |
+| --------------------------------------- | ------------------ |
+| [配置详解](deployment/configuration.md) | 详细的配置选项说明 |
 
 ### 🛠️ 开发文档
 
@@ -75,11 +76,5 @@
 - [GitHub 仓库](https://github.com/looplj/axonhub)
 - [DeepWiki 文档](https://deepwiki.com/looplj/axonhub)
 - [Zread AI](https://zread.ai/looplj/axonhub)
-
-## 🌐 多语言文档
-
-- [English Documentation](../en/index.md)
-
----
 
 > 💡 **提示**: 如果您是新用户，建议从[快速入门指南](getting-started/quick-start.md)开始，然后阅读[渠道管理](guides/channel-management.md)和[模型管理](guides/model-management.md)来了解核心功能。
