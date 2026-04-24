@@ -12,7 +12,6 @@
 [![Test Status](https://github.com/looplj/axonhub/actions/workflows/test.yml/badge.svg)](https://github.com/looplj/axonhub/actions/workflows/test.yml)
 [![Lint Status](https://github.com/looplj/axonhub/actions/workflows/lint.yml/badge.svg)](https://github.com/looplj/axonhub/actions/workflows/lint.yml)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/looplj/axonhub?logo=go&logoColor=white)](https://golang.org/)
-[![Docker Ready](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white)](https://docker.com)
 
 [English](README.md) | [中文](README.zh-CN.md) | [日本語](README.ja-JP.md)
 
@@ -312,24 +311,6 @@ AXONHUB_LOG_LEVEL=info
 ```
 
 For detailed configuration instructions, please refer to [configuration documentation](docs/en/deployment/configuration.md).
-
-#### Docker Compose Deployment
-
-```bash
-# Clone project
-git clone https://github.com/looplj/axonhub.git
-cd axonhub
-
-# Set environment variables
-export AXONHUB_DB_DIALECT="tidb"
-export AXONHUB_DB_DSN="<USER>.root:<PASSWORD>@tcp(gateway01.us-west-2.prod.aws.tidbcloud.com:4000)/axonhub?tls=true&parseTime=true&multiStatements=true&charset=utf8mb4"
-
-# Start services
-docker-compose up -d
-
-# Check status
-docker-compose ps
-```
 
 #### Helm Kubernetes Deployment
 

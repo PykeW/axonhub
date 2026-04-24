@@ -49,7 +49,6 @@ Welcome to the AxonHub documentation center! This index will help you quickly fi
 
 | Document                                     | Description                            |
 | -------------------------------------------- | -------------------------------------- |
-| [Docker Deployment](deployment/docker.md)    | Deploy using Docker and Docker Compose |
 | [Configuration](deployment/configuration.md) | Detailed configuration options         |
 
 ### 🛠️ Development

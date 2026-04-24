@@ -6,36 +6,12 @@ This guide will help you get started with AxonHub quickly. In just a few minutes
 
 ## Prerequisites
 
-- Docker and Docker Compose (recommended)
-- Or Go 1.24+ and Node.js 18+ for development setup
+- Go 1.24+ and Node.js 18+ for development setup
 - A valid API key from an AI provider (OpenAI, Anthropic, etc.)
 
 ## Quick Setup Methods
 
-### Method 1: Docker Compose (Recommended)
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/looplj/axonhub.git
-   cd axonhub
-   ```
-
-2. **Configure environment variables**
-   ```bash
-   cp config.example.yml config.yml
-   # Edit config.yml with your preferred settings
-   ```
-
-3. **Start services**
-   ```bash
-   docker-compose up -d
-   ```
-
-4. **Access the application**
-   - Web interface: http://localhost:8090
-   - Default credentials: admin@example.com / admin123
-
-### Method 2: Binary Download
+### Method 1: Binary Download
 
 1. **Download the latest release**
    - Visit [GitHub Releases](https://github.com/looplj/axonhub/releases)
@@ -374,7 +350,7 @@ log:
 ### Common Issues
 
 **Cannot connect to AxonHub**
-- Check if the service is running: `docker-compose ps`
+- Check if the AxonHub process is running
 - Verify port 8090 is available
 - Check firewall settings
 

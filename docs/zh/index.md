@@ -48,7 +48,6 @@
 
 | 文档                                    | 描述                               |
 | --------------------------------------- | ---------------------------------- |
-| [Docker 部署](deployment/docker.md)     | 使用 Docker 和 Docker Compose 部署 |
 | [配置详解](deployment/configuration.md) | 详细的配置选项说明                 |
 
 ### 🛠️ 开发文档

@@ -12,7 +12,6 @@
 [![测试状态](https://github.com/looplj/axonhub/actions/workflows/test.yml/badge.svg)](https://github.com/looplj/axonhub/actions/workflows/test.yml)
 [![Lint 状态](https://github.com/looplj/axonhub/actions/workflows/lint.yml/badge.svg)](https://github.com/looplj/axonhub/actions/workflows/lint.yml)
 [![Go 版本](https://img.shields.io/github/go-mod/go-version/looplj/axonhub?logo=go&logoColor=white)](https://golang.org/)
-[![Docker Ready](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white)](https://docker.com)
 
 [English](README.md) | [中文](README.zh-CN.md) | [日本語](README.ja-JP.md)
 
@@ -300,24 +299,6 @@ AXONHUB_LOG_LEVEL=info
 ```
 
 详细配置说明请参考 [配置文档](config.example.yml)。
-
-#### Docker Compose 部署
-
-```bash
-# 克隆项目
-git clone https://github.com/looplj/axonhub.git
-cd axonhub
-
-# 设置环境变量
-export AXONHUB_DB_DIALECT="tidb"
-export AXONHUB_DB_DSN="<USER>.root:<PASSWORD>@tcp(gateway01.us-west-2.prod.aws.tidbcloud.com:4000)/axonhub?tls=true&parseTime=true&multiStatements=true&charset=utf8mb4"
-
-# 启动服务
-docker-compose up -d
-
-# 查看状态
-docker-compose ps
-```
 
 #### Helm Kubernetes 部署 | Helm Kubernetes Deployment
 
