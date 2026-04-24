@@ -49,6 +49,21 @@ func TestRelayProductService_ValidateCreateRelayProductInput(t *testing.T) {
 	})
 }
 
+func TestRelayProductService_DataFoundationContract(t *testing.T) {
+	svc := NewRelayProductService(RelayProductServiceParams{})
+	contract := svc.DataFoundationContract()
+
+	require.ElementsMatch(t, []RelayProductDataEntity{
+		{Table: RelayProductTableName, Description: "Sellable shared-capacity relay product catalog"},
+		{Table: RelayProductChannelTableName, Description: "Product-to-upstream-channel pool bindings"},
+	}, contract.Implemented)
+	require.Contains(t, contract.Reused, RelayReusedAPIKeyTableName)
+	require.Contains(t, contract.Reused, RelayReusedChannelTableName)
+	require.Contains(t, contract.Reused, RelayReusedRequestTableName)
+	require.Contains(t, contract.Deferred, RelayProductDataEntity{Table: RelayKeyTableName, Description: "Sub-Key business state bound to existing api_keys"})
+	require.Contains(t, contract.Deferred, RelayProductDataEntity{Table: RelayWalletTableName, Description: "Fast balance snapshot for synchronous access checks"})
+}
+
 func TestRelayProductService_ValidateCreateRelayProductChannelBinding(t *testing.T) {
 	client := enttest.Open(t, dialect.SQLite, "file:ent?mode=memory&_fk=1")
 	defer client.Close()

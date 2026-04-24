@@ -85,6 +85,33 @@ type RelayProductContractDefaults struct {
 	BindingWeight         int    `json:"bindingWeight"`
 }
 
+const (
+	RelayProductTableName                 = "relay_products"
+	RelayProductChannelTableName          = "relay_product_channels"
+	RelayKeyTableName                     = "relay_keys"
+	RelayWalletTableName                  = "relay_wallets"
+	RelayWalletLedgerEntryTableName       = "relay_wallet_ledger_entries"
+	RelayDailyUsageSummaryTableName       = "relay_daily_usage_summaries"
+	RelayReusedAPIKeyTableName            = "api_keys"
+	RelayReusedChannelTableName           = "channels"
+	RelayReusedRequestTableName           = "requests"
+	RelayReusedRequestExecutionTableName  = "request_executions"
+	RelayReusedUsageLogTableName          = "usage_logs"
+	RelayReusedProviderQuotaStatusTable   = "provider_quota_status"
+	RelayReusedChannelModelPriceTableName = "channel_model_prices"
+)
+
+type RelayProductDataEntity struct {
+	Table       string `json:"table"`
+	Description string `json:"description"`
+}
+
+type RelayProductDataFoundationContract struct {
+	Implemented []RelayProductDataEntity `json:"implemented"`
+	Reused      []string                 `json:"reused"`
+	Deferred    []RelayProductDataEntity `json:"deferred"`
+}
+
 type RelayProductCreateInput struct {
 	Code                  string                   `json:"code"`
 	Name                  string                   `json:"name"`
@@ -199,6 +226,30 @@ func (s *RelayProductService) Contract() RelayProductContract {
 			Status:                string(RelayProductStatusDraft),
 			RequestTimeoutSeconds: RelayProductDefaultRequestTimeoutSeconds,
 			BindingWeight:         RelayProductChannelDefaultWeight,
+		},
+	}
+}
+
+func (s *RelayProductService) DataFoundationContract() RelayProductDataFoundationContract {
+	return RelayProductDataFoundationContract{
+		Implemented: []RelayProductDataEntity{
+			{Table: RelayProductTableName, Description: "Sellable shared-capacity relay product catalog"},
+			{Table: RelayProductChannelTableName, Description: "Product-to-upstream-channel pool bindings"},
+		},
+		Reused: []string{
+			RelayReusedAPIKeyTableName,
+			RelayReusedChannelTableName,
+			RelayReusedRequestTableName,
+			RelayReusedRequestExecutionTableName,
+			RelayReusedUsageLogTableName,
+			RelayReusedProviderQuotaStatusTable,
+			RelayReusedChannelModelPriceTableName,
+		},
+		Deferred: []RelayProductDataEntity{
+			{Table: RelayKeyTableName, Description: "Sub-Key business state bound to existing api_keys"},
+			{Table: RelayWalletTableName, Description: "Fast balance snapshot for synchronous access checks"},
+			{Table: RelayWalletLedgerEntryTableName, Description: "Immutable recharge, consume, refund, freeze and manual-adjust ledger"},
+			{Table: RelayDailyUsageSummaryTableName, Description: "Daily aggregate for hard limits and operator dashboards"},
 		},
 	}
 }
