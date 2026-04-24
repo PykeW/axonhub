@@ -50,13 +50,12 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "Environment Variables:"
       echo "  AXONHUB_E2E_DB_TYPE   Database type (takes precedence over --db-type)"
-      echo "  AXONHUB_E2E_DB_DSN    Database DSN for MySQL/PostgreSQL"
-      echo "  AXONHUB_E2E_USE_EXISTING_DB  Use existing database (don't create new)"
+      echo "  AXONHUB_E2E_DB_DSN    Required database DSN for MySQL/PostgreSQL"
       echo "  AXONHUB_E2E_KEEP_DB   Keep database after tests (takes precedence over --keep-db)"
       echo ""
       echo "Examples:"
       echo "  $0                           # Run tests with sqlite"
-      echo "  $0 -d mysql                  # Run tests with MySQL"
+      echo "  AXONHUB_E2E_DB_DSN=... $0 -d mysql  # Run tests with external MySQL"
       echo "  $0 --keep-db                 # Run tests and keep database"
       echo "  AXONHUB_E2E_DB_TYPE=mysql $0  # Set via environment variable"
       echo "  AXONHUB_E2E_KEEP_DB=true $0   # Keep database via environment variable"
@@ -111,7 +110,6 @@ rm -f ./scripts/e2e/.e2e-backend-db-type
 export AXONHUB_E2E_DB_TYPE="$DB_TYPE"
 export AXONHUB_E2E_DB_DSN="${AXONHUB_E2E_DB_DSN:-}"
 export AXONHUB_E2E_DB_DIALECT="${AXONHUB_E2E_DB_DIALECT:-}"
-export AXONHUB_E2E_USE_EXISTING_DB="${AXONHUB_E2E_USE_EXISTING_DB:-false}"
 export AXONHUB_E2E_KEEP_DB="$KEEP_DB"
 
 # Start backend with specified database type
@@ -147,10 +145,10 @@ if [ $TEST_EXIT_CODE -eq 0 ]; then
         echo "   SQLite: ./scripts/e2e/axonhub-e2e.db"
         ;;
       mysql)
-        echo "   MySQL container: axonhub-e2e-mysql (port 13306)"
+        echo "   MySQL: external database from AXONHUB_E2E_DB_DSN"
         ;;
       postgres)
-        echo "   PostgreSQL container: axonhub-e2e-postgres (port 15432)"
+        echo "   PostgreSQL: external database from AXONHUB_E2E_DB_DSN"
         ;;
     esac
   fi
@@ -164,10 +162,10 @@ else
         echo "   SQLite: ./scripts/e2e/axonhub-e2e.db"
         ;;
       mysql)
-        echo "   MySQL container: axonhub-e2e-mysql (port 13306)"
+        echo "   MySQL: external database from AXONHUB_E2E_DB_DSN"
         ;;
       postgres)
-        echo "   PostgreSQL container: axonhub-e2e-postgres (port 15432)"
+        echo "   PostgreSQL: external database from AXONHUB_E2E_DB_DSN"
         ;;
     esac
   else

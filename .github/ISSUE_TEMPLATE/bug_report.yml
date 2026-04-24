@@ -76,7 +76,6 @@ body:
         - Linux (Other) / Linux（其他）
         - macOS / macOS
         - Windows / Windows
-        - Docker / Docker
         - Other / 其他
     validations:
       required: true

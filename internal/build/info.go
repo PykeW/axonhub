@@ -25,7 +25,7 @@ var (
 //nolint:gochecknoinits // init version.
 func init() {
 	// The version can be set by goreleaser.
-	// If not set, use the version in the VERSION file for local development and docker build.
+	// If not set, use the version in the VERSION file for local development builds.
 	if Version == "" {
 		Version = strings.TrimSpace(string(rawVersion))
 	}
