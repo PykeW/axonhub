@@ -6,36 +6,12 @@
 
 ## 先决条件
 
-- Docker 和 Docker Compose（推荐）
-- 或者 Go 1.24+ 和 Node.js 18+ 用于开发环境设置
+- Go 1.24+ 和 Node.js 18+ 用于开发环境设置
 - 来自 AI 提供商的有效 API 密钥（OpenAI、Anthropic 等）
 
 ## 快速设置方法
 
-### 方法 1：Docker Compose（推荐）
-
-1. **克隆仓库**
-   ```bash
-   git clone https://github.com/looplj/axonhub.git
-   cd axonhub
-   ```
-
-2. **配置环境变量**
-   ```bash
-   cp config.example.yml config.yml
-   # 使用您喜欢的编辑器编辑 config.yml
-   ```
-
-3. **启动服务**
-   ```bash
-   docker-compose up -d
-   ```
-
-4. **访问应用程序**
-   - Web 界面：http://localhost:8090
-   - 默认凭据：admin@example.com / admin123
-
-### 方法 2：二进制下载
+### 方法 1：二进制下载
 
 1. **下载最新版本**
    - 访问 [GitHub Releases](https://github.com/looplj/axonhub/releases)
@@ -374,7 +350,7 @@ log:
 ### 常见问题
 
 **无法连接到 AxonHub**
-- 检查服务是否正在运行：`docker-compose ps`
+- 检查 AxonHub 进程是否正在运行
 - 验证端口 8090 是否可用
 - 检查防火墙设置
 

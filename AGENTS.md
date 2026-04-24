@@ -12,7 +12,7 @@ The project is designed around request transformation and provider compatibility
 - Language/Runtime: Go 1.26.0, Node.js with pnpm, TypeScript
 - Framework(s): Gin, Ent ORM, gqlgen, Uber FX, React 19, TanStack Router, TanStack Query, Zustand, Tailwind CSS, Vite, Playwright
 - Key Dependencies: viper, zap, uuid, pgx, mysql driver, sqlite, i18next, Radix UI, DnD Kit, React Hook Form, Zod, Framer Motion, OpenTelemetry
-- Build Tools: Make, Air, GoReleaser, Docker/Docker Compose, ESLint, Prettier, Knip, Husky
+- Build Tools: Make, Air, GoReleaser, ESLint, Prettier, Knip, Husky
 
 ## Project Structure
 ```text
@@ -30,7 +30,6 @@ The project is designed around request transformation and provider compatibility
 |-- scripts/              # E2E, lint, sync, migration, and utility scripts
 |-- README*.md            # Project introduction in multiple languages
 |-- Makefile              # Root build/test/generate workflow
-|-- docker-compose.yml    # Local container deployment
 |-- render.yaml           # Render deployment config
 `-- config.example.yml    # Sample runtime configuration
 ```
@@ -69,7 +68,6 @@ The project is designed around request transformation and provider compatibility
 - Go 1.26.0 or newer
 - Node.js 18+ with pnpm
 - Git
-- Optional: Docker and Docker Compose for containerized runs
 
 ### Installation
 ```bash
@@ -148,7 +146,7 @@ Frontend scripts live in `frontend/package.json`:
 - Important environment variables include `AXONHUB_SERVER_PORT`, `AXONHUB_DB_DIALECT`, `AXONHUB_DB_DSN`, `AXONHUB_LOG_LEVEL`, `AXONHUB_CACHE_MODE`, `AXONHUB_METRICS_ENABLED`, and `AXONHUB_GC_CRON`.
 - Frontend environment examples are in `frontend/.env.example`; `VITE_API_URL` and `VITE_PORT` control the dev proxy and server port.
 - Playwright test defaults are set in `frontend/playwright.config.ts` via `AXONHUB_ADMIN_EMAIL`, `AXONHUB_ADMIN_PASSWORD`, and `AXONHUB_API_URL`.
-- Deployment-related configuration also appears in `docker-compose.yml`, `render.yaml`, `.air.toml`, and `.goreleaser.yml`.
+- Deployment-related configuration also appears in `render.yaml`, `.air.toml`, and `.goreleaser.yml`.
 
 ## Architecture
 AxonHub follows a layered architecture centered on request transformation. The backend starts in `cmd/axonhub/main.go`, loads config from `conf/`, and wires services with Uber FX. HTTP routing and API handling live under `internal/server/`, while database models and migrations are managed by Ent in `internal/ent/`. Observability is handled through logging, metrics, and tracing packages under `internal/log`, `internal/metrics`, and `internal/tracing`.

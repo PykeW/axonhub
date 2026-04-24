@@ -443,7 +443,6 @@ This command will validate your configuration file and report any errors.
 
 ## Related Documentation
 
-- [Docker Deployment](docker.md)
 - [Quick Start Guide](../getting-started/quick-start.md)
 - [OpenAI API](../api-reference/openai-api.md)
 - [Anthropic API](../api-reference/anthropic-api.md)

@@ -409,7 +409,6 @@ username.root:password@tcp(host:4000)/database?tls=true&parseTime=true&multiStat
 
 ## 相关文档
 
-- [Docker 部署](docker.md)
 - [快速入门](../getting-started/quick-start.md)
 - [OpenAI API](../api-reference/openai-api.md)
 - [Anthropic API](../api-reference/anthropic-api.md)

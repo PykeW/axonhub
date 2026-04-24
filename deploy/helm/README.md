@@ -24,7 +24,7 @@ The following table lists the configurable parameters of the AxonHub chart and t
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `global.imagePullSecrets` | Global Docker registry secret names as an array | `[]` |
+| `global.imagePullSecrets` | Global image registry secret names as an array | `[]` |
 
 ### AxonHub Parameters
 
