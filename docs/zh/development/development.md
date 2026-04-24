@@ -137,6 +137,7 @@ bash ./scripts/e2e/e2e-test.sh
 
 - [自托管 Relay + Sub-key 共享容量 MVP：页面清单与用户流程](./relay-subkey-mvp-page-flows.md)
 - [自托管 Relay + Sub-key 共享容量 MVP：后端与数据设计](./relay-subkey-mvp-backend-design.md)
+- [Relay/Sub-Key MVP QA Checklist](./relay-subkey-mvp-qa-checklist.md)
 
 ## 代码质量
 
