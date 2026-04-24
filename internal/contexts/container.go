@@ -15,6 +15,7 @@ type contextContainer struct {
 	RequestID     *string
 	OperationName *string
 	APIKey        *ent.APIKey
+	RelayAuth     any
 	User          *ent.User
 	Source        *request.Source
 	Thread        *ent.Thread
