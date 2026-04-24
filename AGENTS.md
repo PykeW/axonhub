@@ -21,14 +21,14 @@ The project is designed around request transformation and provider compatibility
 |-- cmd/schema/           # Configuration schema generator
 |-- conf/                 # YAML + environment configuration loading
 |-- deploy/               # Install/start/stop scripts and Helm assets
-|-- docs/                 # English, Chinese, and Japanese documentation
+|-- docs/                 # Chinese documentation
 |-- examples/             # Example API payloads and samples
 |-- frontend/             # Standalone React + TypeScript app
 |-- integration_test/     # Cross-provider integration tests
 |-- internal/             # Backend implementation, Ent models, services, metrics, auth, tracing
 |-- llm/                  # Separate Go module for LLM transformers and helpers
 |-- scripts/              # E2E, lint, sync, migration, and utility scripts
-|-- README*.md            # Project introduction in multiple languages
+|-- README.md             # Chinese project introduction and documentation entry point
 |-- Makefile              # Root build/test/generate workflow
 |-- render.yaml           # Render deployment config
 `-- config.example.yml    # Sample runtime configuration
@@ -158,7 +158,7 @@ The frontend is a separate Vite application under `frontend/` that uses TanStack
 - Regenerate generated artifacts after schema changes instead of editing generated files by hand.
 - Prefer small, focused changes that preserve the request transformation pipeline.
 - Follow the existing docs and module boundaries; `llm/` is a separate Go module.
-- Review `docs/en/development/development.md` for detailed development guidance.
+- Review `docs/zh/development/development.md` for detailed development guidance.
 
 ## License
 The repository uses mixed licensing: the root project is Apache-2.0, while `llm/` is LGPL-3.0. See `LICENSE` for the full licensing overview and any file-specific exceptions.
