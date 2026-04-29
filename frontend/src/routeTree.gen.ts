@@ -67,6 +67,7 @@ import { Route as AuthenticatedProjectRelaySubkeysUsageRouteImport } from './rou
 import { Route as AuthenticatedProjectRelaySubkeysProductsRouteImport } from './routes/_authenticated/project/relay-subkeys/products'
 import { Route as AuthenticatedProjectRelaySubkeysGetStartedRouteImport } from './routes/_authenticated/project/relay-subkeys/get-started'
 import { Route as AuthenticatedProjectRelaySubkeysKeysIndexRouteImport } from './routes/_authenticated/project/relay-subkeys/keys/index'
+import { Route as AuthenticatedRelaySubkeysKeysKeyIdBillingRouteImport } from './routes/_authenticated/relay-subkeys/keys/$keyId/billing'
 import { Route as AuthenticatedProjectRelaySubkeysKeysKeyIdRouteImport } from './routes/_authenticated/project/relay-subkeys/keys/$keyId'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -401,6 +402,12 @@ const AuthenticatedProjectRelaySubkeysKeysIndexRoute =
     path: '/project/relay-subkeys/keys/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRelaySubkeysKeysKeyIdBillingRoute =
+  AuthenticatedRelaySubkeysKeysKeyIdBillingRouteImport.update({
+    id: '/billing',
+    path: '/billing',
+    getParentRoute: () => AuthenticatedRelaySubkeysKeysKeyIdRoute,
+  } as any)
 const AuthenticatedProjectRelaySubkeysKeysKeyIdRoute =
   AuthenticatedProjectRelaySubkeysKeysKeyIdRouteImport.update({
     id: '/project/relay-subkeys/keys/$keyId',
@@ -448,7 +455,7 @@ export interface FileRoutesByFullPath {
   '/project/requests/$requestId': typeof AuthenticatedProjectRequestsRequestIdRoute
   '/project/threads/$threadId': typeof AuthenticatedProjectThreadsThreadIdRoute
   '/project/traces/$traceId': typeof AuthenticatedProjectTracesTraceIdRoute
-  '/relay-subkeys/keys/$keyId': typeof AuthenticatedRelaySubkeysKeysKeyIdRoute
+  '/relay-subkeys/keys/$keyId': typeof AuthenticatedRelaySubkeysKeysKeyIdRouteWithChildren
   '/relay-subkeys/keys/create': typeof AuthenticatedRelaySubkeysKeysCreateRoute
   '/relay-subkeys/products/$productId': typeof AuthenticatedRelaySubkeysProductsProductIdRoute
   '/relay-subkeys/products/create': typeof AuthenticatedRelaySubkeysProductsCreateRoute
@@ -466,6 +473,7 @@ export interface FileRoutesByFullPath {
   '/relay-subkeys/products/': typeof AuthenticatedRelaySubkeysProductsIndexRoute
   '/relay-subkeys/requests/': typeof AuthenticatedRelaySubkeysRequestsIndexRoute
   '/project/relay-subkeys/keys/$keyId': typeof AuthenticatedProjectRelaySubkeysKeysKeyIdRoute
+  '/relay-subkeys/keys/$keyId/billing': typeof AuthenticatedRelaySubkeysKeysKeyIdBillingRoute
   '/project/relay-subkeys/keys/': typeof AuthenticatedProjectRelaySubkeysKeysIndexRoute
 }
 export interface FileRoutesByTo {
@@ -506,7 +514,7 @@ export interface FileRoutesByTo {
   '/project/requests/$requestId': typeof AuthenticatedProjectRequestsRequestIdRoute
   '/project/threads/$threadId': typeof AuthenticatedProjectThreadsThreadIdRoute
   '/project/traces/$traceId': typeof AuthenticatedProjectTracesTraceIdRoute
-  '/relay-subkeys/keys/$keyId': typeof AuthenticatedRelaySubkeysKeysKeyIdRoute
+  '/relay-subkeys/keys/$keyId': typeof AuthenticatedRelaySubkeysKeysKeyIdRouteWithChildren
   '/relay-subkeys/keys/create': typeof AuthenticatedRelaySubkeysKeysCreateRoute
   '/relay-subkeys/products/$productId': typeof AuthenticatedRelaySubkeysProductsProductIdRoute
   '/relay-subkeys/products/create': typeof AuthenticatedRelaySubkeysProductsCreateRoute
@@ -524,6 +532,7 @@ export interface FileRoutesByTo {
   '/relay-subkeys/products': typeof AuthenticatedRelaySubkeysProductsIndexRoute
   '/relay-subkeys/requests': typeof AuthenticatedRelaySubkeysRequestsIndexRoute
   '/project/relay-subkeys/keys/$keyId': typeof AuthenticatedProjectRelaySubkeysKeysKeyIdRoute
+  '/relay-subkeys/keys/$keyId/billing': typeof AuthenticatedRelaySubkeysKeysKeyIdBillingRoute
   '/project/relay-subkeys/keys': typeof AuthenticatedProjectRelaySubkeysKeysIndexRoute
 }
 export interface FileRoutesById {
@@ -568,7 +577,7 @@ export interface FileRoutesById {
   '/_authenticated/project/requests/$requestId': typeof AuthenticatedProjectRequestsRequestIdRoute
   '/_authenticated/project/threads/$threadId': typeof AuthenticatedProjectThreadsThreadIdRoute
   '/_authenticated/project/traces/$traceId': typeof AuthenticatedProjectTracesTraceIdRoute
-  '/_authenticated/relay-subkeys/keys/$keyId': typeof AuthenticatedRelaySubkeysKeysKeyIdRoute
+  '/_authenticated/relay-subkeys/keys/$keyId': typeof AuthenticatedRelaySubkeysKeysKeyIdRouteWithChildren
   '/_authenticated/relay-subkeys/keys/create': typeof AuthenticatedRelaySubkeysKeysCreateRoute
   '/_authenticated/relay-subkeys/products/$productId': typeof AuthenticatedRelaySubkeysProductsProductIdRoute
   '/_authenticated/relay-subkeys/products/create': typeof AuthenticatedRelaySubkeysProductsCreateRoute
@@ -586,6 +595,7 @@ export interface FileRoutesById {
   '/_authenticated/relay-subkeys/products/': typeof AuthenticatedRelaySubkeysProductsIndexRoute
   '/_authenticated/relay-subkeys/requests/': typeof AuthenticatedRelaySubkeysRequestsIndexRoute
   '/_authenticated/project/relay-subkeys/keys/$keyId': typeof AuthenticatedProjectRelaySubkeysKeysKeyIdRoute
+  '/_authenticated/relay-subkeys/keys/$keyId/billing': typeof AuthenticatedRelaySubkeysKeysKeyIdBillingRoute
   '/_authenticated/project/relay-subkeys/keys/': typeof AuthenticatedProjectRelaySubkeysKeysIndexRoute
 }
 export interface FileRouteTypes {
@@ -648,6 +658,7 @@ export interface FileRouteTypes {
     | '/relay-subkeys/products/'
     | '/relay-subkeys/requests/'
     | '/project/relay-subkeys/keys/$keyId'
+    | '/relay-subkeys/keys/$keyId/billing'
     | '/project/relay-subkeys/keys/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -706,6 +717,7 @@ export interface FileRouteTypes {
     | '/relay-subkeys/products'
     | '/relay-subkeys/requests'
     | '/project/relay-subkeys/keys/$keyId'
+    | '/relay-subkeys/keys/$keyId/billing'
     | '/project/relay-subkeys/keys'
   id:
     | '__root__'
@@ -767,6 +779,7 @@ export interface FileRouteTypes {
     | '/_authenticated/relay-subkeys/products/'
     | '/_authenticated/relay-subkeys/requests/'
     | '/_authenticated/project/relay-subkeys/keys/$keyId'
+    | '/_authenticated/relay-subkeys/keys/$keyId/billing'
     | '/_authenticated/project/relay-subkeys/keys/'
   fileRoutesById: FileRoutesById
 }
@@ -1191,6 +1204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectRelaySubkeysKeysIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/relay-subkeys/keys/$keyId/billing': {
+      id: '/_authenticated/relay-subkeys/keys/$keyId/billing'
+      path: '/billing'
+      fullPath: '/relay-subkeys/keys/$keyId/billing'
+      preLoaderRoute: typeof AuthenticatedRelaySubkeysKeysKeyIdBillingRouteImport
+      parentRoute: typeof AuthenticatedRelaySubkeysKeysKeyIdRoute
+    }
     '/_authenticated/project/relay-subkeys/keys/$keyId': {
       id: '/_authenticated/project/relay-subkeys/keys/$keyId'
       path: '/project/relay-subkeys/keys/$keyId'
@@ -1201,9 +1221,24 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedRelaySubkeysKeysKeyIdRouteChildren {
+  AuthenticatedRelaySubkeysKeysKeyIdBillingRoute: typeof AuthenticatedRelaySubkeysKeysKeyIdBillingRoute
+}
+
+const AuthenticatedRelaySubkeysKeysKeyIdRouteChildren: AuthenticatedRelaySubkeysKeysKeyIdRouteChildren =
+  {
+    AuthenticatedRelaySubkeysKeysKeyIdBillingRoute:
+      AuthenticatedRelaySubkeysKeysKeyIdBillingRoute,
+  }
+
+const AuthenticatedRelaySubkeysKeysKeyIdRouteWithChildren =
+  AuthenticatedRelaySubkeysKeysKeyIdRoute._addFileChildren(
+    AuthenticatedRelaySubkeysKeysKeyIdRouteChildren,
+  )
+
 interface AuthenticatedRelaySubkeysRouteRouteChildren {
   AuthenticatedRelaySubkeysIndexRoute: typeof AuthenticatedRelaySubkeysIndexRoute
-  AuthenticatedRelaySubkeysKeysKeyIdRoute: typeof AuthenticatedRelaySubkeysKeysKeyIdRoute
+  AuthenticatedRelaySubkeysKeysKeyIdRoute: typeof AuthenticatedRelaySubkeysKeysKeyIdRouteWithChildren
   AuthenticatedRelaySubkeysKeysCreateRoute: typeof AuthenticatedRelaySubkeysKeysCreateRoute
   AuthenticatedRelaySubkeysProductsProductIdRoute: typeof AuthenticatedRelaySubkeysProductsProductIdRoute
   AuthenticatedRelaySubkeysProductsCreateRoute: typeof AuthenticatedRelaySubkeysProductsCreateRoute
@@ -1217,7 +1252,7 @@ const AuthenticatedRelaySubkeysRouteRouteChildren: AuthenticatedRelaySubkeysRout
   {
     AuthenticatedRelaySubkeysIndexRoute: AuthenticatedRelaySubkeysIndexRoute,
     AuthenticatedRelaySubkeysKeysKeyIdRoute:
-      AuthenticatedRelaySubkeysKeysKeyIdRoute,
+      AuthenticatedRelaySubkeysKeysKeyIdRouteWithChildren,
     AuthenticatedRelaySubkeysKeysCreateRoute:
       AuthenticatedRelaySubkeysKeysCreateRoute,
     AuthenticatedRelaySubkeysProductsProductIdRoute:

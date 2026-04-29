@@ -1,5 +1,6 @@
 export {
   RelayChannelPoolHealthPage,
+  RelayKeyBillingPage,
   RelayKeyCreatePage,
   RelayKeyDetailPage,
   RelayKeyListPage,
@@ -9,4 +10,4 @@ export {
   RelayRequestListPage,
   RelaySubkeysLayout,
   RelaySubkeysOverviewPage,
-} from './components';
+} from './pages';

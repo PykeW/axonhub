@@ -126,7 +126,8 @@ export function useRoutePermissions() {
       return groups
         .filter((group) => {
           // 找到对应的路由组配置
-          const routeGroup = routeConfigs.find((rg) => rg.title === group.title);
+          const configTitle = group.routeConfigTitle ?? group.title;
+          const routeGroup = routeConfigs.find((rg) => rg.title === configTitle);
           if (!routeGroup) {
             return true; // 如果没有配置，默认显示
           }

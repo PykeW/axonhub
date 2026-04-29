@@ -1,11 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { ProjectGuard } from '@/components/project-guard';
+import { RouteGuard } from '@/components/route-guard';
 import { ProjectRelaySubkeysGetStartedPage } from '@/features/project-relay-subkeys';
 
 function ProtectedProjectRelaySubkeysGetStarted() {
   return (
     <ProjectGuard>
-      <ProjectRelaySubkeysGetStartedPage />
+      <RouteGuard requiredScopes={['read_api_keys']}>
+        <ProjectRelaySubkeysGetStartedPage />
+      </RouteGuard>
     </ProjectGuard>
   );
 }

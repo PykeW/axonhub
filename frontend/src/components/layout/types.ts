@@ -34,6 +34,7 @@ type NavItem = NavCollapsible | NavLink;
 
 interface NavGroup {
   title: string;
+  routeConfigTitle?: string;
   items: NavItem[];
 }
 

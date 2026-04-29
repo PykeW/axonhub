@@ -1,0 +1,23 @@
+{
+  "sidebar.items.relaySubkeys": "Relay Sub-Keys",
+  "relaySubkeys.operator.title": "Relay Sub-Key Operations",
+  "relaySubkeys.operator.description": "Manage products, channel pools, sub-keys, wallets, and request traces for shared relay capacity.",
+  "relaySubkeys.operator.badge": "Frontend MVP",
+  "relaySubkeys.nav.overview": "Overview",
+  "relaySubkeys.nav.products": "Products",
+  "relaySubkeys.nav.keys": "Sub-Keys",
+  "relaySubkeys.nav.requests": "Request trace",
+  "relaySubkeys.nav.poolHealth": "Channel pool health",
+  "relaySubkeys.overview.title": "Operator overview",
+  "relaySubkeys.overview.description": "The MVP surface keeps the manual relay lifecycle visible from product setup to settlement troubleshooting.",
+  "relaySubkeys.project.badge": "Relay Sub-Keys",
+  "relaySubkeys.project.scope": "Project view",
+  "relaySubkeys.project.nav.overview": "Overview",
+  "relaySubkeys.project.nav.products": "Products",
+  "relaySubkeys.project.nav.keys": "Keys",
+  "relaySubkeys.project.nav.usage": "Usage",
+  "relaySubkeys.project.nav.getStarted": "Get started",
+  "relaySubkeys.project.nav.verify": "Verify",
+  "relaySubkeys.project.overview.title": "Project Relay Sub-Keys",
+  "relaySubkeys.project.overview.description": "Inspect usable relay products, issued keys, usage, and setup health for the selected project."
+}

@@ -62,6 +62,7 @@ export function useSidebarData(): SidebarData {
   const rawNavGroups: NavGroup[] = [
     {
       title: t('sidebar.groups.admin'),
+      routeConfigTitle: 'Admin',
       items: [
         {
           title: t('sidebar.items.dashboard'),
@@ -77,6 +78,11 @@ export function useSidebarData(): SidebarData {
           title: t('sidebar.items.channels'),
           url: '/channels',
           icon: IconAi,
+        } as NavLink,
+        {
+          title: t('sidebar.items.relaySubkeys'),
+          url: '/relay-subkeys',
+          icon: IconKey,
         } as NavLink,
         {
           title: t('sidebar.items.models'),
@@ -112,10 +118,16 @@ export function useSidebarData(): SidebarData {
     },
     {
       title: t('sidebar.groups.project'),
+      routeConfigTitle: 'Project',
       items: [
         {
           title: t('sidebar.items.apiKeys'),
           url: '/project/api-keys',
+          icon: IconKey,
+        } as NavLink,
+        {
+          title: t('sidebar.items.relaySubkeys'),
+          url: '/project/relay-subkeys',
           icon: IconKey,
         } as NavLink,
         {
@@ -163,6 +175,7 @@ export function useSidebarData(): SidebarData {
     },
     {
       title: t('sidebar.groups.settings'),
+      routeConfigTitle: 'Settings',
       items: [
         {
           title: t('sidebar.items.system'),

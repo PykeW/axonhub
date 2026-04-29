@@ -47,6 +47,11 @@ export const routeConfigs: RouteGroup[] = [
         mode: 'hidden',
       },
       {
+        path: '/relay-subkeys',
+        requiredScopes: ['read_channels'],
+        mode: 'hidden',
+      },
+      {
         path: '/models',
         requiredScopes: ['read_channels'],
         mode: 'hidden',
@@ -78,6 +83,11 @@ export const routeConfigs: RouteGroup[] = [
     routes: [
       {
         path: '/project/api-keys',
+        requiredScopes: ['read_api_keys'],
+        mode: 'hidden',
+      },
+      {
+        path: '/project/relay-subkeys',
         requiredScopes: ['read_api_keys'],
         mode: 'hidden',
       },
