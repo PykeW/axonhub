@@ -249,6 +249,10 @@ input APIKeyWhereInput {
   hasRelayKey: Boolean
   hasRelayKeyWith: [RelayKeyWhereInput!]
 }
+"""
+The builtin Any type
+"""
+scalar Any
 type Channel implements Node {
   id: ID!
   createdAt: Time!
@@ -1615,7 +1619,7 @@ input CreateRelayProductChannelInput {
   """
   Opaque per-binding model filter rules for future router matching
   """
-  modelFilter: Map
+  modelFilter: Any
   """
   Optional per-binding inflight cap before routing falls back to another candidate
   """
@@ -4873,7 +4877,7 @@ type RelayProductChannel implements Node {
   """
   Opaque per-binding model filter rules for future router matching
   """
-  modelFilter: Map
+  modelFilter: Any
   """
   Optional per-binding inflight cap before routing falls back to another candidate
   """
@@ -7577,7 +7581,7 @@ input UpdateRelayProductChannelInput {
   """
   Opaque per-binding model filter rules for future router matching
   """
-  modelFilter: Map
+  modelFilter: Any
   clearModelFilter: Boolean
   """
   Optional per-binding inflight cap before routing falls back to another candidate

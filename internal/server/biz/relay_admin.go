@@ -11,11 +11,20 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
 	"github.com/shopspring/decimal"
 	"go.uber.org/fx"
 
 	"github.com/looplj/axonhub/internal/contexts"
 	"github.com/looplj/axonhub/internal/ent"
+	"github.com/looplj/axonhub/internal/ent/apikey"
+	"github.com/looplj/axonhub/internal/ent/channel"
+	"github.com/looplj/axonhub/internal/ent/relaydailyusagesummary"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
+	"github.com/looplj/axonhub/internal/ent/relayproduct"
+	"github.com/looplj/axonhub/internal/ent/relayproductchannel"
+	"github.com/looplj/axonhub/internal/ent/relaywallet"
+	"github.com/looplj/axonhub/internal/ent/relaywalletledgerentry"
 	"github.com/looplj/axonhub/internal/log"
 	"github.com/looplj/axonhub/internal/objects"
 )
@@ -453,14 +462,6 @@ func (s *RelayAdminService) CreateKey(ctx context.Context, input RelayAdminCreat
 	if balanceMode != RelayKeyBalanceModePrepaid && balanceMode != RelayKeyBalanceModeQuotaOnly {
 		return nil, fmt.Errorf("unsupported relay key balance mode %q: %w", balanceMode, ErrRelayUnsupportedValue)
 	}
-	var expiresAt any
-	if strings.TrimSpace(input.ExpiresAt) != "" {
-		parsed, err := time.Parse(time.RFC3339, strings.TrimSpace(input.ExpiresAt))
-		if err != nil {
-			return nil, fmt.Errorf("invalid expiresAt: %w", errors.Join(ErrRelayInvalidInput, err))
-		}
-		expiresAt = parsed
-	}
 	if input.InitialBalance < 0 {
 		return nil, fmt.Errorf("initialBalance cannot be negative")
 	}
@@ -468,15 +469,12 @@ func (s *RelayAdminService) CreateKey(ctx context.Context, input RelayAdminCreat
 	if err != nil {
 		return nil, err
 	}
-	userID := nullableInt(0)
+	userID := 0
 	if user, ok := contexts.GetUser(ctx); ok && user != nil && user.ID > 0 {
 		userID = user.ID
 	}
-	db, dialectName, err := relaySQLDB(s.entFromContext(ctx))
-	if err != nil {
-		return nil, err
-	}
-	tx, err := db.BeginTx(ctx, nil)
+
+	tx, err := s.entFromContext(ctx).Tx(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin relay key transaction: %w", err)
 	}
@@ -486,47 +484,103 @@ func (s *RelayAdminService) CreateKey(ctx context.Context, input RelayAdminCreat
 			_ = tx.Rollback()
 		}
 	}()
-	scopesJSON := `["read_channels","write_requests"]`
-	profilesJSON := `{}`
-	apiKeyID, err := execRelayInsertTx(ctx, tx, dialectName,
-		fmt.Sprintf("INSERT INTO api_keys (key, name, type, status, scopes, profiles, project_id, user_id) VALUES (%s)", strings.Join(relayPlaceholders(dialectName, 8, 1), ",")),
-		apiKeyValue, name, "user", "enabled", scopesJSON, profilesJSON, projectID, userID,
-	)
+
+	apiKeyCreate := tx.APIKey.Create().
+		SetKey(apiKeyValue).
+		SetName(name).
+		SetType(apikey.TypeUser).
+		SetStatus(apikey.StatusEnabled).
+		SetScopes([]string{"read_channels", "write_requests"}).
+		SetProfiles(&objects.APIKeyProfiles{}).
+		SetProjectID(projectID)
+	if userID > 0 {
+		apiKeyCreate = apiKeyCreate.SetUserID(userID)
+	}
+	apiKey, err := apiKeyCreate.Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create backing api key: %w", err)
 	}
-	relayKeyID, err := execRelayInsertTx(ctx, tx, dialectName,
-		fmt.Sprintf(`INSERT INTO relay_keys (api_key_id, project_id, product_id, display_name, status, balance_mode, daily_request_limit, daily_token_limit, monthly_cost_limit, concurrency_limit, expires_at)
-VALUES (%s)`, strings.Join(relayPlaceholders(dialectName, 11, 1), ",")),
-		apiKeyID, projectID, productID, name, string(RelayKeyStatusActive), string(balanceMode), nullablePositiveInt64(input.Limits.DailyRequestLimit), nullablePositiveInt64(input.Limits.DailyTokenLimit), nullablePositiveDecimal(input.Limits.MonthlyCostLimit), nullablePositiveInt64(input.Limits.ConcurrencyLimit), expiresAt,
-	)
+
+	var expiresAtPtr *time.Time
+	if strings.TrimSpace(input.ExpiresAt) != "" {
+		parsed, err := time.Parse(time.RFC3339, strings.TrimSpace(input.ExpiresAt))
+		if err != nil {
+			return nil, fmt.Errorf("invalid expiresAt: %w", errors.Join(ErrRelayInvalidInput, err))
+		}
+		expiresAtPtr = &parsed
+	}
+	var dailyRequestLimit *int64
+	if input.Limits.DailyRequestLimit > 0 {
+		dailyRequestLimit = &input.Limits.DailyRequestLimit
+	}
+	var dailyTokenLimit *int64
+	if input.Limits.DailyTokenLimit > 0 {
+		dailyTokenLimit = &input.Limits.DailyTokenLimit
+	}
+	var monthlyCostLimit *string
+	if input.Limits.MonthlyCostLimit > 0 {
+		value := decimal.NewFromFloat(input.Limits.MonthlyCostLimit).String()
+		monthlyCostLimit = &value
+	}
+	var concurrencyLimit *int64
+	if input.Limits.ConcurrencyLimit > 0 {
+		concurrencyLimit = &input.Limits.ConcurrencyLimit
+	}
+
+	relayKey, err := tx.RelayKey.Create().
+		SetAPIKeyID(apiKey.ID).
+		SetProjectID(projectID).
+		SetProductID(productID).
+		SetDisplayName(name).
+		SetStatus(relaykey.StatusActive).
+		SetBalanceMode(relaykey.BalanceMode(balanceMode)).
+		SetNillableDailyRequestLimit(dailyRequestLimit).
+		SetNillableDailyTokenLimit(dailyTokenLimit).
+		SetNillableMonthlyCostLimit(monthlyCostLimit).
+		SetNillableConcurrencyLimit(concurrencyLimit).
+		SetNillableExpiresAt(expiresAtPtr).
+		Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create relay key: %w", err)
 	}
+
 	initialBalance := decimal.NewFromFloat(input.InitialBalance)
-	_, err = execRelayInsertTx(ctx, tx, dialectName,
-		fmt.Sprintf("INSERT INTO relay_wallets (relay_key_id, project_id, currency, available_amount, frozen_amount, overdraft_limit, version) VALUES (%s)", strings.Join(relayPlaceholders(dialectName, 7, 1), ",")),
-		relayKeyID, projectID, RelayProductDefaultCurrency, initialBalance.String(), "0", "0", 1,
-	)
+	_, err = tx.RelayWallet.Create().
+		SetRelayKeyID(relayKey.ID).
+		SetProjectID(projectID).
+		SetCurrency(RelayProductDefaultCurrency).
+		SetAvailableAmount(initialBalance.String()).
+		SetFrozenAmount("0").
+		SetOverdraftLimit("0").
+		SetVersion(1).
+		Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create relay wallet: %w", err)
 	}
+
 	if initialBalance.GreaterThan(decimal.Zero) {
-		_, err = insertRelayAdminLedgerTx(ctx, tx, dialectName, relayAdminLedgerInsert{
-			RelayKeyID:     relayKeyID,
-			ProjectID:      projectID,
-			Direction:      "credit",
-			Scene:          "recharge",
-			Amount:         initialBalance,
-			BalanceBefore:  decimal.Zero,
-			BalanceAfter:   initialBalance,
-			IdempotencyKey: fmt.Sprintf("initial_recharge:%d", relayKeyID),
-			Remark:         "initial balance",
-		})
-		if err != nil {
-			return nil, err
+		operatorID := 0
+		if user, ok := contexts.GetUser(ctx); ok && user != nil {
+			operatorID = user.ID
+		}
+		ledgerCreate := tx.RelayWalletLedgerEntry.Create().
+			SetRelayKeyID(relayKey.ID).
+			SetProjectID(projectID).
+			SetDirection(relaywalletledgerentry.DirectionCredit).
+			SetScene(relaywalletledgerentry.SceneRecharge).
+			SetAmount(initialBalance.String()).
+			SetBalanceBefore(decimal.Zero.String()).
+			SetBalanceAfter(initialBalance.String()).
+			SetIdempotencyKey(fmt.Sprintf("initial_recharge:%d", relayKey.ID)).
+			SetRemark("initial balance")
+		if operatorID > 0 {
+			ledgerCreate = ledgerCreate.SetOperatorUserID(operatorID)
+		}
+		if _, err = ledgerCreate.Save(ctx); err != nil {
+			return nil, fmt.Errorf("failed to create relay wallet ledger entry: %w", err)
 		}
 	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit relay key transaction: %w", err)
 	}
@@ -534,23 +588,19 @@ VALUES (%s)`, strings.Join(relayPlaceholders(dialectName, 11, 1), ",")),
 	if s.apiKeyService != nil {
 		s.apiKeyService.invalidateAPIKeyCaches(ctx, apiKeyValue)
 	}
-	return s.GetKey(ctx, relayKeyID)
+	return s.GetKey(ctx, relayKey.ID)
 }
 
 func (s *RelayAdminService) UpdateKeyStatus(ctx context.Context, id int, input RelayAdminKeyStatusInput) (*RelayAdminKey, error) {
 	if input.Status != RelayKeyStatusActive && input.Status != RelayKeyStatusSuspended && input.Status != RelayKeyStatusExhausted && input.Status != RelayKeyStatusArchived {
 		return nil, fmt.Errorf("unsupported relay key status %q: %w", input.Status, ErrRelayUnsupportedValue)
 	}
-	db, dialectName, err := relaySQLDB(s.entFromContext(ctx))
-	if err != nil {
-		return nil, err
-	}
 	apiKeyID, apiKeyValue, err := s.relayKeyAPIKey(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	tx, err := db.BeginTx(ctx, nil)
+	tx, err := s.entFromContext(ctx).Tx(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin update key status transaction: %w", err)
 	}
@@ -561,26 +611,24 @@ func (s *RelayAdminService) UpdateKeyStatus(ctx context.Context, id int, input R
 		}
 	}()
 
-	query := fmt.Sprintf("UPDATE relay_keys SET status = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s AND deleted_at = 0", relayPlaceholder(dialectName, 1), relayPlaceholder(dialectName, 2))
-	result, err := tx.ExecContext(ctx, query, string(input.Status), id)
+	_, err = tx.RelayKey.UpdateOneID(id).
+		SetStatus(relaykey.Status(input.Status)).
+		Where(relaykey.DeletedAt(0)).
+		Save(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, fmt.Errorf("relay key %d: %w", id, ErrRelayKeyNotFound)
+		}
 		return nil, fmt.Errorf("failed to update relay key status: %w", err)
 	}
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return nil, err
-	}
-	if rows == 0 {
-		return nil, fmt.Errorf("relay key %d: %w", id, ErrRelayKeyNotFound)
-	}
-	apiStatus := "disabled"
+
+	apiStatus := apikey.StatusDisabled
 	if input.Status == RelayKeyStatusActive {
-		apiStatus = "enabled"
+		apiStatus = apikey.StatusEnabled
 	} else if input.Status == RelayKeyStatusArchived {
-		apiStatus = "archived"
+		apiStatus = apikey.StatusArchived
 	}
-	apiQuery := fmt.Sprintf("UPDATE api_keys SET status = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s", relayPlaceholder(dialectName, 1), relayPlaceholder(dialectName, 2))
-	if _, err := tx.ExecContext(ctx, apiQuery, apiStatus, apiKeyID); err != nil {
+	if _, err := tx.APIKey.UpdateOneID(apiKeyID).SetStatus(apiStatus).Save(ctx); err != nil {
 		return nil, fmt.Errorf("failed to update backing api key status: %w", err)
 	}
 
@@ -597,22 +645,33 @@ func (s *RelayAdminService) UpdateKeyStatus(ctx context.Context, id int, input R
 
 func (s *RelayAdminService) UpdateKeyLimits(ctx context.Context, id int, input RelayAdminKeyLimitsInput) (*RelayAdminKey, error) {
 	limits := input.normalizedLimits()
-	db, dialectName, err := relaySQLDB(s.entFromContext(ctx))
-	if err != nil {
-		return nil, err
+	client := s.entFromContext(ctx)
+	u := client.RelayKey.UpdateOneID(id).Where(relaykey.DeletedAt(0))
+	if limits.DailyRequestLimit > 0 {
+		u.SetDailyRequestLimit(limits.DailyRequestLimit)
+	} else {
+		u.ClearDailyRequestLimit()
 	}
-	query := fmt.Sprintf(`UPDATE relay_keys SET daily_request_limit = %s, daily_token_limit = %s, monthly_cost_limit = %s, concurrency_limit = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s AND deleted_at = 0`,
-		relayPlaceholder(dialectName, 1), relayPlaceholder(dialectName, 2), relayPlaceholder(dialectName, 3), relayPlaceholder(dialectName, 4), relayPlaceholder(dialectName, 5))
-	result, err := db.ExecContext(ctx, query, nullablePositiveInt64(limits.DailyRequestLimit), nullablePositiveInt64(limits.DailyTokenLimit), nullablePositiveDecimal(limits.MonthlyCostLimit), nullablePositiveInt64(limits.ConcurrencyLimit), id)
-	if err != nil {
+	if limits.DailyTokenLimit > 0 {
+		u.SetDailyTokenLimit(limits.DailyTokenLimit)
+	} else {
+		u.ClearDailyTokenLimit()
+	}
+	if limits.MonthlyCostLimit > 0 {
+		u.SetMonthlyCostLimit(decimal.NewFromFloat(limits.MonthlyCostLimit).String())
+	} else {
+		u.ClearMonthlyCostLimit()
+	}
+	if limits.ConcurrencyLimit > 0 {
+		u.SetConcurrencyLimit(limits.ConcurrencyLimit)
+	} else {
+		u.ClearConcurrencyLimit()
+	}
+	if _, err := u.Save(ctx); err != nil {
+		if ent.IsNotFound(err) {
+			return nil, fmt.Errorf("relay key %d: %w", id, ErrRelayKeyNotFound)
+		}
 		return nil, fmt.Errorf("failed to update relay key limits: %w", err)
-	}
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return nil, err
-	}
-	if rows == 0 {
-		return nil, fmt.Errorf("relay key %d: %w", id, ErrRelayKeyNotFound)
 	}
 	return s.GetKey(ctx, id)
 }
@@ -641,11 +700,8 @@ func (s *RelayAdminService) RechargeWallet(ctx context.Context, input RelayAdmin
 	if amount.LessThanOrEqual(decimal.Zero) {
 		return nil, fmt.Errorf("recharge amount must be greater than 0")
 	}
-	db, dialectName, err := relaySQLDB(s.entFromContext(ctx))
-	if err != nil {
-		return nil, err
-	}
-	tx, err := db.BeginTx(ctx, nil)
+
+	tx, err := s.entFromContext(ctx).Tx(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin relay wallet recharge transaction: %w", err)
 	}
@@ -655,74 +711,82 @@ func (s *RelayAdminService) RechargeWallet(ctx context.Context, input RelayAdmin
 			_ = tx.Rollback()
 		}
 	}()
-	selectQuery := fmt.Sprintf(`SELECT rk.project_id, COALESCE(rw.currency, 'USD'), COALESCE(rw.available_amount, '0')
-FROM relay_keys rk
-LEFT JOIN relay_wallets rw ON rw.relay_key_id = rk.id
-WHERE rk.id = %s AND rk.deleted_at = 0`, relayPlaceholder(dialectName, 1))
-	var (
-		projectID    int
-		currency     string
-		availableRaw sql.NullString
-	)
-	if err := tx.QueryRowContext(ctx, selectQuery, relayKeyID).Scan(&projectID, &currency, &availableRaw); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+
+	relayKey, err := tx.RelayKey.Query().Where(relaykey.ID(relayKeyID), relaykey.DeletedAt(0)).First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
 			return nil, fmt.Errorf("relay key %d: %w", relayKeyID, ErrRelayKeyNotFound)
 		}
 		return nil, fmt.Errorf("failed to load relay wallet: %w", err)
 	}
-	available, err := parseRelayDecimal(availableRaw, "wallet available amount")
-	if err != nil {
-		return nil, err
-	}
-	balanceAfter := available.Add(amount)
-	// Use atomic increment to avoid lost-update under concurrency.
-	updateQuery := fmt.Sprintf("UPDATE relay_wallets SET available_amount = available_amount + %s, version = version + 1, updated_at = CURRENT_TIMESTAMP WHERE relay_key_id = %s", relayPlaceholder(dialectName, 1), relayPlaceholder(dialectName, 2))
-	result, err := tx.ExecContext(ctx, updateQuery, amount.String(), relayKeyID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to update relay wallet: %w", err)
-	}
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return nil, err
-	}
-	if rows == 0 {
-		_, err = execRelayInsertTx(ctx, tx, dialectName,
-			fmt.Sprintf("INSERT INTO relay_wallets (relay_key_id, project_id, currency, available_amount, frozen_amount, overdraft_limit, version) VALUES (%s)", strings.Join(relayPlaceholders(dialectName, 7, 1), ",")),
-			relayKeyID, projectID, currency, amount.String(), "0", "0", 1,
-		)
+	projectID := relayKey.ProjectID
+
+	available := decimal.Zero
+	balanceAfter := amount
+	wallet, err := tx.RelayWallet.Query().Where(relaywallet.RelayKeyID(relayKeyID)).First(ctx)
+	if ent.IsNotFound(err) {
+		_, err = tx.RelayWallet.Create().
+			SetRelayKeyID(relayKeyID).
+			SetProjectID(projectID).
+			SetCurrency(RelayProductDefaultCurrency).
+			SetAvailableAmount(amount.String()).
+			SetFrozenAmount("0").
+			SetOverdraftLimit("0").
+			SetVersion(1).
+			Save(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create relay wallet: %w", err)
 		}
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to load relay wallet: %w", err)
+	} else {
+		available, err = decimal.NewFromString(wallet.AvailableAmount)
+		if err != nil {
+			return nil, fmt.Errorf("invalid wallet available amount: %w", err)
+		}
+		balanceAfter = available.Add(amount)
+		_, err = tx.RelayWallet.UpdateOneID(wallet.ID).
+			SetAvailableAmount(balanceAfter.String()).
+			SetVersion(wallet.Version + 1).
+			Where(relaywallet.VersionEQ(wallet.Version)).
+			Save(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update relay wallet: %w", err)
+		}
 	}
+
 	operatorID := 0
 	if user, ok := contexts.GetUser(ctx); ok && user != nil {
 		operatorID = user.ID
 	}
-	ledgerID, err := insertRelayAdminLedgerTx(ctx, tx, dialectName, relayAdminLedgerInsert{
-		RelayKeyID:     relayKeyID,
-		ProjectID:      projectID,
-		Direction:      "credit",
-		Scene:          "recharge",
-		Amount:         amount,
-		BalanceBefore:  available,
-		BalanceAfter:   balanceAfter,
-		IdempotencyKey: fmt.Sprintf("manual_recharge:%d:%d", relayKeyID, time.Now().UnixNano()),
-		OperatorUserID: operatorID,
-		Remark:         strings.TrimSpace(input.Note),
-	})
-	if err != nil {
-		return nil, err
+	ledgerCreate := tx.RelayWalletLedgerEntry.Create().
+		SetRelayKeyID(relayKeyID).
+		SetProjectID(projectID).
+		SetDirection(relaywalletledgerentry.DirectionCredit).
+		SetScene(relaywalletledgerentry.SceneRecharge).
+		SetAmount(amount.String()).
+		SetBalanceBefore(available.String()).
+		SetBalanceAfter(balanceAfter.String()).
+		SetIdempotencyKey(fmt.Sprintf("manual_recharge:%d:%d", relayKeyID, time.Now().UnixNano())).
+		SetRemark(strings.TrimSpace(input.Note))
+	if operatorID > 0 {
+		ledgerCreate = ledgerCreate.SetOperatorUserID(operatorID)
 	}
+	ledgerEntry, err := ledgerCreate.Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create relay wallet ledger entry: %w", err)
+	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit relay wallet recharge: %w", err)
 	}
 	committed = true
-	entries, err := s.listLedgerEntries(ctx, nil, &ledgerID, nil)
+	entries, err := s.listLedgerEntries(ctx, nil, &ledgerEntry.ID, nil)
 	if err != nil {
 		return nil, err
 	}
 	if len(entries) == 0 {
-		return nil, fmt.Errorf("relay wallet ledger entry %d: %w", ledgerID, ErrRelayLedgerNotFound)
+		return nil, fmt.Errorf("relay wallet ledger entry %d: %w", ledgerEntry.ID, ErrRelayLedgerNotFound)
 	}
 	return &entries[0], nil
 }
@@ -810,35 +874,24 @@ func (s *RelayAdminService) GetUsage(ctx context.Context, projectID *int) (*Proj
 }
 
 func (s *RelayAdminService) listProductRows(ctx context.Context) ([]RelayAdminProduct, error) {
-	db, dialectName, err := relaySQLDB(s.entFromContext(ctx))
-	if err != nil {
-		return nil, err
-	}
-	query := `SELECT id, code, name, provider_type, access_mode, billing_mode, status, currency, allowed_models, request_timeout_seconds, list_price_config, created_at, updated_at
-FROM relay_products
-WHERE deleted_at = 0
-ORDER BY id ASC`
-	rows, err := db.QueryContext(ctx, query)
+	rows, err := s.entFromContext(ctx).RelayProduct.Query().
+		Where(relayproduct.DeletedAt(0)).
+		Order(relayproduct.ByID(entsql.OrderAsc())).
+		All(ctx)
 	if err != nil {
 		if isMissingRelayTableError(err) {
 			return []RelayAdminProduct{}, nil
 		}
 		return nil, fmt.Errorf("failed to list relay products: %w", err)
 	}
-	defer rows.Close()
-	out := []RelayAdminProduct{}
-	for rows.Next() {
-		product, err := scanRelayAdminProduct(rows)
-		if err != nil {
-			return nil, err
-		}
-		if err := s.enrichProduct(ctx, db, dialectName, &product); err != nil {
+
+	out := make([]RelayAdminProduct, 0, len(rows))
+	for _, row := range rows {
+		product := relayAdminProductFromEnt(row)
+		if err := s.enrichProduct(ctx, &product); err != nil {
 			return nil, err
 		}
 		out = append(out, product)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
 	}
 	return out, nil
 }
@@ -847,39 +900,34 @@ func (s *RelayAdminService) loadProductRow(ctx context.Context, id int) (*RelayA
 	if id <= 0 {
 		return nil, fmt.Errorf("relay product id must be greater than 0")
 	}
-	db, dialectName, err := relaySQLDB(s.entFromContext(ctx))
+	r, err := s.entFromContext(ctx).RelayProduct.Query().
+		Where(relayproduct.ID(id), relayproduct.DeletedAt(0)).
+		First(ctx)
 	if err != nil {
-		return nil, err
-	}
-	query := fmt.Sprintf(`SELECT id, code, name, provider_type, access_mode, billing_mode, status, currency, allowed_models, request_timeout_seconds, list_price_config, created_at, updated_at
-FROM relay_products
-WHERE id = %s AND deleted_at = 0
-LIMIT 1`, relayPlaceholder(dialectName, 1))
-	product, err := scanRelayAdminProduct(db.QueryRowContext(ctx, query, id))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if ent.IsNotFound(err) {
 			return nil, fmt.Errorf("relay product %d: %w", id, ErrRelayProductNotFound)
 		}
 		return nil, err
 	}
-	if err := s.enrichProduct(ctx, db, dialectName, &product); err != nil {
+	product := relayAdminProductFromEnt(r)
+	if err := s.enrichProduct(ctx, &product); err != nil {
 		return nil, err
 	}
 	return &product, nil
 }
 
-func (s *RelayAdminService) enrichProduct(ctx context.Context, db *sql.DB, dialectName string, product *RelayAdminProduct) error {
+func (s *RelayAdminService) enrichProduct(ctx context.Context, product *RelayAdminProduct) error {
 	id, err := strconv.Atoi(product.ID)
 	if err != nil {
 		return err
 	}
-	channels, err := s.listProductChannels(ctx, db, dialectName, id, product.ProviderType)
+	channels, err := s.listProductChannels(ctx, id, product.ProviderType)
 	if err != nil {
 		return err
 	}
 	product.ChannelPool = channels
 	product.PoolHealth = summarizeRelayPoolHealth(channels)
-	stats, err := s.productStats(ctx, db, dialectName, id)
+	stats, err := s.productStats(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -899,83 +947,131 @@ type relayProductStats struct {
 	monthlyCost         float64
 }
 
-func (s *RelayAdminService) productStats(ctx context.Context, db *sql.DB, dialectName string, productID int) (relayProductStats, error) {
+func (s *RelayAdminService) productStats(ctx context.Context, productID int) (relayProductStats, error) {
 	var stats relayProductStats
-	keyQuery := fmt.Sprintf(`SELECT COUNT(*), COALESCE(SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END), 0)
-FROM relay_keys
-WHERE product_id = %s AND deleted_at = 0`, relayPlaceholder(dialectName, 1))
-	if err := db.QueryRowContext(ctx, keyQuery, productID).Scan(&stats.keyCount, &stats.activeKeyCount); err != nil {
+	client := s.entFromContext(ctx)
+
+	keyCount, err := client.RelayKey.Query().
+		Where(relaykey.ProductID(productID), relaykey.DeletedAt(0)).
+		Count(ctx)
+	if err != nil {
 		if isMissingRelayTableError(err) {
 			return stats, nil
 		}
 		return stats, fmt.Errorf("failed to load relay product key stats: %w", err)
 	}
+	stats.keyCount = keyCount
+
+	activeKeyCount, err := client.RelayKey.Query().
+		Where(relaykey.ProductID(productID), relaykey.DeletedAt(0), relaykey.StatusEQ(relaykey.Status(RelayKeyStatusActive))).
+		Count(ctx)
+	if err != nil {
+		if isMissingRelayTableError(err) {
+			return stats, nil
+		}
+		return stats, fmt.Errorf("failed to load relay product key stats: %w", err)
+	}
+	stats.activeKeyCount = activeKeyCount
+
 	monthStart := time.Date(time.Now().UTC().Year(), time.Now().UTC().Month(), 1, 0, 0, 0, 0, time.UTC)
-	chargeExpr := relayAdminDecimalCast(dialectName, "rdus.total_charge")
-	usageQuery := fmt.Sprintf(`SELECT COALESCE(SUM(rdus.request_count), 0), COALESCE(SUM(rdus.total_tokens), 0), COALESCE(SUM(%s), 0)
-FROM relay_daily_usage_summaries rdus
-JOIN relay_keys rk ON rk.id = rdus.relay_key_id
-WHERE rk.product_id = %s AND rdus.stat_date >= %s`, chargeExpr, relayPlaceholder(dialectName, 1), relayPlaceholder(dialectName, 2))
-	if err := db.QueryRowContext(ctx, usageQuery, productID, monthStart).Scan(&stats.monthlyRequestCount, &stats.monthlyTokenCount, &stats.monthlyCost); err != nil {
+	keys, err := client.RelayKey.Query().
+		Where(relaykey.ProductID(productID), relaykey.DeletedAt(0)).
+		Select(relaykey.FieldID).
+		Ints(ctx)
+	if err != nil {
+		if isMissingRelayTableError(err) {
+			return stats, nil
+		}
+		return stats, fmt.Errorf("failed to load relay product key stats: %w", err)
+	}
+	if len(keys) == 0 {
+		return stats, nil
+	}
+
+	summaries, err := client.RelayDailyUsageSummary.Query().
+		Where(relaydailyusagesummary.RelayKeyIDIn(keys...), relaydailyusagesummary.StatDateGTE(monthStart)).
+		All(ctx)
+	if err != nil {
 		if isMissingRelayTableError(err) {
 			return stats, nil
 		}
 		return stats, fmt.Errorf("failed to load relay product usage stats: %w", err)
 	}
+	for _, sum := range summaries {
+		stats.monthlyRequestCount += sum.RequestCount
+		stats.monthlyTokenCount += sum.TotalTokens
+		charge, _ := decimal.NewFromString(sum.TotalCharge)
+		stats.monthlyCost += charge.InexactFloat64()
+	}
 	return stats, nil
 }
 
-func (s *RelayAdminService) listProductChannels(ctx context.Context, db *sql.DB, dialectName string, productID int, provider RelayProductProviderType) ([]RelayAdminProductChannel, error) {
-	query := fmt.Sprintf(`SELECT rpc.id, rpc.channel_id, COALESCE(c.name, ''), rpc.priority, rpc.weight, rpc.status, rpc.allow_fallback, rpc.model_filter, COALESCE(c.status, ''), COALESCE(c.error_message, ''), pqs.status, pqs.ready, pqs.next_check_at, rpc.updated_at
-FROM relay_product_channels rpc
-JOIN channels c ON c.id = rpc.channel_id AND c.deleted_at = 0
-LEFT JOIN provider_quota_status pqs ON pqs.channel_id = c.id
-WHERE rpc.product_id = %s
-ORDER BY rpc.priority ASC, rpc.weight DESC, rpc.channel_id ASC`, relayPlaceholder(dialectName, 1))
-	rows, err := db.QueryContext(ctx, query, productID)
+func (s *RelayAdminService) listProductChannels(ctx context.Context, productID int, provider RelayProductProviderType) ([]RelayAdminProductChannel, error) {
+	bindings, err := s.entFromContext(ctx).RelayProductChannel.Query().
+		Where(relayproductchannel.ProductID(productID)).
+		WithChannel(func(q *ent.ChannelQuery) {
+			q.Where(channel.DeletedAt(0)).WithProviderQuotaStatus()
+		}).
+		Order(
+			relayproductchannel.ByPriority(entsql.OrderAsc()),
+			relayproductchannel.ByWeight(entsql.OrderDesc()),
+			relayproductchannel.ByChannelID(entsql.OrderAsc()),
+		).
+		All(ctx)
 	if err != nil {
 		if isMissingRelayTableError(err) {
 			return []RelayAdminProductChannel{}, nil
 		}
 		return nil, fmt.Errorf("failed to list relay product channels: %w", err)
 	}
-	defer rows.Close()
-	out := []RelayAdminProductChannel{}
-	for rows.Next() {
-		var (
-			ch             RelayAdminProductChannel
-			bindingID      int
-			channelID      int
-			bindingStatus  string
-			modelFilterRaw sql.NullString
-			channelStatus  string
-			channelError   string
-			quotaStatus    sql.NullString
-			quotaReady     sql.NullBool
-			nextCheckAt    relayNullTime
-			bindingUpdated relayNullTime
-		)
-		if err := rows.Scan(&bindingID, &channelID, &ch.ChannelName, &ch.Priority, &ch.Weight, &bindingStatus, &ch.AllowFallback, &modelFilterRaw, &channelStatus, &channelError, &quotaStatus, &quotaReady, &nextCheckAt, &bindingUpdated); err != nil {
-			return nil, fmt.Errorf("failed to scan relay product channel: %w", err)
+
+	out := make([]RelayAdminProductChannel, 0, len(bindings))
+	for _, b := range bindings {
+		ch := RelayAdminProductChannel{
+			ID:            relayStringID(b.ID),
+			ChannelID:     relayStringID(b.ChannelID),
+			Provider:      provider,
+			Priority:      b.Priority,
+			Weight:        b.Weight,
+			Status:        RelayProductChannelStatus(b.Status),
+			AllowFallback: b.AllowFallback,
+			ModelFilter:   relayAdminModelFilterFromMap(b.ModelFilter),
 		}
-		ch.ID = relayStringID(bindingID)
-		ch.ChannelID = relayStringID(channelID)
-		ch.Provider = provider
-		ch.Status = RelayProductChannelStatus(bindingStatus)
-		ch.ModelFilter = parseRelayModelFilter(modelFilterRaw)
-		if ch.ModelFilter == nil {
-			ch.ModelFilter = []string{}
+		channelStatus := ""
+		channelError := ""
+		quotaStatus := sql.NullString{}
+		quotaReady := sql.NullBool{}
+
+		if c, err := b.Edges.ChannelOrErr(); err == nil {
+			ch.ChannelName = c.Name
+			channelStatus = string(c.Status)
+			if c.ErrorMessage != nil {
+				channelError = *c.ErrorMessage
+			}
+			if pqs, err := c.Edges.ProviderQuotaStatusOrErr(); err == nil {
+				quotaStatus = sql.NullString{String: string(pqs.Status), Valid: true}
+				quotaReady = sql.NullBool{Bool: pqs.Ready, Valid: true}
+				if !pqs.NextCheckAt.IsZero() {
+					ch.LastCheckedAt = pqs.NextCheckAt.Format(time.RFC3339)
+				}
+			} else if !ent.IsNotFound(err) {
+				var notLoaded *ent.NotLoadedError
+				if !errors.As(err, &notLoaded) {
+					return nil, err
+				}
+			}
+		} else if !ent.IsNotFound(err) {
+			var notLoaded *ent.NotLoadedError
+			if !errors.As(err, &notLoaded) {
+				return nil, err
+			}
+		}
+		if ch.LastCheckedAt == "" {
+			ch.LastCheckedAt = b.UpdatedAt.Format(time.RFC3339)
 		}
 		ch.QuotaRemainingPercent = relayQuotaRemaining(quotaStatus, quotaReady)
 		ch.Health, ch.UnavailableReason = relayChannelHealth(ch.Status, channelStatus, channelError, quotaStatus, quotaReady)
-		ch.LastCheckedAt = nextCheckAt.String()
-		if ch.LastCheckedAt == "" {
-			ch.LastCheckedAt = bindingUpdated.String()
-		}
 		out = append(out, ch)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
 	}
 	return out, nil
 }
@@ -1234,50 +1330,30 @@ LIMIT %s`, strings.Join(clauses, " AND "), limitPlaceholder)
 }
 
 func (s *RelayAdminService) listUsageSummaries(ctx context.Context, projectID *int) ([]RelayDailyUsageSummaryView, error) {
-	db, dialectName, err := relaySQLDB(s.entFromContext(ctx))
-	if err != nil {
-		return nil, err
-	}
-	clauses := []string{"1 = 1"}
-	args := []any{}
+	q := s.entFromContext(ctx).RelayDailyUsageSummary.Query()
 	if projectID != nil {
-		args = append(args, *projectID)
-		clauses = append(clauses, fmt.Sprintf("rdus.project_id = %s", relayPlaceholder(dialectName, len(args))))
+		q = q.Where(relaydailyusagesummary.ProjectID(*projectID))
 	}
-	query := fmt.Sprintf(`SELECT rdus.relay_key_id, rdus.stat_date, rdus.request_count, rdus.total_tokens, rdus.total_charge
-FROM relay_daily_usage_summaries rdus
-WHERE %s
-ORDER BY rdus.stat_date DESC, rdus.relay_key_id ASC
-LIMIT 120`, strings.Join(clauses, " AND "))
-	rows, err := db.QueryContext(ctx, query, args...)
+	rows, err := q.Order(
+		relaydailyusagesummary.ByStatDate(entsql.OrderDesc()),
+		relaydailyusagesummary.ByRelayKeyID(entsql.OrderAsc()),
+	).Limit(120).All(ctx)
 	if err != nil {
 		if isMissingRelayTableError(err) {
 			return []RelayDailyUsageSummaryView{}, nil
 		}
 		return nil, fmt.Errorf("failed to list relay usage summaries: %w", err)
 	}
-	defer rows.Close()
-	out := []RelayDailyUsageSummaryView{}
-	for rows.Next() {
-		var (
-			view        RelayDailyUsageSummaryView
-			statDate    relayNullTime
-			totalTokens sql.NullInt64
-			totalCharge sql.NullString
-		)
-		if err := rows.Scan(&view.RelayKeyID, &statDate, &view.Requests, &totalTokens, &totalCharge); err != nil {
-			return nil, err
+	out := make([]RelayDailyUsageSummaryView, 0, len(rows))
+	for _, row := range rows {
+		view := RelayDailyUsageSummaryView{
+			RelayKeyID:       relayStringID(row.RelayKeyID),
+			StatDate:         row.StatDate.UTC().Format("2006-01-02"),
+			Requests:         row.RequestCount,
+			CompletionTokens: row.TotalTokens,
+			TotalCost:        relayDecimalFloat(sql.NullString{String: row.TotalCharge, Valid: row.TotalCharge != ""}),
 		}
-		view.RelayKeyID = relayNormalizeStringID(view.RelayKeyID)
-		view.StatDate = statDate.DateString()
-		if totalTokens.Valid {
-			view.CompletionTokens = totalTokens.Int64
-		}
-		view.TotalCost = relayDecimalFloat(totalCharge)
 		out = append(out, view)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
 	}
 	return out, nil
 }
@@ -1323,6 +1399,63 @@ func scanRelayAdminProduct(row relayScanner) (RelayAdminProduct, error) {
 	product.CreatedAt = createdAt.String()
 	product.UpdatedAt = updatedAt.String()
 	return product, nil
+}
+
+func relayAdminProductFromEnt(e *ent.RelayProduct) RelayAdminProduct {
+	models := e.AllowedModels
+	if models == nil {
+		models = []string{}
+	}
+	priceConfig := e.ListPriceConfig
+	if priceConfig == nil {
+		priceConfig = map[string]any{}
+	}
+	product := RelayAdminProduct{
+		ID:                    relayStringID(e.ID),
+		Code:                  e.Code,
+		Name:                  e.Name,
+		ProviderType:          RelayProductProviderType(e.ProviderType),
+		AccessMode:            RelayProductAccessMode(e.AccessMode),
+		BillingMode:           RelayProductBillingMode(e.BillingMode),
+		Status:                RelayProductStatus(e.Status),
+		Currency:              e.Currency,
+		AllowedModels:         models,
+		DefaultTimeoutMs:      e.RequestTimeoutSeconds * 1000,
+		RequestTimeoutSeconds: e.RequestTimeoutSeconds,
+		ListPriceConfig:       priceConfig,
+		CreatedAt:             e.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:             e.UpdatedAt.Format(time.RFC3339),
+	}
+	if description, ok := priceConfig["description"].(string); ok {
+		product.Description = description
+	}
+	return product
+}
+
+func relayAdminModelFilterFromMap(m any) []string {
+	mf, ok := m.(map[string]any)
+	if !ok || mf == nil || len(mf) == 0 {
+		return []string{}
+	}
+	for _, key := range []string{"models", "allowedModels", "patterns", "include"} {
+		if raw, ok := mf[key]; ok {
+			switch v := raw.(type) {
+			case []string:
+				return v
+			case []interface{}:
+				out := make([]string, 0, len(v))
+				for _, item := range v {
+					if s, ok := item.(string); ok {
+						out = append(out, s)
+					}
+				}
+				if len(out) > 0 {
+					return out
+				}
+			}
+		}
+	}
+	return []string{}
 }
 
 func scanRelayAdminKey(row relayScanner) (RelayAdminKey, RelayProductProviderType, decimal.Decimal, error) {
@@ -1572,24 +1705,21 @@ func execRelayInsertTx(ctx context.Context, tx *sql.Tx, dialectName, query strin
 }
 
 func (s *RelayAdminService) relayKeyAPIKey(ctx context.Context, relayKeyID int) (int, string, error) {
-	db, dialectName, err := relaySQLDB(s.entFromContext(ctx))
+	relayKey, err := s.entFromContext(ctx).RelayKey.Query().Where(relaykey.ID(relayKeyID), relaykey.DeletedAt(0)).WithAPIKey().First(ctx)
 	if err != nil {
-		return 0, "", err
-	}
-	query := fmt.Sprintf(`SELECT ak.id, ak.key
-FROM relay_keys rk
-JOIN api_keys ak ON ak.id = rk.api_key_id
-WHERE rk.id = %s AND rk.deleted_at = 0
-LIMIT 1`, relayPlaceholder(dialectName, 1))
-	var apiKeyID int
-	var apiKeyValue string
-	if err := db.QueryRowContext(ctx, query, relayKeyID).Scan(&apiKeyID, &apiKeyValue); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if ent.IsNotFound(err) {
 			return 0, "", fmt.Errorf("relay key %d: %w", relayKeyID, ErrRelayKeyNotFound)
 		}
 		return 0, "", err
 	}
-	return apiKeyID, apiKeyValue, nil
+	apiKey, err := relayKey.Edges.APIKeyOrErr()
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return 0, "", fmt.Errorf("relay key %d: %w", relayKeyID, ErrRelayKeyNotFound)
+		}
+		return 0, "", err
+	}
+	return apiKey.ID, apiKey.Key, nil
 }
 
 func (s *RelayAdminService) resolveProjectID(ctx context.Context, value string) (int, error) {

@@ -662,10 +662,6 @@ func init() {
 	relayproductchannelDescAllowFallback := relayproductchannelFields[5].Descriptor()
 	// relayproductchannel.DefaultAllowFallback holds the default value on creation for the allow_fallback field.
 	relayproductchannel.DefaultAllowFallback = relayproductchannelDescAllowFallback.Default.(bool)
-	// relayproductchannelDescModelFilter is the schema descriptor for model_filter field.
-	relayproductchannelDescModelFilter := relayproductchannelFields[6].Descriptor()
-	// relayproductchannel.DefaultModelFilter holds the default value on creation for the model_filter field.
-	relayproductchannel.DefaultModelFilter = relayproductchannelDescModelFilter.Default.(map[string]interface{})
 	relaywalletMixin := schema.RelayWallet{}.Mixin()
 	relaywallet.Policy = privacy.NewPolicies(schema.RelayWallet{})
 	relaywallet.Hooks[0] = func(next ent.Mutator) ent.Mutator {

@@ -20,7 +20,7 @@ import (
 )
 
 func TestRelayAccessService_LoadContextByAPIKeyOrdinaryBypass(t *testing.T) {
-	ctx := context.Background()
+	ctx := authz.WithTestBypass(context.Background())
 	client := newRelayServicesTestClient(t)
 	db := relayServicesTestDB(t, client)
 
@@ -157,7 +157,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 5001, 4001, 7, "USD", "10", "0", "0", 1)
 
 func newRelayServicesTestClient(t *testing.T) *ent.Client {
 	t.Helper()
-	client := enttest.Open(t, dialect.SQLite, fmt.Sprintf("file:relay_services_%d?mode=memory&cache=shared&_fk=0", time.Now().UnixNano()))
+	client := enttest.NewEntClient(t, dialect.SQLite, fmt.Sprintf("file:relay_services_%d?mode=memory&cache=shared&_fk=0", time.Now().UnixNano()))
 	t.Cleanup(func() {
 		require.NoError(t, client.Close())
 	})

@@ -875,7 +875,7 @@ type CreateRelayProductChannelInput struct {
 	Weight        *int
 	Status        *relayproductchannel.Status
 	AllowFallback *bool
-	ModelFilter   map[string]interface{}
+	ModelFilter   any
 	MaxInflight   *int
 	ProductID     int
 }
@@ -916,7 +916,7 @@ type UpdateRelayProductChannelInput struct {
 	Status           *relayproductchannel.Status
 	AllowFallback    *bool
 	ClearModelFilter bool
-	ModelFilter      map[string]interface{}
+	ModelFilter      any
 	ClearMaxInflight bool
 	MaxInflight      *int
 }

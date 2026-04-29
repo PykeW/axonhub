@@ -121,7 +121,7 @@ func (_c *RelayProductChannelCreate) SetNillableAllowFallback(v *bool) *RelayPro
 }
 
 // SetModelFilter sets the "model_filter" field.
-func (_c *RelayProductChannelCreate) SetModelFilter(v map[string]interface{}) *RelayProductChannelCreate {
+func (_c *RelayProductChannelCreate) SetModelFilter(v any) *RelayProductChannelCreate {
 	_c.mutation.SetModelFilter(v)
 	return _c
 }
@@ -216,10 +216,6 @@ func (_c *RelayProductChannelCreate) defaults() error {
 	if _, ok := _c.mutation.AllowFallback(); !ok {
 		v := relayproductchannel.DefaultAllowFallback
 		_c.mutation.SetAllowFallback(v)
-	}
-	if _, ok := _c.mutation.ModelFilter(); !ok {
-		v := relayproductchannel.DefaultModelFilter
-		_c.mutation.SetModelFilter(v)
 	}
 	return nil
 }
@@ -473,7 +469,7 @@ func (u *RelayProductChannelUpsert) UpdateAllowFallback() *RelayProductChannelUp
 }
 
 // SetModelFilter sets the "model_filter" field.
-func (u *RelayProductChannelUpsert) SetModelFilter(v map[string]interface{}) *RelayProductChannelUpsert {
+func (u *RelayProductChannelUpsert) SetModelFilter(v any) *RelayProductChannelUpsert {
 	u.Set(relayproductchannel.FieldModelFilter, v)
 	return u
 }
@@ -650,7 +646,7 @@ func (u *RelayProductChannelUpsertOne) UpdateAllowFallback() *RelayProductChanne
 }
 
 // SetModelFilter sets the "model_filter" field.
-func (u *RelayProductChannelUpsertOne) SetModelFilter(v map[string]interface{}) *RelayProductChannelUpsertOne {
+func (u *RelayProductChannelUpsertOne) SetModelFilter(v any) *RelayProductChannelUpsertOne {
 	return u.Update(func(s *RelayProductChannelUpsert) {
 		s.SetModelFilter(v)
 	})
@@ -1000,7 +996,7 @@ func (u *RelayProductChannelUpsertBulk) UpdateAllowFallback() *RelayProductChann
 }
 
 // SetModelFilter sets the "model_filter" field.
-func (u *RelayProductChannelUpsertBulk) SetModelFilter(v map[string]interface{}) *RelayProductChannelUpsertBulk {
+func (u *RelayProductChannelUpsertBulk) SetModelFilter(v any) *RelayProductChannelUpsertBulk {
 	return u.Update(func(s *RelayProductChannelUpsert) {
 		s.SetModelFilter(v)
 	})

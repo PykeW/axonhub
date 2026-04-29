@@ -1904,7 +1904,7 @@ func (_m *RelayProductChannel) Node(ctx context.Context) (node *Node, err error)
 		return nil, err
 	}
 	node.Fields[8] = &Field{
-		Type:  "map[string]interface {}",
+		Type:  "any",
 		Name:  "model_filter",
 		Value: string(buf),
 	}

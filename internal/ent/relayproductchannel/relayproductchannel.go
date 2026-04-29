@@ -105,8 +105,6 @@ var (
 	DefaultWeight int
 	// DefaultAllowFallback holds the default value on creation for the "allow_fallback" field.
 	DefaultAllowFallback bool
-	// DefaultModelFilter holds the default value on creation for the "model_filter" field.
-	DefaultModelFilter map[string]interface{}
 )
 
 // Status defines the type for the "status" enum field.

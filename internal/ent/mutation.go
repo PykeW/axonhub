@@ -17594,7 +17594,7 @@ type RelayProductChannelMutation struct {
 	addweight       *int
 	status          *relayproductchannel.Status
 	allow_fallback  *bool
-	model_filter    *map[string]interface{}
+	model_filter    *any
 	max_inflight    *int
 	addmax_inflight *int
 	clearedFields   map[string]struct{}
@@ -18034,12 +18034,12 @@ func (m *RelayProductChannelMutation) ResetAllowFallback() {
 }
 
 // SetModelFilter sets the "model_filter" field.
-func (m *RelayProductChannelMutation) SetModelFilter(value map[string]interface{}) {
-	m.model_filter = &value
+func (m *RelayProductChannelMutation) SetModelFilter(a any) {
+	m.model_filter = &a
 }
 
 // ModelFilter returns the value of the "model_filter" field in the mutation.
-func (m *RelayProductChannelMutation) ModelFilter() (r map[string]interface{}, exists bool) {
+func (m *RelayProductChannelMutation) ModelFilter() (r any, exists bool) {
 	v := m.model_filter
 	if v == nil {
 		return
@@ -18050,7 +18050,7 @@ func (m *RelayProductChannelMutation) ModelFilter() (r map[string]interface{}, e
 // OldModelFilter returns the old "model_filter" field's value of the RelayProductChannel entity.
 // If the RelayProductChannel object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RelayProductChannelMutation) OldModelFilter(ctx context.Context) (v map[string]interface{}, err error) {
+func (m *RelayProductChannelMutation) OldModelFilter(ctx context.Context) (v any, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldModelFilter is only allowed on UpdateOne operations")
 	}
@@ -18394,7 +18394,7 @@ func (m *RelayProductChannelMutation) SetField(name string, value ent.Value) err
 		m.SetAllowFallback(v)
 		return nil
 	case relayproductchannel.FieldModelFilter:
-		v, ok := value.(map[string]interface{})
+		v, ok := value.(any)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}

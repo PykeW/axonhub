@@ -53,9 +53,9 @@ func (RelayProductChannel) Fields() []ent.Field {
 		field.Bool("allow_fallback").
 			Default(true).
 			Comment("Whether routing may continue to lower-priority bindings when this binding is unsuitable"),
-		field.JSON("model_filter", map[string]any{}).
-			Default(map[string]any{}).
+		field.Any("model_filter").
 			Optional().
+			Annotations(entgql.Type("Any")).
 			Comment("Opaque per-binding model filter rules for future router matching"),
 		field.Int("max_inflight").
 			Optional().

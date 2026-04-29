@@ -106,7 +106,7 @@ func (_u *RelayProductChannelUpdate) SetNillableAllowFallback(v *bool) *RelayPro
 }
 
 // SetModelFilter sets the "model_filter" field.
-func (_u *RelayProductChannelUpdate) SetModelFilter(v map[string]interface{}) *RelayProductChannelUpdate {
+func (_u *RelayProductChannelUpdate) SetModelFilter(v any) *RelayProductChannelUpdate {
 	_u.mutation.SetModelFilter(v)
 	return _u
 }
@@ -360,7 +360,7 @@ func (_u *RelayProductChannelUpdateOne) SetNillableAllowFallback(v *bool) *Relay
 }
 
 // SetModelFilter sets the "model_filter" field.
-func (_u *RelayProductChannelUpdateOne) SetModelFilter(v map[string]interface{}) *RelayProductChannelUpdateOne {
+func (_u *RelayProductChannelUpdateOne) SetModelFilter(v any) *RelayProductChannelUpdateOne {
 	_u.mutation.SetModelFilter(v)
 	return _u
 }

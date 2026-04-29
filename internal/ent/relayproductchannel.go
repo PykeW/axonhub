@@ -37,7 +37,7 @@ type RelayProductChannel struct {
 	// Whether routing may continue to lower-priority bindings when this binding is unsuitable
 	AllowFallback bool `json:"allow_fallback,omitempty"`
 	// Opaque per-binding model filter rules for future router matching
-	ModelFilter map[string]interface{} `json:"model_filter,omitempty"`
+	ModelFilter any `json:"model_filter,omitempty"`
 	// Optional per-binding inflight cap before routing falls back to another candidate
 	MaxInflight *int `json:"max_inflight,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.

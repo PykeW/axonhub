@@ -16,6 +16,11 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/looplj/axonhub/internal/ent"
+	"github.com/looplj/axonhub/internal/ent/channel"
+	"github.com/looplj/axonhub/internal/ent/relaydailyusagesummary"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
+	"github.com/looplj/axonhub/internal/ent/relayproduct"
+	"github.com/looplj/axonhub/internal/ent/relayproductchannel"
 )
 
 type RelayAccessContext = RelayAuthContext
@@ -53,56 +58,79 @@ func (s *RelayAccessService) LoadContextByAPIKey(ctx context.Context, apiKeyID i
 		return nil, fmt.Errorf("relay api key id must be greater than 0")
 	}
 
-	db, dialectName, err := relaySQLDB(s.db)
+	statDate := relayUTCDate(time.Now())
+	relayKey, err := s.db.RelayKey.Query().
+		Where(
+			relaykey.APIKeyID(apiKeyID),
+			relaykey.DeletedAt(0),
+			relaykey.HasProductWith(relayproduct.DeletedAt(0)),
+		).
+		WithAPIKey().
+		WithProduct().
+		WithWallet().
+		WithDailyUsageSummaries(func(q *ent.RelayDailyUsageSummaryQuery) {
+			q.Where(relaydailyusagesummary.StatDateEQ(statDate))
+		}).
+		First(ctx)
 	if err != nil {
-		return nil, err
+		if ent.IsNotFound(err) || isMissingRelayTableError(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to load relay access context: %w", err)
 	}
 
-	statDate := relayUTCDate(time.Now())
-	query := fmt.Sprintf(`
-SELECT
-	rk.id,
-	rk.api_key_id,
-	rk.project_id,
-	rk.product_id,
-	rk.status,
-	rk.balance_mode,
-	rk.daily_request_limit,
-	rk.daily_token_limit,
-	rk.monthly_cost_limit,
-	rk.concurrency_limit,
-	rk.expires_at,
-	rp.code,
-	rp.name,
-	rp.provider_type,
-	rp.status,
-	rw.currency,
-	rw.available_amount,
-	rw.frozen_amount,
-	rw.overdraft_limit,
-	rw.version,
-	rdus.request_count,
-	rdus.total_tokens,
-	rdus.total_charge
-FROM relay_keys rk
-JOIN api_keys ak ON ak.id = rk.api_key_id AND ak.project_id = rk.project_id
-JOIN relay_products rp ON rp.id = rk.product_id AND rp.deleted_at = 0
-LEFT JOIN relay_wallets rw ON rw.relay_key_id = rk.id
-LEFT JOIN relay_daily_usage_summaries rdus ON rdus.relay_key_id = rk.id AND rdus.stat_date = %s
-WHERE rk.api_key_id = %s AND rk.deleted_at = 0
-LIMIT 1`, relayPlaceholder(dialectName, 1), relayPlaceholder(dialectName, 2))
+	relay := &RelayAccessContext{
+		RelayKeyID:  relayKey.ID,
+		APIKeyID:    relayKey.APIKeyID,
+		ProjectID:   relayKey.ProjectID,
+		ProductID:   relayKey.ProductID,
+		Status:      RelayKeyStatus(relayKey.Status),
+		BalanceMode: RelayKeyBalanceMode(relayKey.BalanceMode),
+		ExpiresAt:   relayKey.ExpiresAt,
+		Quota:       RelayKeyQuotaSnapshot{},
+		DailyUsage:  RelayUsageSnapshot{},
+		ChannelPool: RelayChannelPool{},
+	}
 
-	row := db.QueryRowContext(ctx, query, statDate, apiKeyID)
-	relay, err := scanRelayAccessContext(row)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		if isMissingRelayTableError(err) {
-			return nil, nil
-		}
+	if product := relayKey.Edges.Product; product != nil {
+		relay.ProductCode = product.Code
+		relay.ProductName = product.Name
+		relay.ProviderType = RelayProductProviderType(product.ProviderType)
+		relay.ProductStatus = RelayProductStatus(product.Status)
+	}
 
-		return nil, fmt.Errorf("failed to load relay access context: %w", err)
+	if relayKey.DailyRequestLimit != nil {
+		relay.Quota.DailyRequestLimit = relayKey.DailyRequestLimit
+	}
+	if relayKey.DailyTokenLimit != nil {
+		relay.Quota.DailyTokenLimit = relayKey.DailyTokenLimit
+	}
+	if relayKey.MonthlyCostLimit != nil {
+		d, _ := decimal.NewFromString(*relayKey.MonthlyCostLimit)
+		relay.Quota.MonthlyCostLimit = &d
+	}
+	if relayKey.ConcurrencyLimit != nil {
+		relay.Quota.ConcurrencyLimit = relayKey.ConcurrencyLimit
+	}
+
+	if wallet := relayKey.Edges.Wallet; wallet != nil {
+		available, _ := decimal.NewFromString(wallet.AvailableAmount)
+		frozen, _ := decimal.NewFromString(wallet.FrozenAmount)
+		overdraft, _ := decimal.NewFromString(wallet.OverdraftLimit)
+		relay.Wallet = &RelayWalletSnapshot{
+			Currency:        wallet.Currency,
+			AvailableAmount: available,
+			FrozenAmount:    frozen,
+			OverdraftLimit:  overdraft,
+			Version:         wallet.Version,
+		}
+	}
+
+	for _, dailyUsage := range relayKey.Edges.DailyUsageSummaries {
+		relay.DailyUsage.RequestCount = dailyUsage.RequestCount
+		relay.DailyUsage.TotalTokens = dailyUsage.TotalTokens
+		charge, _ := decimal.NewFromString(dailyUsage.TotalCharge)
+		relay.DailyUsage.TotalCharge = charge
 	}
 
 	if s.router != nil {
@@ -199,80 +227,62 @@ func (s *RelayRouterService) listActivePool(ctx context.Context, productID int, 
 		return RelayChannelPool{}, fmt.Errorf("relay product id must be greater than 0")
 	}
 
-	db, dialectName, err := relaySQLDB(s.db)
+	product, err := s.db.RelayProduct.Query().
+		Where(
+			relayproduct.ID(productID),
+			relayproduct.DeletedAt(0),
+			relayproduct.StatusEQ(relayproduct.Status(RelayProductStatusActive)),
+		).
+		WithChannelBindings(func(q *ent.RelayProductChannelQuery) {
+			q.Where(relayproductchannel.StatusEQ(relayproductchannel.Status(RelayProductChannelStatusActive))).
+				WithChannel(func(cq *ent.ChannelQuery) {
+					cq.Where(channel.DeletedAt(0), channel.StatusEQ(channel.StatusEnabled))
+				}).
+				Order(
+					ent.Asc(relayproductchannel.FieldPriority),
+					ent.Desc(relayproductchannel.FieldWeight),
+					ent.Asc(relayproductchannel.FieldChannelID),
+				)
+		}).
+		First(ctx)
 	if err != nil {
-		return RelayChannelPool{}, err
-	}
-
-	query := fmt.Sprintf(`
-SELECT
-	rp.allowed_models,
-	rpc.channel_id,
-	rpc.priority,
-	rpc.weight,
-	rpc.allow_fallback,
-	rpc.model_filter,
-	rpc.max_inflight
-FROM relay_products rp
-JOIN relay_product_channels rpc ON rpc.product_id = rp.id
-JOIN channels c ON c.id = rpc.channel_id AND c.deleted_at = 0 AND c.status = 'enabled'
-WHERE rp.id = %s
-  AND rp.deleted_at = 0
-  AND rp.status = 'active'
-  AND rpc.status = 'active'
-ORDER BY rpc.priority ASC, rpc.weight DESC, rpc.channel_id ASC`, relayPlaceholder(dialectName, 1))
-
-	rows, err := db.QueryContext(ctx, query, productID)
-	if err != nil {
-		if isMissingRelayTableError(err) {
+		if ent.IsNotFound(err) || isMissingRelayTableError(err) {
 			return RelayChannelPool{}, nil
 		}
-
 		return RelayChannelPool{}, fmt.Errorf("failed to list relay product channels: %w", err)
 	}
-	defer rows.Close()
 
-	pool := RelayChannelPool{}
-	allowedModelsLoaded := false
-	for rows.Next() {
-		var (
-			allowedModelsRaw sql.NullString
-			modelFilterRaw   sql.NullString
-			entry            RelayChannelPoolEntry
-			maxInflight      sql.NullInt64
-		)
-		if err := rows.Scan(
-			&allowedModelsRaw,
-			&entry.ChannelID,
-			&entry.Priority,
-			&entry.Weight,
-			&entry.AllowFallback,
-			&modelFilterRaw,
-			&maxInflight,
-		); err != nil {
-			return RelayChannelPool{}, fmt.Errorf("failed to scan relay product channel: %w", err)
+	pool := RelayChannelPool{
+		AllowedModels: product.AllowedModels,
+	}
+	if pool.AllowedModels == nil {
+		pool.AllowedModels = []string{}
+	}
+
+	for _, binding := range product.Edges.ChannelBindings {
+		if _, err := binding.Edges.ChannelOrErr(); err != nil {
+			continue
 		}
-		if !allowedModelsLoaded {
-			models, err := parseRelayStringList(allowedModelsRaw)
-			if err != nil {
-				return RelayChannelPool{}, err
-			}
-			pool.AllowedModels = models
-			allowedModelsLoaded = true
+
+		entry := RelayChannelPoolEntry{
+			ChannelID:     binding.ChannelID,
+			Priority:      binding.Priority,
+			Weight:        binding.Weight,
+			AllowFallback: binding.AllowFallback,
+			ModelFilter:   relayAdminModelFilterFromMap(binding.ModelFilter),
 		}
-		if maxInflight.Valid {
-			value := int(maxInflight.Int64)
+		if entry.ModelFilter == nil {
+			entry.ModelFilter = []string{}
+		}
+		if binding.MaxInflight != nil {
+			value := *binding.MaxInflight
 			entry.MaxInflight = &value
 		}
 
-		entry.ModelFilter = parseRelayModelFilter(modelFilterRaw)
 		if model != "" && (!matchRelayModelPatterns(pool.AllowedModels, model) || !entry.AllowsModel(model)) {
 			continue
 		}
 		pool.Channels = append(pool.Channels, entry)
-	}
-	if err := rows.Err(); err != nil {
-		return RelayChannelPool{}, fmt.Errorf("failed to iterate relay product channels: %w", err)
 	}
 
 	return pool, nil
@@ -573,6 +583,15 @@ func relayPlaceholder(dialectName string, index int) string {
 	}
 
 	return "?"
+}
+
+func relayPlaceholders(dialectName string, count, start int) []string {
+	placeholders := make([]string, count)
+	for i := range placeholders {
+		placeholders[i] = relayPlaceholder(dialectName, start+i)
+	}
+
+	return placeholders
 }
 
 func relayUTCDate(ts time.Time) time.Time {

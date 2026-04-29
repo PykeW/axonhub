@@ -4,16 +4,16 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"slices"
 	"strings"
 
-	"entgo.io/ent/dialect"
 	"go.uber.org/fx"
 
 	"github.com/looplj/axonhub/internal/ent"
 	"github.com/looplj/axonhub/internal/ent/channel"
+	"github.com/looplj/axonhub/internal/ent/relayproduct"
+	"github.com/looplj/axonhub/internal/ent/relayproductchannel"
 )
 
 type RelayProductProviderType string
@@ -198,6 +198,49 @@ func NewRelayProductService(params RelayProductServiceParams) *RelayProductServi
 	}
 }
 
+func relayProductFromEnt(e *ent.RelayProduct) *RelayProductRecord {
+	models := e.AllowedModels
+	if models == nil {
+		models = []string{}
+	}
+	return &RelayProductRecord{
+		ID:                    e.ID,
+		Code:                  e.Code,
+		Name:                  e.Name,
+		ProviderType:          RelayProductProviderType(e.ProviderType),
+		AccessMode:            RelayProductAccessMode(e.AccessMode),
+		BillingMode:           RelayProductBillingMode(e.BillingMode),
+		Status:                RelayProductStatus(e.Status),
+		Currency:              e.Currency,
+		AllowedModels:         models,
+		RequestTimeoutSeconds: e.RequestTimeoutSeconds,
+		ListPriceConfig:       e.ListPriceConfig,
+	}
+}
+
+func relayProductChannelFromEnt(e *ent.RelayProductChannel) *RelayProductChannelBindingRecord {
+	binding := &RelayProductChannelBindingRecord{
+		ID:            e.ID,
+		ProductID:     e.ProductID,
+		ChannelID:     e.ChannelID,
+		Priority:      e.Priority,
+		Weight:        e.Weight,
+		Status:        RelayProductChannelStatus(e.Status),
+		AllowFallback: e.AllowFallback,
+		ModelFilter:   func() map[string]any {
+			if mf, ok := e.ModelFilter.(map[string]any); ok {
+				return mf
+			}
+			return map[string]any{}
+		}(),
+	}
+	if e.MaxInflight != nil {
+		v := *e.MaxInflight
+		binding.MaxInflight = &v
+	}
+	return binding
+}
+
 func (s *RelayProductService) Contract() RelayProductContract {
 	return RelayProductContract{
 		ProviderTypes: []RelayProductProviderType{
@@ -261,57 +304,33 @@ func (s *RelayProductService) ListRelayProducts(ctx context.Context, input Relay
 		return nil, err
 	}
 
-	db, dialectName, err := relaySQLDB(s.entFromContext(ctx))
-	if err != nil {
-		return nil, err
-	}
-
-	clauses := []string{"deleted_at = 0"}
-	args := make([]any, 0, len(input.StatusIn)+2)
+	q := s.entFromContext(ctx).RelayProduct.Query().Where(relayproduct.DeletedAt(0))
 	if len(input.StatusIn) > 0 {
-		placeholders := make([]string, len(input.StatusIn))
+		statuses := make([]relayproduct.Status, len(input.StatusIn))
 		for i, status := range input.StatusIn {
-			args = append(args, string(status))
-			placeholders[i] = relayPlaceholder(dialectName, len(args))
+			statuses[i] = relayproduct.Status(status)
 		}
-		clauses = append(clauses, fmt.Sprintf("status IN (%s)", strings.Join(placeholders, ",")))
+		q = q.Where(relayproduct.StatusIn(statuses...))
 	}
 	if input.ProviderType != nil {
-		args = append(args, string(*input.ProviderType))
-		clauses = append(clauses, fmt.Sprintf("provider_type = %s", relayPlaceholder(dialectName, len(args))))
+		q = q.Where(relayproduct.ProviderTypeEQ(relayproduct.ProviderType(*input.ProviderType)))
 	}
 	if query := strings.TrimSpace(input.Query); query != "" {
-		pattern := "%" + strings.ToLower(query) + "%"
-		args = append(args, pattern)
-		codePlaceholder := relayPlaceholder(dialectName, len(args))
-		args = append(args, pattern)
-		namePlaceholder := relayPlaceholder(dialectName, len(args))
-		clauses = append(clauses, fmt.Sprintf("(LOWER(code) LIKE %s OR LOWER(name) LIKE %s)", codePlaceholder, namePlaceholder))
+		q = q.Where(relayproduct.Or(
+			relayproduct.CodeContains(query),
+			relayproduct.NameContains(query),
+		))
 	}
 
-	query := fmt.Sprintf(`SELECT id, code, name, provider_type, access_mode, billing_mode, status, currency, allowed_models, request_timeout_seconds, list_price_config
-FROM relay_products
-WHERE %s
-ORDER BY id ASC`, strings.Join(clauses, " AND "))
-	rows, err := db.QueryContext(ctx, query, args...)
+	ents, err := q.Order(ent.Asc(relayproduct.FieldID)).All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list relay products: %w", err)
 	}
-	defer rows.Close()
-
-	products := make([]*RelayProductRecord, 0)
-	for rows.Next() {
-		product, err := scanRelayProductRecord(rows)
-		if err != nil {
-			return nil, err
-		}
-		products = append(products, product)
+	records := make([]*RelayProductRecord, len(ents))
+	for i, e := range ents {
+		records[i] = relayProductFromEnt(e)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("failed to iterate relay products: %w", err)
-	}
-
-	return products, nil
+	return records, nil
 }
 
 func (s *RelayProductService) CreateRelayProduct(ctx context.Context, input RelayProductCreateInput) (*RelayProductRecord, error) {
@@ -319,13 +338,6 @@ func (s *RelayProductService) CreateRelayProduct(ctx context.Context, input Rela
 		return nil, err
 	}
 
-	db, dialectName, err := relaySQLDB(s.entFromContext(ctx))
-	if err != nil {
-		return nil, err
-	}
-
-	code := strings.TrimSpace(input.Code)
-	name := strings.TrimSpace(input.Name)
 	accessMode := input.AccessMode
 	if accessMode == "" {
 		accessMode = RelayProductAccessModeSharedCapacity
@@ -346,30 +358,34 @@ func (s *RelayProductService) CreateRelayProduct(ctx context.Context, input Rela
 	if timeout == 0 {
 		timeout = RelayProductDefaultRequestTimeoutSeconds
 	}
-
-	allowedModels, err := marshalRelayJSON(input.AllowedModels)
-	if err != nil {
-		return nil, err
+	allowedModels := input.AllowedModels
+	if allowedModels == nil {
+		allowedModels = []string{}
 	}
-	priceConfig, err := marshalRelayJSONObject(input.ListPriceConfig)
-	if err != nil {
-		return nil, err
+	priceConfig := input.ListPriceConfig
+	if priceConfig == nil {
+		priceConfig = map[string]any{}
 	}
 
-	columns := []string{"code", "name", "provider_type", "access_mode", "billing_mode", "status", "currency", "allowed_models", "request_timeout_seconds", "list_price_config"}
-	placeholders := relayPlaceholders(dialectName, len(columns), 1)
-	query := fmt.Sprintf("INSERT INTO relay_products (%s) VALUES (%s)", strings.Join(columns, ","), strings.Join(placeholders, ","))
-	args := []any{code, name, string(input.ProviderType), string(accessMode), string(billingMode), string(status), currency, allowedModels, timeout, priceConfig}
-
-	id, err := execRelayInsert(ctx, db, dialectName, query, args...)
+	e, err := s.entFromContext(ctx).RelayProduct.Create().
+		SetCode(strings.TrimSpace(input.Code)).
+		SetName(strings.TrimSpace(input.Name)).
+		SetProviderType(relayproduct.ProviderType(input.ProviderType)).
+		SetAccessMode(relayproduct.AccessMode(accessMode)).
+		SetBillingMode(relayproduct.BillingMode(billingMode)).
+		SetStatus(relayproduct.Status(status)).
+		SetCurrency(currency).
+		SetAllowedModels(allowedModels).
+		SetRequestTimeoutSeconds(timeout).
+		SetListPriceConfig(priceConfig).
+		Save(ctx)
 	if err != nil {
-		if isUniqueConstraintError(err) {
-			return nil, fmt.Errorf("relay product code %q: %w: %v", code, ErrRelayProductCodeExists, err)
+		if ent.IsConstraintError(err) {
+			return nil, fmt.Errorf("relay product code %q: %w: %v", input.Code, ErrRelayProductCodeExists, err)
 		}
 		return nil, fmt.Errorf("failed to create relay product: %w", err)
 	}
-
-	return s.getRelayProduct(ctx, id)
+	return relayProductFromEnt(e), nil
 }
 
 func (s *RelayProductService) UpdateRelayProduct(ctx context.Context, id int, input RelayProductUpdateInput) (*RelayProductRecord, error) {
@@ -380,70 +396,36 @@ func (s *RelayProductService) UpdateRelayProduct(ctx context.Context, id int, in
 		return nil, err
 	}
 
-	db, dialectName, err := relaySQLDB(s.entFromContext(ctx))
-	if err != nil {
-		return nil, err
-	}
-
-	sets := make([]string, 0, 8)
-	args := make([]any, 0, 8)
+	u := s.entFromContext(ctx).RelayProduct.UpdateOneID(id).Where(relayproduct.DeletedAt(0))
 	if input.Name != nil {
-		args = append(args, strings.TrimSpace(*input.Name))
-		sets = append(sets, fmt.Sprintf("name = %s", relayPlaceholder(dialectName, len(args))))
+		u = u.SetName(strings.TrimSpace(*input.Name))
 	}
 	if input.BillingMode != nil {
-		args = append(args, string(*input.BillingMode))
-		sets = append(sets, fmt.Sprintf("billing_mode = %s", relayPlaceholder(dialectName, len(args))))
+		u = u.SetBillingMode(relayproduct.BillingMode(*input.BillingMode))
 	}
 	if input.Status != nil {
-		args = append(args, string(*input.Status))
-		sets = append(sets, fmt.Sprintf("status = %s", relayPlaceholder(dialectName, len(args))))
+		u = u.SetStatus(relayproduct.Status(*input.Status))
 	}
 	if input.Currency != nil {
-		args = append(args, strings.TrimSpace(*input.Currency))
-		sets = append(sets, fmt.Sprintf("currency = %s", relayPlaceholder(dialectName, len(args))))
+		u = u.SetCurrency(strings.TrimSpace(*input.Currency))
 	}
 	if input.AllowedModels != nil {
-		allowedModels, err := marshalRelayJSON(input.AllowedModels)
-		if err != nil {
-			return nil, err
-		}
-		args = append(args, allowedModels)
-		sets = append(sets, fmt.Sprintf("allowed_models = %s", relayPlaceholder(dialectName, len(args))))
+		u = u.SetAllowedModels(input.AllowedModels)
 	}
 	if input.RequestTimeoutSeconds != nil {
-		args = append(args, *input.RequestTimeoutSeconds)
-		sets = append(sets, fmt.Sprintf("request_timeout_seconds = %s", relayPlaceholder(dialectName, len(args))))
+		u = u.SetRequestTimeoutSeconds(*input.RequestTimeoutSeconds)
 	}
 	if input.ListPriceConfig != nil {
-		priceConfig, err := marshalRelayJSONObject(input.ListPriceConfig)
-		if err != nil {
-			return nil, err
-		}
-		args = append(args, priceConfig)
-		sets = append(sets, fmt.Sprintf("list_price_config = %s", relayPlaceholder(dialectName, len(args))))
+		u = u.SetListPriceConfig(input.ListPriceConfig)
 	}
-	if len(sets) == 0 {
-		return s.getRelayProduct(ctx, id)
-	}
-	sets = append(sets, "updated_at = CURRENT_TIMESTAMP")
-
-	args = append(args, id)
-	idPlaceholder := relayPlaceholder(dialectName, len(args))
-	query := fmt.Sprintf("UPDATE relay_products SET %s WHERE id = %s AND deleted_at = 0", strings.Join(sets, ", "), idPlaceholder)
-	result, err := db.ExecContext(ctx, query, args...)
+	e, err := u.Save(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, fmt.Errorf("relay product %d: %w", id, ErrRelayProductNotFound)
+		}
 		return nil, fmt.Errorf("failed to update relay product %d: %w", id, err)
 	}
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return nil, fmt.Errorf("failed to inspect relay product update result: %w", err)
-	}
-	if rows == 0 {
-		return nil, fmt.Errorf("relay product %d: %w", id, ErrRelayProductNotFound)
-	}
-
-	return s.getRelayProduct(ctx, id)
+	return relayProductFromEnt(e), nil
 }
 
 func (s *RelayProductService) CreateRelayProductChannelBinding(ctx context.Context, input RelayProductChannelBindingInput) (*RelayProductChannelBindingRecord, error) {
@@ -451,11 +433,6 @@ func (s *RelayProductService) CreateRelayProductChannelBinding(ctx context.Conte
 		return nil, err
 	}
 	if _, err := s.getRelayProduct(ctx, input.ProductID); err != nil {
-		return nil, err
-	}
-
-	db, dialectName, err := relaySQLDB(s.entFromContext(ctx))
-	if err != nil {
 		return nil, err
 	}
 
@@ -467,25 +444,30 @@ func (s *RelayProductService) CreateRelayProductChannelBinding(ctx context.Conte
 	if input.AllowFallback != nil {
 		allowFallback = *input.AllowFallback
 	}
-	modelFilter, err := marshalRelayJSONObject(input.ModelFilter)
-	if err != nil {
-		return nil, err
+	modelFilter := input.ModelFilter
+	if modelFilter == nil {
+		modelFilter = map[string]any{}
 	}
 
-	columns := []string{"product_id", "channel_id", "priority", "weight", "status", "allow_fallback", "model_filter", "max_inflight"}
-	placeholders := relayPlaceholders(dialectName, len(columns), 1)
-	query := fmt.Sprintf("INSERT INTO relay_product_channels (%s) VALUES (%s)", strings.Join(columns, ","), strings.Join(placeholders, ","))
-	args := []any{input.ProductID, input.ChannelID, input.Priority, input.Weight, string(status), allowFallback, modelFilter, nullableIntPtr(input.MaxInflight)}
-
-	id, err := execRelayInsert(ctx, db, dialectName, query, args...)
+	b := s.entFromContext(ctx).RelayProductChannel.Create().
+		SetProductID(input.ProductID).
+		SetChannelID(input.ChannelID).
+		SetPriority(input.Priority).
+		SetWeight(input.Weight).
+		SetStatus(relayproductchannel.Status(status)).
+		SetAllowFallback(allowFallback).
+		SetModelFilter(modelFilter)
+	if input.MaxInflight != nil {
+		b = b.SetMaxInflight(*input.MaxInflight)
+	}
+	e, err := b.Save(ctx)
 	if err != nil {
-		if isUniqueConstraintError(err) {
+		if ent.IsConstraintError(err) {
 			return nil, fmt.Errorf("relay product %d is already bound to channel %d: %w: %v", input.ProductID, input.ChannelID, ErrRelayProductAlreadyBound, err)
 		}
 		return nil, fmt.Errorf("failed to create relay product channel binding: %w", err)
 	}
-
-	return s.getRelayProductChannelBinding(ctx, id)
+	return relayProductChannelFromEnt(e), nil
 }
 
 func (s *RelayProductService) UpdateRelayProductChannelBinding(ctx context.Context, id int, input RelayProductChannelBindingUpdateInput) (*RelayProductChannelBindingRecord, error) {
@@ -496,86 +478,46 @@ func (s *RelayProductService) UpdateRelayProductChannelBinding(ctx context.Conte
 		return nil, err
 	}
 
-	db, dialectName, err := relaySQLDB(s.entFromContext(ctx))
-	if err != nil {
-		return nil, err
-	}
-
-	sets := make([]string, 0, 7)
-	args := make([]any, 0, 7)
+	u := s.entFromContext(ctx).RelayProductChannel.UpdateOneID(id)
 	if input.Priority != nil {
-		args = append(args, *input.Priority)
-		sets = append(sets, fmt.Sprintf("priority = %s", relayPlaceholder(dialectName, len(args))))
+		u = u.SetPriority(*input.Priority)
 	}
 	if input.Weight != nil {
-		args = append(args, *input.Weight)
-		sets = append(sets, fmt.Sprintf("weight = %s", relayPlaceholder(dialectName, len(args))))
+		u = u.SetWeight(*input.Weight)
 	}
 	if input.Status != nil {
-		args = append(args, string(*input.Status))
-		sets = append(sets, fmt.Sprintf("status = %s", relayPlaceholder(dialectName, len(args))))
+		u = u.SetStatus(relayproductchannel.Status(*input.Status))
 	}
 	if input.AllowFallback != nil {
-		args = append(args, *input.AllowFallback)
-		sets = append(sets, fmt.Sprintf("allow_fallback = %s", relayPlaceholder(dialectName, len(args))))
+		u = u.SetAllowFallback(*input.AllowFallback)
 	}
 	if input.ModelFilter != nil {
-		modelFilter, err := marshalRelayJSONObject(input.ModelFilter)
-		if err != nil {
-			return nil, err
-		}
-		args = append(args, modelFilter)
-		sets = append(sets, fmt.Sprintf("model_filter = %s", relayPlaceholder(dialectName, len(args))))
+		u = u.SetModelFilter(input.ModelFilter)
 	}
 	if input.MaxInflight != nil {
-		args = append(args, *input.MaxInflight)
-		sets = append(sets, fmt.Sprintf("max_inflight = %s", relayPlaceholder(dialectName, len(args))))
+		u = u.SetMaxInflight(*input.MaxInflight)
 	}
-	if len(sets) == 0 {
-		return s.getRelayProductChannelBinding(ctx, id)
-	}
-	sets = append(sets, "updated_at = CURRENT_TIMESTAMP")
-
-	args = append(args, id)
-	idPlaceholder := relayPlaceholder(dialectName, len(args))
-	query := fmt.Sprintf("UPDATE relay_product_channels SET %s WHERE id = %s", strings.Join(sets, ", "), idPlaceholder)
-	result, err := db.ExecContext(ctx, query, args...)
+	e, err := u.Save(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, fmt.Errorf("relay product channel binding %d: %w", id, ErrRelayBindingNotFound)
+		}
 		return nil, fmt.Errorf("failed to update relay product channel binding %d: %w", id, err)
 	}
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return nil, fmt.Errorf("failed to inspect relay product channel binding update result: %w", err)
-	}
-	if rows == 0 {
-		return nil, fmt.Errorf("relay product channel binding %d: %w", id, ErrRelayBindingNotFound)
-	}
-
-	return s.getRelayProductChannelBinding(ctx, id)
+	return relayProductChannelFromEnt(e), nil
 }
 
 func (s *RelayProductService) DeleteRelayProductChannelBinding(ctx context.Context, id int) error {
 	if id <= 0 {
 		return fmt.Errorf("relay product channel binding id must be greater than 0")
 	}
-
-	db, dialectName, err := relaySQLDB(s.entFromContext(ctx))
+	err := s.entFromContext(ctx).RelayProductChannel.DeleteOneID(id).Exec(ctx)
 	if err != nil {
-		return err
-	}
-	query := fmt.Sprintf("DELETE FROM relay_product_channels WHERE id = %s", relayPlaceholder(dialectName, 1))
-	result, err := db.ExecContext(ctx, query, id)
-	if err != nil {
+		if ent.IsNotFound(err) {
+			return fmt.Errorf("relay product channel binding %d: %w", id, ErrRelayBindingNotFound)
+		}
 		return fmt.Errorf("failed to delete relay product channel binding %d: %w", id, err)
 	}
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to inspect relay product channel binding delete result: %w", err)
-	}
-	if rows == 0 {
-		return fmt.Errorf("relay product channel binding %d: %w", id, ErrRelayBindingNotFound)
-	}
-
 	return nil
 }
 
@@ -794,131 +736,32 @@ func (s *RelayProductService) getRelayProduct(ctx context.Context, id int) (*Rel
 	if id <= 0 {
 		return nil, fmt.Errorf("relay product id must be greater than 0")
 	}
-
-	db, dialectName, err := relaySQLDB(s.entFromContext(ctx))
+	e, err := s.entFromContext(ctx).RelayProduct.Query().
+		Where(relayproduct.ID(id), relayproduct.DeletedAt(0)).
+		First(ctx)
 	if err != nil {
-		return nil, err
-	}
-	query := fmt.Sprintf(`SELECT id, code, name, provider_type, access_mode, billing_mode, status, currency, allowed_models, request_timeout_seconds, list_price_config
-FROM relay_products
-WHERE id = %s AND deleted_at = 0
-LIMIT 1`, relayPlaceholder(dialectName, 1))
-	product, err := scanRelayProductRecord(db.QueryRowContext(ctx, query, id))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if ent.IsNotFound(err) {
 			return nil, fmt.Errorf("relay product %d: %w", id, ErrRelayProductNotFound)
 		}
 		return nil, fmt.Errorf("failed to load relay product %d: %w", id, err)
 	}
-
-	return product, nil
+	return relayProductFromEnt(e), nil
 }
 
 func (s *RelayProductService) getRelayProductChannelBinding(ctx context.Context, id int) (*RelayProductChannelBindingRecord, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("relay product channel binding id must be greater than 0")
 	}
-
-	db, dialectName, err := relaySQLDB(s.entFromContext(ctx))
+	e, err := s.entFromContext(ctx).RelayProductChannel.Query().
+		Where(relayproductchannel.ID(id)).
+		First(ctx)
 	if err != nil {
-		return nil, err
-	}
-	query := fmt.Sprintf(`SELECT id, product_id, channel_id, priority, weight, status, allow_fallback, model_filter, max_inflight
-FROM relay_product_channels
-WHERE id = %s
-LIMIT 1`, relayPlaceholder(dialectName, 1))
-	binding, err := scanRelayProductChannelBindingRecord(db.QueryRowContext(ctx, query, id))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if ent.IsNotFound(err) {
 			return nil, fmt.Errorf("relay product channel binding %d: %w", id, ErrRelayBindingNotFound)
 		}
 		return nil, fmt.Errorf("failed to load relay product channel binding %d: %w", id, err)
 	}
-
-	return binding, nil
-}
-
-func scanRelayProductRecord(row relayScanner) (*RelayProductRecord, error) {
-	var (
-		product         RelayProductRecord
-		providerType    string
-		accessMode      string
-		billingMode     string
-		status          string
-		allowedModels   sql.NullString
-		listPriceConfig sql.NullString
-	)
-	if err := row.Scan(
-		&product.ID,
-		&product.Code,
-		&product.Name,
-		&providerType,
-		&accessMode,
-		&billingMode,
-		&status,
-		&product.Currency,
-		&allowedModels,
-		&product.RequestTimeoutSeconds,
-		&listPriceConfig,
-	); err != nil {
-		return nil, err
-	}
-
-	models, err := parseRelayStringList(allowedModels)
-	if err != nil {
-		return nil, err
-	}
-	priceConfig, err := parseRelayJSONObject(listPriceConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	product.ProviderType = RelayProductProviderType(providerType)
-	product.AccessMode = RelayProductAccessMode(accessMode)
-	product.BillingMode = RelayProductBillingMode(billingMode)
-	product.Status = RelayProductStatus(status)
-	product.AllowedModels = models
-	product.ListPriceConfig = priceConfig
-	if product.AllowedModels == nil {
-		product.AllowedModels = []string{}
-	}
-
-	return &product, nil
-}
-
-func scanRelayProductChannelBindingRecord(row relayScanner) (*RelayProductChannelBindingRecord, error) {
-	var (
-		binding     RelayProductChannelBindingRecord
-		status      string
-		modelFilter sql.NullString
-		maxInflight sql.NullInt64
-	)
-	if err := row.Scan(
-		&binding.ID,
-		&binding.ProductID,
-		&binding.ChannelID,
-		&binding.Priority,
-		&binding.Weight,
-		&status,
-		&binding.AllowFallback,
-		&modelFilter,
-		&maxInflight,
-	); err != nil {
-		return nil, err
-	}
-
-	parsedFilter, err := parseRelayJSONObject(modelFilter)
-	if err != nil {
-		return nil, err
-	}
-	if maxInflight.Valid {
-		value := int(maxInflight.Int64)
-		binding.MaxInflight = &value
-	}
-	binding.Status = RelayProductChannelStatus(status)
-	binding.ModelFilter = parsedFilter
-
-	return &binding, nil
+	return relayProductChannelFromEnt(e), nil
 }
 
 func marshalRelayJSON(value any) (string, error) {
@@ -959,36 +802,6 @@ func parseRelayJSONObject(value sql.NullString) (map[string]any, error) {
 	}
 
 	return out, nil
-}
-
-func execRelayInsert(ctx context.Context, db *sql.DB, dialectName, query string, args ...any) (int, error) {
-	if dialectName == dialect.Postgres {
-		var id int
-		if err := db.QueryRowContext(ctx, query+" RETURNING id", args...).Scan(&id); err != nil {
-			return 0, err
-		}
-		return id, nil
-	}
-
-	result, err := db.ExecContext(ctx, query, args...)
-	if err != nil {
-		return 0, err
-	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-
-	return int(id), nil
-}
-
-func relayPlaceholders(dialectName string, count, start int) []string {
-	placeholders := make([]string, count)
-	for i := range placeholders {
-		placeholders[i] = relayPlaceholder(dialectName, start+i)
-	}
-
-	return placeholders
 }
 
 func nullableIntPtr(value *int) any {
