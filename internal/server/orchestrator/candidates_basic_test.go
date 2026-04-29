@@ -5,8 +5,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/looplj/axonhub/internal/contexts"
 	"github.com/looplj/axonhub/internal/ent/channel"
 	"github.com/looplj/axonhub/internal/objects"
+	"github.com/looplj/axonhub/internal/server/biz"
 	"github.com/looplj/axonhub/llm"
 )
 
@@ -289,4 +291,39 @@ func TestSelectedChannelsSelector_Select_EmptyFilter(t *testing.T) {
 	require.Contains(t, channelIDs, channels[0].ID)
 	require.Contains(t, channelIDs, channels[1].ID)
 	require.Contains(t, channelIDs, channels[2].ID)
+}
+
+func TestRelayChannelPoolSelector_Select_FiltersAndPrioritizesRelayPool(t *testing.T) {
+	ctx, client := setupTest(t)
+
+	channels := createTestChannels(t, ctx, client)
+
+	channelService := newTestChannelServiceForChannels(client)
+	modelService := newTestModelService(client)
+	systemService := newTestSystemService(client)
+	baseSelector := NewDefaultSelector(channelService, modelService, systemService)
+	selector := WithRelayChannelPoolSelector(baseSelector)
+
+	relayAuthContext := &biz.RelayAuthContext{
+		RelayKeyID:  9,
+		ProductID:   11,
+		ProductCode: "relay-product",
+		ChannelPool: biz.RelayChannelPool{
+			AllowedModels: []string{"gpt-*"},
+			Channels: []biz.RelayChannelPoolEntry{
+				{ChannelID: channels[0].ID, Priority: 20, ModelFilter: []string{"gpt-4"}},
+				{ChannelID: channels[1].ID, Priority: 5, ModelFilter: []string{"claude-*"}},
+				{ChannelID: channels[2].ID, Priority: 10},
+			},
+		},
+	}
+	ctx = contexts.WithRelayAuthContext(ctx, relayAuthContext)
+
+	result, err := selector.Select(ctx, &llm.Request{Model: "gpt-4"})
+	require.NoError(t, err)
+	require.Len(t, result, 2)
+	require.Equal(t, channels[2].ID, result[0].Channel.ID)
+	require.Equal(t, 10, result[0].Priority)
+	require.Equal(t, channels[0].ID, result[1].Channel.ID)
+	require.Equal(t, 20, result[1].Priority)
 }

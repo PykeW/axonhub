@@ -3,6 +3,7 @@ package biz
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/samber/lo"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/looplj/axonhub/internal/ent/usagelog"
 	"github.com/looplj/axonhub/internal/log"
 	"github.com/looplj/axonhub/internal/objects"
+	"github.com/looplj/axonhub/internal/pkg/xcontext"
 	"github.com/looplj/axonhub/llm"
 )
 
@@ -18,8 +20,9 @@ import (
 type UsageLogService struct {
 	*AbstractService
 
-	SystemService  *SystemService
-	ChannelService *ChannelService
+	SystemService   *SystemService
+	ChannelService  *ChannelService
+	RelaySettlement RelaySettlementRecorder
 
 	// OnUsageLogCreated is called after a usage log is successfully created.
 	// Used to invalidate caches that depend on usage log data.
@@ -75,8 +78,41 @@ func NewUsageLogService(ent *ent.Client, systemService *SystemService, channelSe
 		AbstractService: &AbstractService{
 			db: ent,
 		},
-		SystemService:  systemService,
-		ChannelService: channelService,
+		SystemService:     systemService,
+		ChannelService:    channelService,
+		RelaySettlement:   nil,
+		OnUsageLogCreated: nil,
+	}
+}
+
+func (s *UsageLogService) SetRelaySettlementRecorder(settlement RelaySettlementRecorder) {
+	if s != nil {
+		s.RelaySettlement = settlement
+	}
+}
+
+func (s *UsageLogService) recordRelaySettlement(ctx context.Context, lookup func(context.Context) (any, bool), usageLog *ent.UsageLog, request *ent.Request) {
+	if s == nil || s.RelaySettlement == nil || usageLog == nil || lookup == nil {
+		return
+	}
+
+	value, ok := lookup(ctx)
+	if !ok || value == nil {
+		return
+	}
+	relayAuthContext, ok := value.(*RelayAuthContext)
+	if !ok || relayAuthContext == nil {
+		return
+	}
+
+	settlementCtx, cancel := xcontext.DetachWithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	if err := s.RelaySettlement.RecordRelayUsage(settlementCtx, relayAuthContext, RelayUsageSettlementInput{UsageLog: usageLog, Request: request}); err != nil {
+		log.Warn(settlementCtx, "failed to settle relay usage",
+			log.Int("usage_log_id", usageLog.ID),
+			log.Int("relay_key_id", relayAuthContext.RelayKeyID),
+			log.Cause(err))
 	}
 }
 
@@ -90,6 +126,7 @@ type CreateUsageLogParams struct {
 	Source        usagelog.Source
 	Format        string
 	APIKeyID      *int
+	Request       *ent.Request
 }
 
 // CreateUsageLog creates a new usage log record from LLM response usage data.
@@ -167,6 +204,8 @@ func (s *UsageLogService) CreateUsageLog(ctx context.Context, params CreateUsage
 		)
 	}
 
+	s.recordRelaySettlement(ctx, contexts.GetRelayAuthContext, usageLog, params.Request)
+
 	if s.OnUsageLogCreated != nil {
 		s.OnUsageLogCreated()
 	}
@@ -194,5 +233,6 @@ func (s *UsageLogService) CreateUsageLogFromRequest(
 		Source:        usagelog.Source(request.Source),
 		Format:        request.Format,
 		APIKeyID:      lo.ToPtr(request.APIKeyID),
+		Request:       request,
 	})
 }

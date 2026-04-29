@@ -17,6 +17,16 @@ func checkApiKeyModelAccess(inbound *PersistentInboundTransformer) pipeline.Midd
 			return nil, fmt.Errorf("%w: request model is empty", biz.ErrInvalidModel)
 		}
 
+		if relayAuthContext := inbound.state.RelayAuthContext; relayAuthContext != nil && !relayAuthContext.AllowsModel(llmRequest.Model) {
+			log.Warn(ctx, "model access denied by relay channel pool",
+				log.Int("relay_key_id", relayAuthContext.RelayKeyID),
+				log.Int("relay_product_id", relayAuthContext.ProductID),
+				log.String("model", llmRequest.Model),
+				log.Any("allowed_models", relayAuthContext.ChannelPool.AllowedModels))
+
+			return nil, fmt.Errorf("%w: %s", biz.ErrInvalidModel, llmRequest.Model)
+		}
+
 		if inbound.state.APIKey == nil {
 			return llmRequest, nil
 		}

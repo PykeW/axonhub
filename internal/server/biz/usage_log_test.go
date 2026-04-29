@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/looplj/axonhub/internal/contexts"
+
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 
@@ -358,4 +360,68 @@ func TestUsageLogService_CreateUsageLog_WithCachedTokens(t *testing.T) {
 func toDecimalPtr(s string) *decimal.Decimal {
 	d, _ := decimal.NewFromString(s)
 	return &d
+}
+
+type relaySettlementRecorderSpy struct {
+	relay  *RelayAuthContext
+	inputs []RelayUsageSettlementInput
+}
+
+func (s *relaySettlementRecorderSpy) RecordRelayUsage(ctx context.Context, relay *RelayAuthContext, input RelayUsageSettlementInput) error {
+	s.relay = relay
+	s.inputs = append(s.inputs, input)
+	return nil
+}
+
+func TestUsageLogService_CreateUsageLog_RecordsRelaySettlement(t *testing.T) {
+	client := enttest.NewEntClient(t, "sqlite3", "file:ent?mode=memory&_fk=0")
+	defer client.Close()
+
+	ctx := context.Background()
+	ctx = ent.NewContext(ctx, client)
+	ctx = authz.WithTestBypass(ctx)
+
+	p, err := client.Project.Create().
+		SetName("relay-settlement-project").
+		SetStatus(project.StatusActive).
+		Save(ctx)
+	require.NoError(t, err)
+
+	req, err := client.Request.Create().
+		SetProjectID(p.ID).
+		SetModelID("gpt-4").
+		SetStatus(request.StatusCompleted).
+		SetRequestBody(objects.JSONRawMessage([]byte(`{}`))).
+		Save(ctx)
+	require.NoError(t, err)
+
+	systemService := NewSystemService(SystemServiceParams{
+		CacheConfig: xcache.Config{},
+		Ent:         client,
+	})
+	channelService := NewChannelServiceForTest(client)
+	svc := NewUsageLogService(client, systemService, channelService)
+
+	recorder := &relaySettlementRecorderSpy{}
+	svc.SetRelaySettlementRecorder(recorder)
+	relayAuthContext := &RelayAuthContext{RelayKeyID: 7, APIKeyID: 9, ProjectID: p.ID}
+	ctx = contexts.WithRelayAuthContext(ctx, relayAuthContext)
+
+	created, err := svc.CreateUsageLog(ctx, CreateUsageLogParams{
+		RequestID:     req.ID,
+		ProjectID:     p.ID,
+		ChannelID:     0,
+		ActualModelID: "gpt-4",
+		Usage:         &llm.Usage{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15},
+		Source:        usagelog.SourceAPI,
+		Format:        "openai/chat_completions",
+		Request:       req,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, created)
+	require.Same(t, relayAuthContext, recorder.relay)
+	require.Len(t, recorder.inputs, 1)
+	require.Equal(t, created.ID, recorder.inputs[0].UsageLog.ID)
+	require.Same(t, req, recorder.inputs[0].Request)
 }

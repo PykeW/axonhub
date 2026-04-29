@@ -25,6 +25,7 @@ func selectCandidates(inbound *PersistentInboundTransformer) pipeline.Middleware
 		selector := inbound.state.CandidateSelector
 		if relayAuthContext := inbound.state.RelayAuthContext; relayAuthContext != nil && relayAuthContext.HasRoutingConstraints() {
 			selector = WithSelectedChannelsSelector(selector, relayAuthContext.AllowedChannelIDs())
+			selector = WithRelayChannelPoolSelector(selector)
 		}
 
 		// Project-level profile filtering (upper boundary)
@@ -43,13 +44,15 @@ func selectCandidates(inbound *PersistentInboundTransformer) pipeline.Middleware
 		}
 
 		// Key-level profile filtering (narrows further within project scope)
-		if profile := inbound.state.APIKey.GetActiveProfile(); profile != nil {
-			if len(profile.ChannelIDs) > 0 {
-				selector = WithSelectedChannelsSelector(selector, profile.ChannelIDs)
-			}
+		if inbound.state.APIKey != nil {
+			if profile := inbound.state.APIKey.GetActiveProfile(); profile != nil {
+				if len(profile.ChannelIDs) > 0 {
+					selector = WithSelectedChannelsSelector(selector, profile.ChannelIDs)
+				}
 
-			if len(profile.ChannelTags) > 0 {
-				selector = WithChannelTagsFilterSelector(selector, profile.ChannelTags, profile.ChannelTagsMatchMode)
+				if len(profile.ChannelTags) > 0 {
+					selector = WithChannelTagsFilterSelector(selector, profile.ChannelTags, profile.ChannelTagsMatchMode)
+				}
 			}
 		}
 
