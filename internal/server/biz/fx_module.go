@@ -28,6 +28,13 @@ var Module = fx.Module("biz",
 	fx.Provide(NewPromptService),
 	fx.Provide(NewPromptProtectionRuleService),
 	fx.Provide(NewRelayProductService),
+	fx.Provide(NewRelayAdminService),
+	fx.Provide(NewRelayRouterService),
+	fx.Provide(NewRelayAccessService),
+	fx.Provide(NewRelaySettlementService),
+	fx.Invoke(func(usageLogService *UsageLogService, settlementService *RelaySettlementService) {
+		usageLogService.SetRelaySettlementRecorder(settlementService)
+	}),
 	fx.Provide(NewQuotaService),
 	fx.Provide(NewProviderQuotaService),
 

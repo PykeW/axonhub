@@ -104,3 +104,130 @@ func TestRelayProductService_ValidateCreateRelayProductChannelBinding(t *testing
 		require.Error(t, svc.ValidateCreateRelayProductChannelBinding(ctx, invalid))
 	})
 }
+
+func TestRelayProductService_CRUDAndChannelBindingRawSQL(t *testing.T) {
+	ctx := authz.WithTestBypass(context.Background())
+	client := newRelayServicesTestClient(t)
+	db := relayServicesTestDB(t, client)
+
+	ch, err := client.Channel.Create().
+		SetType(channel.TypeCodex).
+		SetName("codex relay crud").
+		SetStatus(channel.StatusEnabled).
+		SetCredentials(objects.ChannelCredentials{}).
+		SetSupportedModels([]string{"o3", "gpt-4.1"}).
+		SetDefaultTestModel("o3").
+		Save(ctx)
+	require.NoError(t, err)
+
+	svc := NewRelayProductService(RelayProductServiceParams{Ent: client})
+	product, err := svc.CreateRelayProduct(ctx, RelayProductCreateInput{
+		Code:                  "relay-codex-shared",
+		Name:                  "Codex Shared",
+		ProviderType:          RelayProductProviderTypeCodex,
+		AllowedModels:         []string{"o3", "gpt-4.1"},
+		RequestTimeoutSeconds: 120,
+		ListPriceConfig: map[string]any{
+			"unit": "request",
+		},
+	})
+	require.NoError(t, err)
+	require.NotZero(t, product.ID)
+	require.Equal(t, RelayProductAccessModeSharedCapacity, product.AccessMode)
+	require.Equal(t, RelayProductBillingModePrepaid, product.BillingMode)
+	require.Equal(t, RelayProductStatusDraft, product.Status)
+	require.Equal(t, RelayProductDefaultCurrency, product.Currency)
+	require.Equal(t, []string{"o3", "gpt-4.1"}, product.AllowedModels)
+	require.Equal(t, "request", product.ListPriceConfig["unit"])
+
+	products, err := svc.ListRelayProducts(ctx, RelayProductListInput{ProviderType: ptrRelayProductProviderType(RelayProductProviderTypeCodex), Query: "shared"})
+	require.NoError(t, err)
+	require.Len(t, products, 1)
+	require.Equal(t, product.ID, products[0].ID)
+
+	active := RelayProductStatusActive
+	name := "Codex Shared Active"
+	updated, err := svc.UpdateRelayProduct(ctx, product.ID, RelayProductUpdateInput{
+		Name:          &name,
+		Status:        &active,
+		AllowedModels: []string{"o3"},
+	})
+	require.NoError(t, err)
+	require.Equal(t, name, updated.Name)
+	require.Equal(t, RelayProductStatusActive, updated.Status)
+	require.Equal(t, []string{"o3"}, updated.AllowedModels)
+
+	allowFallback := false
+	maxInflight := 4
+	binding, err := svc.CreateRelayProductChannelBinding(ctx, RelayProductChannelBindingInput{
+		ProductID:     product.ID,
+		ChannelID:     ch.ID,
+		Priority:      5,
+		Weight:        50,
+		Status:        RelayProductChannelStatusActive,
+		AllowFallback: &allowFallback,
+		ModelFilter:   map[string]any{"models": []any{"o3"}},
+		MaxInflight:   &maxInflight,
+	})
+	require.NoError(t, err)
+	require.Equal(t, product.ID, binding.ProductID)
+	require.Equal(t, ch.ID, binding.ChannelID)
+	require.False(t, binding.AllowFallback)
+	require.Equal(t, maxInflight, *binding.MaxInflight)
+	require.Contains(t, binding.ModelFilter, "models")
+
+	paused := RelayProductChannelStatusPaused
+	priority := 20
+	updatedBinding, err := svc.UpdateRelayProductChannelBinding(ctx, binding.ID, RelayProductChannelBindingUpdateInput{
+		Priority: &priority,
+		Status:   &paused,
+	})
+	require.NoError(t, err)
+	require.Equal(t, priority, updatedBinding.Priority)
+	require.Equal(t, RelayProductChannelStatusPaused, updatedBinding.Status)
+
+	require.NoError(t, svc.DeleteRelayProductChannelBinding(ctx, binding.ID))
+	var bindingCount int
+	require.NoError(t, db.QueryRowContext(ctx, "SELECT COUNT(*) FROM relay_product_channels WHERE id = ?", binding.ID).Scan(&bindingCount))
+	require.Zero(t, bindingCount)
+}
+
+func TestRelayProductService_UniqueConstraintsRawSQL(t *testing.T) {
+	ctx := authz.WithTestBypass(context.Background())
+	client := newRelayServicesTestClient(t)
+	ch, err := client.Channel.Create().
+		SetType(channel.TypeCodex).
+		SetName("codex relay unique").
+		SetStatus(channel.StatusEnabled).
+		SetCredentials(objects.ChannelCredentials{}).
+		SetSupportedModels([]string{"o3"}).
+		SetDefaultTestModel("o3").
+		Save(ctx)
+	require.NoError(t, err)
+
+	svc := NewRelayProductService(RelayProductServiceParams{Ent: client})
+	input := RelayProductCreateInput{
+		Code:         "relay-codex-unique",
+		Name:         "Codex Unique",
+		ProviderType: RelayProductProviderTypeCodex,
+	}
+	product, err := svc.CreateRelayProduct(ctx, input)
+	require.NoError(t, err)
+	_, err = svc.CreateRelayProduct(ctx, input)
+	require.Error(t, err)
+
+	bindingInput := RelayProductChannelBindingInput{
+		ProductID: product.ID,
+		ChannelID: ch.ID,
+		Weight:    RelayProductChannelDefaultWeight,
+		Status:    RelayProductChannelStatusActive,
+	}
+	_, err = svc.CreateRelayProductChannelBinding(ctx, bindingInput)
+	require.NoError(t, err)
+	_, err = svc.CreateRelayProductChannelBinding(ctx, bindingInput)
+	require.Error(t, err)
+}
+
+func ptrRelayProductProviderType(value RelayProductProviderType) *RelayProductProviderType {
+	return &value
+}
