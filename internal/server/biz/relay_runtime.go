@@ -64,21 +64,22 @@ type RelaySettlementRecorder interface {
 
 // RelayAuthContext carries request-scoped Relay/Sub-Key auth and routing metadata.
 type RelayAuthContext struct {
-	RelayKeyID   int
-	APIKeyID     int
-	ProjectID    int
-	ProductID    int
-	ProductCode  string
-	ProductName  string
-	ProviderType RelayProductProviderType
-	Status       RelayKeyStatus
-	BalanceMode  RelayKeyBalanceMode
-	ExpiresAt    *time.Time
-	Wallet       *RelayWalletSnapshot
-	Quota        RelayKeyQuotaSnapshot
-	DailyUsage   RelayUsageSnapshot
-	ChannelPool  RelayChannelPool
-	Metadata     map[string]any
+	RelayKeyID    int
+	APIKeyID      int
+	ProjectID     int
+	ProductID     int
+	ProductCode   string
+	ProductName   string
+	ProviderType  RelayProductProviderType
+	ProductStatus RelayProductStatus
+	Status        RelayKeyStatus
+	BalanceMode   RelayKeyBalanceMode
+	ExpiresAt     *time.Time
+	Wallet        *RelayWalletSnapshot
+	Quota         RelayKeyQuotaSnapshot
+	DailyUsage    RelayUsageSnapshot
+	ChannelPool   RelayChannelPool
+	Metadata      map[string]any
 }
 
 type RelayKeyStatus string
@@ -142,6 +143,86 @@ type RelayAccessDecision struct {
 	StatusCode int
 	Code       string
 	Message    string
+}
+
+// RelayAuthError preserves Relay/Sub-Key denial diagnostics for HTTP middleware.
+type RelayAuthError struct {
+	StatusCode int
+	Code       string
+	Message    string
+	Err        error
+}
+
+func NewRelayAuthError(decision *RelayAccessDecision) *RelayAuthError {
+	if decision == nil || decision.Allowed {
+		return nil
+	}
+
+	statusCode := decision.StatusCode
+	if statusCode == 0 {
+		statusCode = http.StatusForbidden
+	}
+	message := decision.Message
+	if message == "" {
+		message = "relay access denied"
+	}
+
+	return &RelayAuthError{
+		StatusCode: statusCode,
+		Code:       decision.Code,
+		Message:    message,
+		Err:        decision.ErrorOrNil(),
+	}
+}
+
+func (e *RelayAuthError) Error() string {
+	if e == nil {
+		return ""
+	}
+	if e.Code != "" && e.Message != "" {
+		return fmt.Sprintf("%s: %s", e.Code, e.Message)
+	}
+	if e.Message != "" {
+		return e.Message
+	}
+	if e.Err != nil {
+		return e.Err.Error()
+	}
+	return "relay access denied"
+}
+
+func (e *RelayAuthError) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+	return e.Err
+}
+
+func (e *RelayAuthError) HTTPStatus() int {
+	if e == nil || e.StatusCode == 0 {
+		return http.StatusForbidden
+	}
+	return e.StatusCode
+}
+
+func (e *RelayAuthError) ErrorCode() string {
+	if e == nil || e.Code == "" {
+		return http.StatusText(e.HTTPStatus())
+	}
+	return e.Code
+}
+
+func (e *RelayAuthError) ErrorMessage() string {
+	if e == nil {
+		return "relay access denied"
+	}
+	if e.Message != "" {
+		return e.Message
+	}
+	if e.Err != nil {
+		return e.Err.Error()
+	}
+	return "relay access denied"
 }
 
 type RelayUsageSettlementInput struct {
@@ -279,14 +360,34 @@ func (c *RelayAuthContext) HasRoutingConstraints() bool {
 }
 
 // AuthenticateRelayAPIKey is the post-API-key-auth Relay hook.
-// It is intentionally a no-op until relay_keys code generation lands; callers can
-// already consume a RelayAuthContext without coupling contexts to biz.
-func (s *AuthService) AuthenticateRelayAPIKey(_ context.Context, apiKey *ent.APIKey) (*RelayAuthContext, error) {
-	if apiKey == nil {
+func (s *AuthService) AuthenticateRelayAPIKey(ctx context.Context, apiKey *ent.APIKey) (*RelayAuthContext, error) {
+	if s == nil || s.RelayAccess == nil || apiKey == nil {
 		return nil, nil
 	}
 
-	return nil, nil
+	relay, err := s.RelayAccess.ResolveRelayAuth(ctx, apiKey)
+	if err != nil || relay == nil {
+		return relay, err
+	}
+	if relay.APIKeyID == 0 {
+		relay.APIKeyID = apiKey.ID
+	}
+	if relay.ProjectID == 0 {
+		relay.ProjectID = apiKey.ProjectID
+	}
+
+	decision, err := s.RelayAccess.CheckRelayAccess(ctx, relay, RelayAccessCheckInput{
+		APIKey: apiKey,
+		Now:    time.Now(),
+	})
+	if err != nil {
+		return relay, err
+	}
+	if relayErr := NewRelayAuthError(decision); relayErr != nil {
+		return relay, relayErr
+	}
+
+	return relay, nil
 }
 
 func matchRelayModelPatterns(patterns []string, model string) bool {

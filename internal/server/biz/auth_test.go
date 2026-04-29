@@ -420,6 +420,51 @@ func TestAuthService_AuthenticateAPIKey(t *testing.T) {
 	require.Contains(t, err.Error(), "api key project not valid")
 }
 
+func TestAuthService_AuthenticateRelayAPIKey_OrdinaryKeyBypassesRelay(t *testing.T) {
+	authService, client, cleanup := setupTestAuthService(t, xcache.Config{})
+	defer cleanup()
+	defer client.Close()
+
+	ctx := context.Background()
+	ctx = ent.NewContext(ctx, client)
+	ctx = authz.WithTestBypass(ctx)
+
+	hashedPassword, err := HashPassword("test-password")
+	require.NoError(t, err)
+
+	owner, err := client.User.Create().
+		SetEmail(fmt.Sprintf("relay-bypass-%d@example.com", time.Now().UnixNano())).
+		SetPassword(hashedPassword).
+		SetFirstName("Relay").
+		SetLastName("Bypass").
+		SetStatus(user.StatusActivated).
+		Save(ctx)
+	require.NoError(t, err)
+
+	project, err := client.Project.Create().
+		SetName(uuid.NewString()).
+		SetDescription("relay ordinary key bypass").
+		SetStatus(project.StatusActive).
+		Save(ctx)
+	require.NoError(t, err)
+
+	apiKey, err := client.APIKey.Create().
+		SetKey("sk-ordinary-relay-bypass").
+		SetName("ordinary key").
+		SetUser(owner).
+		SetProject(project).
+		SetStatus(apikey.StatusEnabled).
+		Save(ctx)
+	require.NoError(t, err)
+
+	authService.RelayAccess = NewRelayAccessService(RelayAccessServiceParams{Ent: client})
+
+	relayAuthContext, err := authService.AuthenticateRelayAPIKey(ctx, apiKey)
+
+	require.NoError(t, err)
+	require.Nil(t, relayAuthContext)
+}
+
 func TestAuthService_AuthenticateNoAuth(t *testing.T) {
 	cacheConfig := xcache.Config{}
 

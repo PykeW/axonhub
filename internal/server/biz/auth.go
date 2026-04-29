@@ -26,6 +26,7 @@ type AuthServiceParams struct {
 	SystemService *SystemService
 	APIKeyService *APIKeyService
 	UserService   *UserService
+	RelayAccess   *RelayAccessService `optional:"true"`
 	Ent           *ent.Client
 	AllowNoAuth   bool `name:"allow_no_auth"`
 }
@@ -38,6 +39,7 @@ func NewAuthService(params AuthServiceParams) *AuthService {
 		SystemService: params.SystemService,
 		APIKeyService: params.APIKeyService,
 		UserService:   params.UserService,
+		RelayAccess:   params.RelayAccess,
 		AllowNoAuth:   params.AllowNoAuth,
 	}
 }
@@ -48,6 +50,7 @@ type AuthService struct {
 	SystemService *SystemService
 	APIKeyService *APIKeyService
 	UserService   *UserService
+	RelayAccess   *RelayAccessService
 	AllowNoAuth   bool
 }
 

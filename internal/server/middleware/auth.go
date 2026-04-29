@@ -13,6 +13,7 @@ import (
 	"github.com/looplj/axonhub/internal/ent/apikey"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/log"
+	"github.com/looplj/axonhub/internal/objects"
 	"github.com/looplj/axonhub/internal/server/biz"
 )
 
@@ -54,13 +55,10 @@ func WithAPIKeyConfig(auth *biz.AuthService, config *APIKeyConfig) gin.HandlerFu
 			ctx = contexts.WithProjectID(ctx, apiKey.Edges.Project.ID)
 		}
 
-		relayAuthContext, err := auth.AuthenticateRelayAPIKey(ctx, apiKey)
+		ctx, err = attachRelayAuthContext(ctx, auth, apiKey)
 		if err != nil {
-			AbortWithError(c, http.StatusUnauthorized, errors.New("Invalid relay authentication context"))
+			abortRelayAuthError(c, err)
 			return
-		}
-		if relayAuthContext != nil {
-			ctx = contexts.WithRelayAuthContext(ctx, relayAuthContext)
 		}
 
 		ctx, err = withAPIKeyPrincipal(ctx, apiKey)
@@ -190,6 +188,12 @@ func WithGeminiKeyAuth(auth *biz.AuthService) gin.HandlerFunc {
 			ctx = contexts.WithProjectID(ctx, apiKey.Edges.Project.ID)
 		}
 
+		ctx, err = attachRelayAuthContext(ctx, auth, apiKey)
+		if err != nil {
+			abortRelayAuthError(c, err)
+			return
+		}
+
 		ctx, err = withAPIKeyPrincipal(ctx, apiKey)
 		if err != nil {
 			AbortWithError(c, http.StatusUnauthorized, errors.New("Invalid authentication context"))
@@ -214,6 +218,35 @@ func WithSource(source request.Source) gin.HandlerFunc {
 func withUserPrincipal(ctx context.Context, user *ent.User) (context.Context, error) {
 	principal := authz.Principal{Type: authz.PrincipalTypeUser, UserID: &user.ID}
 	return authz.WithPrincipal(ctx, principal)
+}
+
+func attachRelayAuthContext(ctx context.Context, auth *biz.AuthService, apiKey *ent.APIKey) (context.Context, error) {
+	relayAuthContext, err := auth.AuthenticateRelayAPIKey(ctx, apiKey)
+	if err != nil {
+		return ctx, err
+	}
+	if relayAuthContext != nil {
+		ctx = contexts.WithRelayAuthContext(ctx, relayAuthContext)
+	}
+
+	return ctx, nil
+}
+
+func abortRelayAuthError(c *gin.Context, err error) {
+	var relayErr *biz.RelayAuthError
+	if errors.As(err, &relayErr) {
+		_ = c.Error(relayErr)
+		c.AbortWithStatusJSON(relayErr.HTTPStatus(), objects.ErrorResponse{
+			Error: objects.Error{
+				Type:    relayErr.ErrorCode(),
+				Message: relayErr.ErrorMessage(),
+			},
+		})
+		return
+	}
+
+	log.Error(c.Request.Context(), "Failed to validate relay authentication context", log.Cause(err))
+	AbortWithError(c, http.StatusInternalServerError, errors.New("Failed to validate relay authentication context"))
 }
 
 func withAPIKeyPrincipal(ctx context.Context, key *ent.APIKey) (context.Context, error) {
