@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/looplj/axonhub/internal/ent/apikey"
 	"github.com/looplj/axonhub/internal/ent/predicate"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/objects"
 )
@@ -146,6 +147,25 @@ func (_u *APIKeyUpdate) AddRequests(v ...*Request) *APIKeyUpdate {
 	return _u.AddRequestIDs(ids...)
 }
 
+// SetRelayKeyID sets the "relay_key" edge to the RelayKey entity by ID.
+func (_u *APIKeyUpdate) SetRelayKeyID(id int) *APIKeyUpdate {
+	_u.mutation.SetRelayKeyID(id)
+	return _u
+}
+
+// SetNillableRelayKeyID sets the "relay_key" edge to the RelayKey entity by ID if the given value is not nil.
+func (_u *APIKeyUpdate) SetNillableRelayKeyID(id *int) *APIKeyUpdate {
+	if id != nil {
+		_u = _u.SetRelayKeyID(*id)
+	}
+	return _u
+}
+
+// SetRelayKey sets the "relay_key" edge to the RelayKey entity.
+func (_u *APIKeyUpdate) SetRelayKey(v *RelayKey) *APIKeyUpdate {
+	return _u.SetRelayKeyID(v.ID)
+}
+
 // Mutation returns the APIKeyMutation object of the builder.
 func (_u *APIKeyUpdate) Mutation() *APIKeyMutation {
 	return _u.mutation
@@ -170,6 +190,12 @@ func (_u *APIKeyUpdate) RemoveRequests(v ...*Request) *APIKeyUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveRequestIDs(ids...)
+}
+
+// ClearRelayKey clears the "relay_key" edge to the RelayKey entity.
+func (_u *APIKeyUpdate) ClearRelayKey() *APIKeyUpdate {
+	_u.mutation.ClearRelayKey()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -330,6 +356,35 @@ func (_u *APIKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.RelayKeyCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   apikey.RelayKeyTable,
+			Columns: []string{apikey.RelayKeyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relaykey.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RelayKeyIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   apikey.RelayKeyTable,
+			Columns: []string{apikey.RelayKeyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relaykey.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -466,6 +521,25 @@ func (_u *APIKeyUpdateOne) AddRequests(v ...*Request) *APIKeyUpdateOne {
 	return _u.AddRequestIDs(ids...)
 }
 
+// SetRelayKeyID sets the "relay_key" edge to the RelayKey entity by ID.
+func (_u *APIKeyUpdateOne) SetRelayKeyID(id int) *APIKeyUpdateOne {
+	_u.mutation.SetRelayKeyID(id)
+	return _u
+}
+
+// SetNillableRelayKeyID sets the "relay_key" edge to the RelayKey entity by ID if the given value is not nil.
+func (_u *APIKeyUpdateOne) SetNillableRelayKeyID(id *int) *APIKeyUpdateOne {
+	if id != nil {
+		_u = _u.SetRelayKeyID(*id)
+	}
+	return _u
+}
+
+// SetRelayKey sets the "relay_key" edge to the RelayKey entity.
+func (_u *APIKeyUpdateOne) SetRelayKey(v *RelayKey) *APIKeyUpdateOne {
+	return _u.SetRelayKeyID(v.ID)
+}
+
 // Mutation returns the APIKeyMutation object of the builder.
 func (_u *APIKeyUpdateOne) Mutation() *APIKeyMutation {
 	return _u.mutation
@@ -490,6 +564,12 @@ func (_u *APIKeyUpdateOne) RemoveRequests(v ...*Request) *APIKeyUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveRequestIDs(ids...)
+}
+
+// ClearRelayKey clears the "relay_key" edge to the RelayKey entity.
+func (_u *APIKeyUpdateOne) ClearRelayKey() *APIKeyUpdateOne {
+	_u.mutation.ClearRelayKey()
+	return _u
 }
 
 // Where appends a list predicates to the APIKeyUpdate builder.
@@ -673,6 +753,35 @@ func (_u *APIKeyUpdateOne) sqlSave(ctx context.Context) (_node *APIKey, err erro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(request.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RelayKeyCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   apikey.RelayKeyTable,
+			Columns: []string{apikey.RelayKeyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relaykey.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RelayKeyIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   apikey.RelayKeyTable,
+			Columns: []string{apikey.RelayKeyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relaykey.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

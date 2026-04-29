@@ -14,6 +14,7 @@ import (
 	"github.com/looplj/axonhub/internal/ent/apikey"
 	"github.com/looplj/axonhub/internal/ent/project"
 	"github.com/looplj/axonhub/internal/ent/prompt"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/ent/role"
 	"github.com/looplj/axonhub/internal/ent/thread"
@@ -157,6 +158,21 @@ func (_c *ProjectCreate) AddAPIKeys(v ...*APIKey) *ProjectCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddAPIKeyIDs(ids...)
+}
+
+// AddRelayKeyIDs adds the "relay_keys" edge to the RelayKey entity by IDs.
+func (_c *ProjectCreate) AddRelayKeyIDs(ids ...int) *ProjectCreate {
+	_c.mutation.AddRelayKeyIDs(ids...)
+	return _c
+}
+
+// AddRelayKeys adds the "relay_keys" edges to the RelayKey entity.
+func (_c *ProjectCreate) AddRelayKeys(v ...*RelayKey) *ProjectCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRelayKeyIDs(ids...)
 }
 
 // AddRequestIDs adds the "requests" edge to the Request entity by IDs.
@@ -438,6 +454,22 @@ func (_c *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apikey.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RelayKeysIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   project.RelayKeysTable,
+			Columns: []string{project.RelayKeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relaykey.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

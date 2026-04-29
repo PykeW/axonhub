@@ -399,6 +399,150 @@ func (f ProviderQuotaStatusMutationRuleFunc) EvalMutation(ctx context.Context, m
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ProviderQuotaStatusMutation", m)
 }
 
+// The RelayDailyUsageSummaryQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type RelayDailyUsageSummaryQueryRuleFunc func(context.Context, *ent.RelayDailyUsageSummaryQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f RelayDailyUsageSummaryQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelayDailyUsageSummaryQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.RelayDailyUsageSummaryQuery", q)
+}
+
+// The RelayDailyUsageSummaryMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type RelayDailyUsageSummaryMutationRuleFunc func(context.Context, *ent.RelayDailyUsageSummaryMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f RelayDailyUsageSummaryMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.RelayDailyUsageSummaryMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.RelayDailyUsageSummaryMutation", m)
+}
+
+// The RelayKeyQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type RelayKeyQueryRuleFunc func(context.Context, *ent.RelayKeyQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f RelayKeyQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelayKeyQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.RelayKeyQuery", q)
+}
+
+// The RelayKeyMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type RelayKeyMutationRuleFunc func(context.Context, *ent.RelayKeyMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f RelayKeyMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.RelayKeyMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.RelayKeyMutation", m)
+}
+
+// The RelayProductQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type RelayProductQueryRuleFunc func(context.Context, *ent.RelayProductQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f RelayProductQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelayProductQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.RelayProductQuery", q)
+}
+
+// The RelayProductMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type RelayProductMutationRuleFunc func(context.Context, *ent.RelayProductMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f RelayProductMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.RelayProductMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.RelayProductMutation", m)
+}
+
+// The RelayProductChannelQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type RelayProductChannelQueryRuleFunc func(context.Context, *ent.RelayProductChannelQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f RelayProductChannelQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelayProductChannelQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.RelayProductChannelQuery", q)
+}
+
+// The RelayProductChannelMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type RelayProductChannelMutationRuleFunc func(context.Context, *ent.RelayProductChannelMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f RelayProductChannelMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.RelayProductChannelMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.RelayProductChannelMutation", m)
+}
+
+// The RelayWalletQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type RelayWalletQueryRuleFunc func(context.Context, *ent.RelayWalletQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f RelayWalletQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelayWalletQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.RelayWalletQuery", q)
+}
+
+// The RelayWalletMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type RelayWalletMutationRuleFunc func(context.Context, *ent.RelayWalletMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f RelayWalletMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.RelayWalletMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.RelayWalletMutation", m)
+}
+
+// The RelayWalletLedgerEntryQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type RelayWalletLedgerEntryQueryRuleFunc func(context.Context, *ent.RelayWalletLedgerEntryQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f RelayWalletLedgerEntryQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelayWalletLedgerEntryQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.RelayWalletLedgerEntryQuery", q)
+}
+
+// The RelayWalletLedgerEntryMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type RelayWalletLedgerEntryMutationRuleFunc func(context.Context, *ent.RelayWalletLedgerEntryMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f RelayWalletLedgerEntryMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.RelayWalletLedgerEntryMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.RelayWalletLedgerEntryMutation", m)
+}
+
 // The RequestQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type RequestQueryRuleFunc func(context.Context, *ent.RequestQuery) error
@@ -698,6 +842,18 @@ func queryFilter(q ent.Query) (Filter, error) {
 		return q.Filter(), nil
 	case *ent.ProviderQuotaStatusQuery:
 		return q.Filter(), nil
+	case *ent.RelayDailyUsageSummaryQuery:
+		return q.Filter(), nil
+	case *ent.RelayKeyQuery:
+		return q.Filter(), nil
+	case *ent.RelayProductQuery:
+		return q.Filter(), nil
+	case *ent.RelayProductChannelQuery:
+		return q.Filter(), nil
+	case *ent.RelayWalletQuery:
+		return q.Filter(), nil
+	case *ent.RelayWalletLedgerEntryQuery:
+		return q.Filter(), nil
 	case *ent.RequestQuery:
 		return q.Filter(), nil
 	case *ent.RequestExecutionQuery:
@@ -748,6 +904,18 @@ func mutationFilter(m ent.Mutation) (Filter, error) {
 	case *ent.PromptProtectionRuleMutation:
 		return m.Filter(), nil
 	case *ent.ProviderQuotaStatusMutation:
+		return m.Filter(), nil
+	case *ent.RelayDailyUsageSummaryMutation:
+		return m.Filter(), nil
+	case *ent.RelayKeyMutation:
+		return m.Filter(), nil
+	case *ent.RelayProductMutation:
+		return m.Filter(), nil
+	case *ent.RelayProductChannelMutation:
+		return m.Filter(), nil
+	case *ent.RelayWalletMutation:
+		return m.Filter(), nil
+	case *ent.RelayWalletLedgerEntryMutation:
 		return m.Filter(), nil
 	case *ent.RequestMutation:
 		return m.Filter(), nil

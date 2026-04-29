@@ -915,6 +915,29 @@ func HasChannelModelPricesWith(preds ...predicate.ChannelModelPrice) predicate.C
 	})
 }
 
+// HasRelayProductBindings applies the HasEdge predicate on the "relay_product_bindings" edge.
+func HasRelayProductBindings() predicate.Channel {
+	return predicate.Channel(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RelayProductBindingsTable, RelayProductBindingsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRelayProductBindingsWith applies the HasEdge predicate on the "relay_product_bindings" edge with a given conditions (other predicates).
+func HasRelayProductBindingsWith(preds ...predicate.RelayProductChannel) predicate.Channel {
+	return predicate.Channel(func(s *sql.Selector) {
+		step := newRelayProductBindingsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasProviderQuotaStatus applies the HasEdge predicate on the "provider_quota_status" edge.
 func HasProviderQuotaStatus() predicate.Channel {
 	return predicate.Channel(func(s *sql.Selector) {

@@ -153,6 +153,78 @@ func (f ProviderQuotaStatusFunc) Mutate(ctx context.Context, m ent.Mutation) (en
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ProviderQuotaStatusMutation", m)
 }
 
+// The RelayDailyUsageSummaryFunc type is an adapter to allow the use of ordinary
+// function as RelayDailyUsageSummary mutator.
+type RelayDailyUsageSummaryFunc func(context.Context, *ent.RelayDailyUsageSummaryMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelayDailyUsageSummaryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelayDailyUsageSummaryMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelayDailyUsageSummaryMutation", m)
+}
+
+// The RelayKeyFunc type is an adapter to allow the use of ordinary
+// function as RelayKey mutator.
+type RelayKeyFunc func(context.Context, *ent.RelayKeyMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelayKeyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelayKeyMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelayKeyMutation", m)
+}
+
+// The RelayProductFunc type is an adapter to allow the use of ordinary
+// function as RelayProduct mutator.
+type RelayProductFunc func(context.Context, *ent.RelayProductMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelayProductFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelayProductMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelayProductMutation", m)
+}
+
+// The RelayProductChannelFunc type is an adapter to allow the use of ordinary
+// function as RelayProductChannel mutator.
+type RelayProductChannelFunc func(context.Context, *ent.RelayProductChannelMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelayProductChannelFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelayProductChannelMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelayProductChannelMutation", m)
+}
+
+// The RelayWalletFunc type is an adapter to allow the use of ordinary
+// function as RelayWallet mutator.
+type RelayWalletFunc func(context.Context, *ent.RelayWalletMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelayWalletFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelayWalletMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelayWalletMutation", m)
+}
+
+// The RelayWalletLedgerEntryFunc type is an adapter to allow the use of ordinary
+// function as RelayWalletLedgerEntry mutator.
+type RelayWalletLedgerEntryFunc func(context.Context, *ent.RelayWalletLedgerEntryMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelayWalletLedgerEntryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelayWalletLedgerEntryMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelayWalletLedgerEntryMutation", m)
+}
+
 // The RequestFunc type is an adapter to allow the use of ordinary
 // function as Request mutator.
 type RequestFunc func(context.Context, *ent.RequestMutation) (ent.Value, error)

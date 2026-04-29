@@ -17,6 +17,7 @@ import (
 	"github.com/looplj/axonhub/internal/ent/channeloverridetemplate"
 	"github.com/looplj/axonhub/internal/ent/predicate"
 	"github.com/looplj/axonhub/internal/ent/project"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
 	"github.com/looplj/axonhub/internal/ent/role"
 	"github.com/looplj/axonhub/internal/ent/user"
 	"github.com/looplj/axonhub/internal/ent/userproject"
@@ -32,6 +33,7 @@ type UserQuery struct {
 	predicates                        []predicate.User
 	withProjects                      *ProjectQuery
 	withAPIKeys                       *APIKeyQuery
+	withRelayKeys                     *RelayKeyQuery
 	withRoles                         *RoleQuery
 	withChannelOverrideTemplates      *ChannelOverrideTemplateQuery
 	withProjectUsers                  *UserProjectQuery
@@ -40,6 +42,7 @@ type UserQuery struct {
 	modifiers                         []func(*sql.Selector)
 	withNamedProjects                 map[string]*ProjectQuery
 	withNamedAPIKeys                  map[string]*APIKeyQuery
+	withNamedRelayKeys                map[string]*RelayKeyQuery
 	withNamedRoles                    map[string]*RoleQuery
 	withNamedChannelOverrideTemplates map[string]*ChannelOverrideTemplateQuery
 	withNamedProjectUsers             map[string]*UserProjectQuery
@@ -117,6 +120,28 @@ func (_q *UserQuery) QueryAPIKeys() *APIKeyQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(apikey.Table, apikey.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.APIKeysTable, user.APIKeysColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRelayKeys chains the current query on the "relay_keys" edge.
+func (_q *UserQuery) QueryRelayKeys() *RelayKeyQuery {
+	query := (&RelayKeyClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(relaykey.Table, relaykey.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RelayKeysTable, user.RelayKeysColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -406,6 +431,7 @@ func (_q *UserQuery) Clone() *UserQuery {
 		predicates:                   append([]predicate.User{}, _q.predicates...),
 		withProjects:                 _q.withProjects.Clone(),
 		withAPIKeys:                  _q.withAPIKeys.Clone(),
+		withRelayKeys:                _q.withRelayKeys.Clone(),
 		withRoles:                    _q.withRoles.Clone(),
 		withChannelOverrideTemplates: _q.withChannelOverrideTemplates.Clone(),
 		withProjectUsers:             _q.withProjectUsers.Clone(),
@@ -436,6 +462,17 @@ func (_q *UserQuery) WithAPIKeys(opts ...func(*APIKeyQuery)) *UserQuery {
 		opt(query)
 	}
 	_q.withAPIKeys = query
+	return _q
+}
+
+// WithRelayKeys tells the query-builder to eager-load the nodes that are connected to
+// the "relay_keys" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithRelayKeys(opts ...func(*RelayKeyQuery)) *UserQuery {
+	query := (&RelayKeyClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRelayKeys = query
 	return _q
 }
 
@@ -567,9 +604,10 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [6]bool{
+		loadedTypes = [7]bool{
 			_q.withProjects != nil,
 			_q.withAPIKeys != nil,
+			_q.withRelayKeys != nil,
 			_q.withRoles != nil,
 			_q.withChannelOverrideTemplates != nil,
 			_q.withProjectUsers != nil,
@@ -608,6 +646,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadAPIKeys(ctx, query, nodes,
 			func(n *User) { n.Edges.APIKeys = []*APIKey{} },
 			func(n *User, e *APIKey) { n.Edges.APIKeys = append(n.Edges.APIKeys, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRelayKeys; query != nil {
+		if err := _q.loadRelayKeys(ctx, query, nodes,
+			func(n *User) { n.Edges.RelayKeys = []*RelayKey{} },
+			func(n *User, e *RelayKey) { n.Edges.RelayKeys = append(n.Edges.RelayKeys, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -652,6 +697,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadAPIKeys(ctx, query, nodes,
 			func(n *User) { n.appendNamedAPIKeys(name) },
 			func(n *User, e *APIKey) { n.appendNamedAPIKeys(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRelayKeys {
+		if err := _q.loadRelayKeys(ctx, query, nodes,
+			func(n *User) { n.appendNamedRelayKeys(name) },
+			func(n *User, e *RelayKey) { n.appendNamedRelayKeys(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -777,6 +829,39 @@ func (_q *UserQuery) loadAPIKeys(ctx context.Context, query *APIKeyQuery, nodes 
 		node, ok := nodeids[fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadRelayKeys(ctx context.Context, query *RelayKeyQuery, nodes []*User, init func(*User), assign func(*User, *RelayKey)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(relaykey.FieldOwnerUserID)
+	}
+	query.Where(predicate.RelayKey(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.RelayKeysColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.OwnerUserID
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "owner_user_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "owner_user_id" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -1052,6 +1137,20 @@ func (_q *UserQuery) WithNamedAPIKeys(name string, opts ...func(*APIKeyQuery)) *
 		_q.withNamedAPIKeys = make(map[string]*APIKeyQuery)
 	}
 	_q.withNamedAPIKeys[name] = query
+	return _q
+}
+
+// WithNamedRelayKeys tells the query-builder to eager-load the nodes that are connected to the "relay_keys"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedRelayKeys(name string, opts ...func(*RelayKeyQuery)) *UserQuery {
+	query := (&RelayKeyClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRelayKeys == nil {
+		_q.withNamedRelayKeys = make(map[string]*RelayKeyQuery)
+	}
+	_q.withNamedRelayKeys[name] = query
 	return _q
 }
 

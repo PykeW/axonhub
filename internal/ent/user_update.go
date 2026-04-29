@@ -16,6 +16,7 @@ import (
 	"github.com/looplj/axonhub/internal/ent/channeloverridetemplate"
 	"github.com/looplj/axonhub/internal/ent/predicate"
 	"github.com/looplj/axonhub/internal/ent/project"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
 	"github.com/looplj/axonhub/internal/ent/role"
 	"github.com/looplj/axonhub/internal/ent/user"
 	"github.com/looplj/axonhub/internal/ent/userproject"
@@ -229,6 +230,21 @@ func (_u *UserUpdate) AddAPIKeys(v ...*APIKey) *UserUpdate {
 	return _u.AddAPIKeyIDs(ids...)
 }
 
+// AddRelayKeyIDs adds the "relay_keys" edge to the RelayKey entity by IDs.
+func (_u *UserUpdate) AddRelayKeyIDs(ids ...int) *UserUpdate {
+	_u.mutation.AddRelayKeyIDs(ids...)
+	return _u
+}
+
+// AddRelayKeys adds the "relay_keys" edges to the RelayKey entity.
+func (_u *UserUpdate) AddRelayKeys(v ...*RelayKey) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRelayKeyIDs(ids...)
+}
+
 // AddRoleIDs adds the "roles" edge to the Role entity by IDs.
 func (_u *UserUpdate) AddRoleIDs(ids ...int) *UserUpdate {
 	_u.mutation.AddRoleIDs(ids...)
@@ -334,6 +350,27 @@ func (_u *UserUpdate) RemoveAPIKeys(v ...*APIKey) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveAPIKeyIDs(ids...)
+}
+
+// ClearRelayKeys clears all "relay_keys" edges to the RelayKey entity.
+func (_u *UserUpdate) ClearRelayKeys() *UserUpdate {
+	_u.mutation.ClearRelayKeys()
+	return _u
+}
+
+// RemoveRelayKeyIDs removes the "relay_keys" edge to RelayKey entities by IDs.
+func (_u *UserUpdate) RemoveRelayKeyIDs(ids ...int) *UserUpdate {
+	_u.mutation.RemoveRelayKeyIDs(ids...)
+	return _u
+}
+
+// RemoveRelayKeys removes "relay_keys" edges to RelayKey entities.
+func (_u *UserUpdate) RemoveRelayKeys(v ...*RelayKey) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRelayKeyIDs(ids...)
 }
 
 // ClearRoles clears all "roles" edges to the Role entity.
@@ -632,6 +669,51 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apikey.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RelayKeysCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelayKeysTable,
+			Columns: []string{user.RelayKeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relaykey.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRelayKeysIDs(); len(nodes) > 0 && !_u.mutation.RelayKeysCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelayKeysTable,
+			Columns: []string{user.RelayKeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relaykey.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RelayKeysIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelayKeysTable,
+			Columns: []string{user.RelayKeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relaykey.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -1046,6 +1128,21 @@ func (_u *UserUpdateOne) AddAPIKeys(v ...*APIKey) *UserUpdateOne {
 	return _u.AddAPIKeyIDs(ids...)
 }
 
+// AddRelayKeyIDs adds the "relay_keys" edge to the RelayKey entity by IDs.
+func (_u *UserUpdateOne) AddRelayKeyIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.AddRelayKeyIDs(ids...)
+	return _u
+}
+
+// AddRelayKeys adds the "relay_keys" edges to the RelayKey entity.
+func (_u *UserUpdateOne) AddRelayKeys(v ...*RelayKey) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRelayKeyIDs(ids...)
+}
+
 // AddRoleIDs adds the "roles" edge to the Role entity by IDs.
 func (_u *UserUpdateOne) AddRoleIDs(ids ...int) *UserUpdateOne {
 	_u.mutation.AddRoleIDs(ids...)
@@ -1151,6 +1248,27 @@ func (_u *UserUpdateOne) RemoveAPIKeys(v ...*APIKey) *UserUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveAPIKeyIDs(ids...)
+}
+
+// ClearRelayKeys clears all "relay_keys" edges to the RelayKey entity.
+func (_u *UserUpdateOne) ClearRelayKeys() *UserUpdateOne {
+	_u.mutation.ClearRelayKeys()
+	return _u
+}
+
+// RemoveRelayKeyIDs removes the "relay_keys" edge to RelayKey entities by IDs.
+func (_u *UserUpdateOne) RemoveRelayKeyIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.RemoveRelayKeyIDs(ids...)
+	return _u
+}
+
+// RemoveRelayKeys removes "relay_keys" edges to RelayKey entities.
+func (_u *UserUpdateOne) RemoveRelayKeys(v ...*RelayKey) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRelayKeyIDs(ids...)
 }
 
 // ClearRoles clears all "roles" edges to the Role entity.
@@ -1479,6 +1597,51 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(apikey.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RelayKeysCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelayKeysTable,
+			Columns: []string{user.RelayKeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relaykey.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRelayKeysIDs(); len(nodes) > 0 && !_u.mutation.RelayKeysCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelayKeysTable,
+			Columns: []string{user.RelayKeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relaykey.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RelayKeysIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelayKeysTable,
+			Columns: []string{user.RelayKeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relaykey.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

@@ -54,6 +54,8 @@ type UserEdges struct {
 	Projects []*Project `json:"projects,omitempty"`
 	// APIKeys holds the value of the api_keys edge.
 	APIKeys []*APIKey `json:"api_keys,omitempty"`
+	// RelayKeys holds the value of the relay_keys edge.
+	RelayKeys []*RelayKey `json:"relay_keys,omitempty"`
 	// Roles holds the value of the roles edge.
 	Roles []*Role `json:"roles,omitempty"`
 	// ChannelOverrideTemplates holds the value of the channel_override_templates edge.
@@ -64,12 +66,13 @@ type UserEdges struct {
 	UserRoles []*UserRole `json:"user_roles,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [7]bool
 	// totalCount holds the count of the edges above.
-	totalCount [6]map[string]int
+	totalCount [7]map[string]int
 
 	namedProjects                 map[string][]*Project
 	namedAPIKeys                  map[string][]*APIKey
+	namedRelayKeys                map[string][]*RelayKey
 	namedRoles                    map[string][]*Role
 	namedChannelOverrideTemplates map[string][]*ChannelOverrideTemplate
 	namedProjectUsers             map[string][]*UserProject
@@ -94,10 +97,19 @@ func (e UserEdges) APIKeysOrErr() ([]*APIKey, error) {
 	return nil, &NotLoadedError{edge: "api_keys"}
 }
 
+// RelayKeysOrErr returns the RelayKeys value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RelayKeysOrErr() ([]*RelayKey, error) {
+	if e.loadedTypes[2] {
+		return e.RelayKeys, nil
+	}
+	return nil, &NotLoadedError{edge: "relay_keys"}
+}
+
 // RolesOrErr returns the Roles value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RolesOrErr() ([]*Role, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.Roles, nil
 	}
 	return nil, &NotLoadedError{edge: "roles"}
@@ -106,7 +118,7 @@ func (e UserEdges) RolesOrErr() ([]*Role, error) {
 // ChannelOverrideTemplatesOrErr returns the ChannelOverrideTemplates value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) ChannelOverrideTemplatesOrErr() ([]*ChannelOverrideTemplate, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[4] {
 		return e.ChannelOverrideTemplates, nil
 	}
 	return nil, &NotLoadedError{edge: "channel_override_templates"}
@@ -115,7 +127,7 @@ func (e UserEdges) ChannelOverrideTemplatesOrErr() ([]*ChannelOverrideTemplate, 
 // ProjectUsersOrErr returns the ProjectUsers value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) ProjectUsersOrErr() ([]*UserProject, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[5] {
 		return e.ProjectUsers, nil
 	}
 	return nil, &NotLoadedError{edge: "project_users"}
@@ -124,7 +136,7 @@ func (e UserEdges) ProjectUsersOrErr() ([]*UserProject, error) {
 // UserRolesOrErr returns the UserRoles value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) UserRolesOrErr() ([]*UserRole, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[6] {
 		return e.UserRoles, nil
 	}
 	return nil, &NotLoadedError{edge: "user_roles"}
@@ -263,6 +275,11 @@ func (_m *User) QueryAPIKeys() *APIKeyQuery {
 	return NewUserClient(_m.config).QueryAPIKeys(_m)
 }
 
+// QueryRelayKeys queries the "relay_keys" edge of the User entity.
+func (_m *User) QueryRelayKeys() *RelayKeyQuery {
+	return NewUserClient(_m.config).QueryRelayKeys(_m)
+}
+
 // QueryRoles queries the "roles" edge of the User entity.
 func (_m *User) QueryRoles() *RoleQuery {
 	return NewUserClient(_m.config).QueryRoles(_m)
@@ -389,6 +406,30 @@ func (_m *User) appendNamedAPIKeys(name string, edges ...*APIKey) {
 		_m.Edges.namedAPIKeys[name] = []*APIKey{}
 	} else {
 		_m.Edges.namedAPIKeys[name] = append(_m.Edges.namedAPIKeys[name], edges...)
+	}
+}
+
+// NamedRelayKeys returns the RelayKeys named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedRelayKeys(name string) ([]*RelayKey, error) {
+	if _m.Edges.namedRelayKeys == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelayKeys[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedRelayKeys(name string, edges ...*RelayKey) {
+	if _m.Edges.namedRelayKeys == nil {
+		_m.Edges.namedRelayKeys = make(map[string][]*RelayKey)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelayKeys[name] = []*RelayKey{}
+	} else {
+		_m.Edges.namedRelayKeys[name] = append(_m.Edges.namedRelayKeys[name], edges...)
 	}
 }
 

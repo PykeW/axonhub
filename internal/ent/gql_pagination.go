@@ -26,6 +26,12 @@ import (
 	"github.com/looplj/axonhub/internal/ent/prompt"
 	"github.com/looplj/axonhub/internal/ent/promptprotectionrule"
 	"github.com/looplj/axonhub/internal/ent/providerquotastatus"
+	"github.com/looplj/axonhub/internal/ent/relaydailyusagesummary"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
+	"github.com/looplj/axonhub/internal/ent/relayproduct"
+	"github.com/looplj/axonhub/internal/ent/relayproductchannel"
+	"github.com/looplj/axonhub/internal/ent/relaywallet"
+	"github.com/looplj/axonhub/internal/ent/relaywalletledgerentry"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/ent/requestexecution"
 	"github.com/looplj/axonhub/internal/ent/role"
@@ -3943,6 +3949,1998 @@ func (_m *ProviderQuotaStatus) ToEdge(order *ProviderQuotaStatusOrder) *Provider
 		order = DefaultProviderQuotaStatusOrder
 	}
 	return &ProviderQuotaStatusEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// RelayDailyUsageSummaryEdge is the edge representation of RelayDailyUsageSummary.
+type RelayDailyUsageSummaryEdge struct {
+	Node   *RelayDailyUsageSummary `json:"node"`
+	Cursor Cursor                  `json:"cursor"`
+}
+
+// RelayDailyUsageSummaryConnection is the connection containing edges to RelayDailyUsageSummary.
+type RelayDailyUsageSummaryConnection struct {
+	Edges      []*RelayDailyUsageSummaryEdge `json:"edges"`
+	PageInfo   PageInfo                      `json:"pageInfo"`
+	TotalCount int                           `json:"totalCount"`
+}
+
+func (c *RelayDailyUsageSummaryConnection) build(nodes []*RelayDailyUsageSummary, pager *relaydailyusagesummaryPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *RelayDailyUsageSummary
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *RelayDailyUsageSummary {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *RelayDailyUsageSummary {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*RelayDailyUsageSummaryEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &RelayDailyUsageSummaryEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// RelayDailyUsageSummaryPaginateOption enables pagination customization.
+type RelayDailyUsageSummaryPaginateOption func(*relaydailyusagesummaryPager) error
+
+// WithRelayDailyUsageSummaryOrder configures pagination ordering.
+func WithRelayDailyUsageSummaryOrder(order *RelayDailyUsageSummaryOrder) RelayDailyUsageSummaryPaginateOption {
+	if order == nil {
+		order = DefaultRelayDailyUsageSummaryOrder
+	}
+	o := *order
+	return func(pager *relaydailyusagesummaryPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultRelayDailyUsageSummaryOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithRelayDailyUsageSummaryFilter configures pagination filter.
+func WithRelayDailyUsageSummaryFilter(filter func(*RelayDailyUsageSummaryQuery) (*RelayDailyUsageSummaryQuery, error)) RelayDailyUsageSummaryPaginateOption {
+	return func(pager *relaydailyusagesummaryPager) error {
+		if filter == nil {
+			return errors.New("RelayDailyUsageSummaryQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type relaydailyusagesummaryPager struct {
+	reverse bool
+	order   *RelayDailyUsageSummaryOrder
+	filter  func(*RelayDailyUsageSummaryQuery) (*RelayDailyUsageSummaryQuery, error)
+}
+
+func newRelayDailyUsageSummaryPager(opts []RelayDailyUsageSummaryPaginateOption, reverse bool) (*relaydailyusagesummaryPager, error) {
+	pager := &relaydailyusagesummaryPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultRelayDailyUsageSummaryOrder
+	}
+	return pager, nil
+}
+
+func (p *relaydailyusagesummaryPager) applyFilter(query *RelayDailyUsageSummaryQuery) (*RelayDailyUsageSummaryQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *relaydailyusagesummaryPager) toCursor(_m *RelayDailyUsageSummary) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *relaydailyusagesummaryPager) applyCursors(query *RelayDailyUsageSummaryQuery, after, before *Cursor) (*RelayDailyUsageSummaryQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultRelayDailyUsageSummaryOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *relaydailyusagesummaryPager) applyOrder(query *RelayDailyUsageSummaryQuery) *RelayDailyUsageSummaryQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultRelayDailyUsageSummaryOrder.Field {
+		query = query.Order(DefaultRelayDailyUsageSummaryOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *relaydailyusagesummaryPager) orderExpr(query *RelayDailyUsageSummaryQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultRelayDailyUsageSummaryOrder.Field {
+			b.Comma().Ident(DefaultRelayDailyUsageSummaryOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to RelayDailyUsageSummary.
+func (_m *RelayDailyUsageSummaryQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...RelayDailyUsageSummaryPaginateOption,
+) (*RelayDailyUsageSummaryConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newRelayDailyUsageSummaryPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &RelayDailyUsageSummaryConnection{Edges: []*RelayDailyUsageSummaryEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+var (
+	// RelayDailyUsageSummaryOrderFieldCreatedAt orders RelayDailyUsageSummary by created_at.
+	RelayDailyUsageSummaryOrderFieldCreatedAt = &RelayDailyUsageSummaryOrderField{
+		Value: func(_m *RelayDailyUsageSummary) (ent.Value, error) {
+			return _m.CreatedAt, nil
+		},
+		column: relaydailyusagesummary.FieldCreatedAt,
+		toTerm: relaydailyusagesummary.ByCreatedAt,
+		toCursor: func(_m *RelayDailyUsageSummary) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.CreatedAt,
+			}
+		},
+	}
+	// RelayDailyUsageSummaryOrderFieldUpdatedAt orders RelayDailyUsageSummary by updated_at.
+	RelayDailyUsageSummaryOrderFieldUpdatedAt = &RelayDailyUsageSummaryOrderField{
+		Value: func(_m *RelayDailyUsageSummary) (ent.Value, error) {
+			return _m.UpdatedAt, nil
+		},
+		column: relaydailyusagesummary.FieldUpdatedAt,
+		toTerm: relaydailyusagesummary.ByUpdatedAt,
+		toCursor: func(_m *RelayDailyUsageSummary) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.UpdatedAt,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f RelayDailyUsageSummaryOrderField) String() string {
+	var str string
+	switch f.column {
+	case RelayDailyUsageSummaryOrderFieldCreatedAt.column:
+		str = "CREATED_AT"
+	case RelayDailyUsageSummaryOrderFieldUpdatedAt.column:
+		str = "UPDATED_AT"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f RelayDailyUsageSummaryOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *RelayDailyUsageSummaryOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("RelayDailyUsageSummaryOrderField %T must be a string", v)
+	}
+	switch str {
+	case "CREATED_AT":
+		*f = *RelayDailyUsageSummaryOrderFieldCreatedAt
+	case "UPDATED_AT":
+		*f = *RelayDailyUsageSummaryOrderFieldUpdatedAt
+	default:
+		return fmt.Errorf("%s is not a valid RelayDailyUsageSummaryOrderField", str)
+	}
+	return nil
+}
+
+// RelayDailyUsageSummaryOrderField defines the ordering field of RelayDailyUsageSummary.
+type RelayDailyUsageSummaryOrderField struct {
+	// Value extracts the ordering value from the given RelayDailyUsageSummary.
+	Value    func(*RelayDailyUsageSummary) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) relaydailyusagesummary.OrderOption
+	toCursor func(*RelayDailyUsageSummary) Cursor
+}
+
+// RelayDailyUsageSummaryOrder defines the ordering of RelayDailyUsageSummary.
+type RelayDailyUsageSummaryOrder struct {
+	Direction OrderDirection                    `json:"direction"`
+	Field     *RelayDailyUsageSummaryOrderField `json:"field"`
+}
+
+// DefaultRelayDailyUsageSummaryOrder is the default ordering of RelayDailyUsageSummary.
+var DefaultRelayDailyUsageSummaryOrder = &RelayDailyUsageSummaryOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &RelayDailyUsageSummaryOrderField{
+		Value: func(_m *RelayDailyUsageSummary) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: relaydailyusagesummary.FieldID,
+		toTerm: relaydailyusagesummary.ByID,
+		toCursor: func(_m *RelayDailyUsageSummary) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts RelayDailyUsageSummary into RelayDailyUsageSummaryEdge.
+func (_m *RelayDailyUsageSummary) ToEdge(order *RelayDailyUsageSummaryOrder) *RelayDailyUsageSummaryEdge {
+	if order == nil {
+		order = DefaultRelayDailyUsageSummaryOrder
+	}
+	return &RelayDailyUsageSummaryEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// RelayKeyEdge is the edge representation of RelayKey.
+type RelayKeyEdge struct {
+	Node   *RelayKey `json:"node"`
+	Cursor Cursor    `json:"cursor"`
+}
+
+// RelayKeyConnection is the connection containing edges to RelayKey.
+type RelayKeyConnection struct {
+	Edges      []*RelayKeyEdge `json:"edges"`
+	PageInfo   PageInfo        `json:"pageInfo"`
+	TotalCount int             `json:"totalCount"`
+}
+
+func (c *RelayKeyConnection) build(nodes []*RelayKey, pager *relaykeyPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *RelayKey
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *RelayKey {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *RelayKey {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*RelayKeyEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &RelayKeyEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// RelayKeyPaginateOption enables pagination customization.
+type RelayKeyPaginateOption func(*relaykeyPager) error
+
+// WithRelayKeyOrder configures pagination ordering.
+func WithRelayKeyOrder(order *RelayKeyOrder) RelayKeyPaginateOption {
+	if order == nil {
+		order = DefaultRelayKeyOrder
+	}
+	o := *order
+	return func(pager *relaykeyPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultRelayKeyOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithRelayKeyFilter configures pagination filter.
+func WithRelayKeyFilter(filter func(*RelayKeyQuery) (*RelayKeyQuery, error)) RelayKeyPaginateOption {
+	return func(pager *relaykeyPager) error {
+		if filter == nil {
+			return errors.New("RelayKeyQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type relaykeyPager struct {
+	reverse bool
+	order   *RelayKeyOrder
+	filter  func(*RelayKeyQuery) (*RelayKeyQuery, error)
+}
+
+func newRelayKeyPager(opts []RelayKeyPaginateOption, reverse bool) (*relaykeyPager, error) {
+	pager := &relaykeyPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultRelayKeyOrder
+	}
+	return pager, nil
+}
+
+func (p *relaykeyPager) applyFilter(query *RelayKeyQuery) (*RelayKeyQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *relaykeyPager) toCursor(_m *RelayKey) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *relaykeyPager) applyCursors(query *RelayKeyQuery, after, before *Cursor) (*RelayKeyQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultRelayKeyOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *relaykeyPager) applyOrder(query *RelayKeyQuery) *RelayKeyQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultRelayKeyOrder.Field {
+		query = query.Order(DefaultRelayKeyOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *relaykeyPager) orderExpr(query *RelayKeyQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultRelayKeyOrder.Field {
+			b.Comma().Ident(DefaultRelayKeyOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to RelayKey.
+func (_m *RelayKeyQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...RelayKeyPaginateOption,
+) (*RelayKeyConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newRelayKeyPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &RelayKeyConnection{Edges: []*RelayKeyEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+var (
+	// RelayKeyOrderFieldCreatedAt orders RelayKey by created_at.
+	RelayKeyOrderFieldCreatedAt = &RelayKeyOrderField{
+		Value: func(_m *RelayKey) (ent.Value, error) {
+			return _m.CreatedAt, nil
+		},
+		column: relaykey.FieldCreatedAt,
+		toTerm: relaykey.ByCreatedAt,
+		toCursor: func(_m *RelayKey) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.CreatedAt,
+			}
+		},
+	}
+	// RelayKeyOrderFieldUpdatedAt orders RelayKey by updated_at.
+	RelayKeyOrderFieldUpdatedAt = &RelayKeyOrderField{
+		Value: func(_m *RelayKey) (ent.Value, error) {
+			return _m.UpdatedAt, nil
+		},
+		column: relaykey.FieldUpdatedAt,
+		toTerm: relaykey.ByUpdatedAt,
+		toCursor: func(_m *RelayKey) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.UpdatedAt,
+			}
+		},
+	}
+	// RelayKeyOrderFieldStatus orders RelayKey by status.
+	RelayKeyOrderFieldStatus = &RelayKeyOrderField{
+		Value: func(_m *RelayKey) (ent.Value, error) {
+			return _m.Status, nil
+		},
+		column: relaykey.FieldStatus,
+		toTerm: relaykey.ByStatus,
+		toCursor: func(_m *RelayKey) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.Status,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f RelayKeyOrderField) String() string {
+	var str string
+	switch f.column {
+	case RelayKeyOrderFieldCreatedAt.column:
+		str = "CREATED_AT"
+	case RelayKeyOrderFieldUpdatedAt.column:
+		str = "UPDATED_AT"
+	case RelayKeyOrderFieldStatus.column:
+		str = "STATUS"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f RelayKeyOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *RelayKeyOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("RelayKeyOrderField %T must be a string", v)
+	}
+	switch str {
+	case "CREATED_AT":
+		*f = *RelayKeyOrderFieldCreatedAt
+	case "UPDATED_AT":
+		*f = *RelayKeyOrderFieldUpdatedAt
+	case "STATUS":
+		*f = *RelayKeyOrderFieldStatus
+	default:
+		return fmt.Errorf("%s is not a valid RelayKeyOrderField", str)
+	}
+	return nil
+}
+
+// RelayKeyOrderField defines the ordering field of RelayKey.
+type RelayKeyOrderField struct {
+	// Value extracts the ordering value from the given RelayKey.
+	Value    func(*RelayKey) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) relaykey.OrderOption
+	toCursor func(*RelayKey) Cursor
+}
+
+// RelayKeyOrder defines the ordering of RelayKey.
+type RelayKeyOrder struct {
+	Direction OrderDirection      `json:"direction"`
+	Field     *RelayKeyOrderField `json:"field"`
+}
+
+// DefaultRelayKeyOrder is the default ordering of RelayKey.
+var DefaultRelayKeyOrder = &RelayKeyOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &RelayKeyOrderField{
+		Value: func(_m *RelayKey) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: relaykey.FieldID,
+		toTerm: relaykey.ByID,
+		toCursor: func(_m *RelayKey) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts RelayKey into RelayKeyEdge.
+func (_m *RelayKey) ToEdge(order *RelayKeyOrder) *RelayKeyEdge {
+	if order == nil {
+		order = DefaultRelayKeyOrder
+	}
+	return &RelayKeyEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// RelayProductEdge is the edge representation of RelayProduct.
+type RelayProductEdge struct {
+	Node   *RelayProduct `json:"node"`
+	Cursor Cursor        `json:"cursor"`
+}
+
+// RelayProductConnection is the connection containing edges to RelayProduct.
+type RelayProductConnection struct {
+	Edges      []*RelayProductEdge `json:"edges"`
+	PageInfo   PageInfo            `json:"pageInfo"`
+	TotalCount int                 `json:"totalCount"`
+}
+
+func (c *RelayProductConnection) build(nodes []*RelayProduct, pager *relayproductPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *RelayProduct
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *RelayProduct {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *RelayProduct {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*RelayProductEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &RelayProductEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// RelayProductPaginateOption enables pagination customization.
+type RelayProductPaginateOption func(*relayproductPager) error
+
+// WithRelayProductOrder configures pagination ordering.
+func WithRelayProductOrder(order *RelayProductOrder) RelayProductPaginateOption {
+	if order == nil {
+		order = DefaultRelayProductOrder
+	}
+	o := *order
+	return func(pager *relayproductPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultRelayProductOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithRelayProductFilter configures pagination filter.
+func WithRelayProductFilter(filter func(*RelayProductQuery) (*RelayProductQuery, error)) RelayProductPaginateOption {
+	return func(pager *relayproductPager) error {
+		if filter == nil {
+			return errors.New("RelayProductQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type relayproductPager struct {
+	reverse bool
+	order   *RelayProductOrder
+	filter  func(*RelayProductQuery) (*RelayProductQuery, error)
+}
+
+func newRelayProductPager(opts []RelayProductPaginateOption, reverse bool) (*relayproductPager, error) {
+	pager := &relayproductPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultRelayProductOrder
+	}
+	return pager, nil
+}
+
+func (p *relayproductPager) applyFilter(query *RelayProductQuery) (*RelayProductQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *relayproductPager) toCursor(_m *RelayProduct) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *relayproductPager) applyCursors(query *RelayProductQuery, after, before *Cursor) (*RelayProductQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultRelayProductOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *relayproductPager) applyOrder(query *RelayProductQuery) *RelayProductQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultRelayProductOrder.Field {
+		query = query.Order(DefaultRelayProductOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *relayproductPager) orderExpr(query *RelayProductQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultRelayProductOrder.Field {
+			b.Comma().Ident(DefaultRelayProductOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to RelayProduct.
+func (_m *RelayProductQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...RelayProductPaginateOption,
+) (*RelayProductConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newRelayProductPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &RelayProductConnection{Edges: []*RelayProductEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+var (
+	// RelayProductOrderFieldCreatedAt orders RelayProduct by created_at.
+	RelayProductOrderFieldCreatedAt = &RelayProductOrderField{
+		Value: func(_m *RelayProduct) (ent.Value, error) {
+			return _m.CreatedAt, nil
+		},
+		column: relayproduct.FieldCreatedAt,
+		toTerm: relayproduct.ByCreatedAt,
+		toCursor: func(_m *RelayProduct) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.CreatedAt,
+			}
+		},
+	}
+	// RelayProductOrderFieldUpdatedAt orders RelayProduct by updated_at.
+	RelayProductOrderFieldUpdatedAt = &RelayProductOrderField{
+		Value: func(_m *RelayProduct) (ent.Value, error) {
+			return _m.UpdatedAt, nil
+		},
+		column: relayproduct.FieldUpdatedAt,
+		toTerm: relayproduct.ByUpdatedAt,
+		toCursor: func(_m *RelayProduct) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.UpdatedAt,
+			}
+		},
+	}
+	// RelayProductOrderFieldCode orders RelayProduct by code.
+	RelayProductOrderFieldCode = &RelayProductOrderField{
+		Value: func(_m *RelayProduct) (ent.Value, error) {
+			return _m.Code, nil
+		},
+		column: relayproduct.FieldCode,
+		toTerm: relayproduct.ByCode,
+		toCursor: func(_m *RelayProduct) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.Code,
+			}
+		},
+	}
+	// RelayProductOrderFieldName orders RelayProduct by name.
+	RelayProductOrderFieldName = &RelayProductOrderField{
+		Value: func(_m *RelayProduct) (ent.Value, error) {
+			return _m.Name, nil
+		},
+		column: relayproduct.FieldName,
+		toTerm: relayproduct.ByName,
+		toCursor: func(_m *RelayProduct) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.Name,
+			}
+		},
+	}
+	// RelayProductOrderFieldProviderType orders RelayProduct by provider_type.
+	RelayProductOrderFieldProviderType = &RelayProductOrderField{
+		Value: func(_m *RelayProduct) (ent.Value, error) {
+			return _m.ProviderType, nil
+		},
+		column: relayproduct.FieldProviderType,
+		toTerm: relayproduct.ByProviderType,
+		toCursor: func(_m *RelayProduct) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.ProviderType,
+			}
+		},
+	}
+	// RelayProductOrderFieldStatus orders RelayProduct by status.
+	RelayProductOrderFieldStatus = &RelayProductOrderField{
+		Value: func(_m *RelayProduct) (ent.Value, error) {
+			return _m.Status, nil
+		},
+		column: relayproduct.FieldStatus,
+		toTerm: relayproduct.ByStatus,
+		toCursor: func(_m *RelayProduct) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.Status,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f RelayProductOrderField) String() string {
+	var str string
+	switch f.column {
+	case RelayProductOrderFieldCreatedAt.column:
+		str = "CREATED_AT"
+	case RelayProductOrderFieldUpdatedAt.column:
+		str = "UPDATED_AT"
+	case RelayProductOrderFieldCode.column:
+		str = "CODE"
+	case RelayProductOrderFieldName.column:
+		str = "NAME"
+	case RelayProductOrderFieldProviderType.column:
+		str = "PROVIDER_TYPE"
+	case RelayProductOrderFieldStatus.column:
+		str = "STATUS"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f RelayProductOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *RelayProductOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("RelayProductOrderField %T must be a string", v)
+	}
+	switch str {
+	case "CREATED_AT":
+		*f = *RelayProductOrderFieldCreatedAt
+	case "UPDATED_AT":
+		*f = *RelayProductOrderFieldUpdatedAt
+	case "CODE":
+		*f = *RelayProductOrderFieldCode
+	case "NAME":
+		*f = *RelayProductOrderFieldName
+	case "PROVIDER_TYPE":
+		*f = *RelayProductOrderFieldProviderType
+	case "STATUS":
+		*f = *RelayProductOrderFieldStatus
+	default:
+		return fmt.Errorf("%s is not a valid RelayProductOrderField", str)
+	}
+	return nil
+}
+
+// RelayProductOrderField defines the ordering field of RelayProduct.
+type RelayProductOrderField struct {
+	// Value extracts the ordering value from the given RelayProduct.
+	Value    func(*RelayProduct) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) relayproduct.OrderOption
+	toCursor func(*RelayProduct) Cursor
+}
+
+// RelayProductOrder defines the ordering of RelayProduct.
+type RelayProductOrder struct {
+	Direction OrderDirection          `json:"direction"`
+	Field     *RelayProductOrderField `json:"field"`
+}
+
+// DefaultRelayProductOrder is the default ordering of RelayProduct.
+var DefaultRelayProductOrder = &RelayProductOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &RelayProductOrderField{
+		Value: func(_m *RelayProduct) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: relayproduct.FieldID,
+		toTerm: relayproduct.ByID,
+		toCursor: func(_m *RelayProduct) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts RelayProduct into RelayProductEdge.
+func (_m *RelayProduct) ToEdge(order *RelayProductOrder) *RelayProductEdge {
+	if order == nil {
+		order = DefaultRelayProductOrder
+	}
+	return &RelayProductEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// RelayProductChannelEdge is the edge representation of RelayProductChannel.
+type RelayProductChannelEdge struct {
+	Node   *RelayProductChannel `json:"node"`
+	Cursor Cursor               `json:"cursor"`
+}
+
+// RelayProductChannelConnection is the connection containing edges to RelayProductChannel.
+type RelayProductChannelConnection struct {
+	Edges      []*RelayProductChannelEdge `json:"edges"`
+	PageInfo   PageInfo                   `json:"pageInfo"`
+	TotalCount int                        `json:"totalCount"`
+}
+
+func (c *RelayProductChannelConnection) build(nodes []*RelayProductChannel, pager *relayproductchannelPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *RelayProductChannel
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *RelayProductChannel {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *RelayProductChannel {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*RelayProductChannelEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &RelayProductChannelEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// RelayProductChannelPaginateOption enables pagination customization.
+type RelayProductChannelPaginateOption func(*relayproductchannelPager) error
+
+// WithRelayProductChannelOrder configures pagination ordering.
+func WithRelayProductChannelOrder(order *RelayProductChannelOrder) RelayProductChannelPaginateOption {
+	if order == nil {
+		order = DefaultRelayProductChannelOrder
+	}
+	o := *order
+	return func(pager *relayproductchannelPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultRelayProductChannelOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithRelayProductChannelFilter configures pagination filter.
+func WithRelayProductChannelFilter(filter func(*RelayProductChannelQuery) (*RelayProductChannelQuery, error)) RelayProductChannelPaginateOption {
+	return func(pager *relayproductchannelPager) error {
+		if filter == nil {
+			return errors.New("RelayProductChannelQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type relayproductchannelPager struct {
+	reverse bool
+	order   *RelayProductChannelOrder
+	filter  func(*RelayProductChannelQuery) (*RelayProductChannelQuery, error)
+}
+
+func newRelayProductChannelPager(opts []RelayProductChannelPaginateOption, reverse bool) (*relayproductchannelPager, error) {
+	pager := &relayproductchannelPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultRelayProductChannelOrder
+	}
+	return pager, nil
+}
+
+func (p *relayproductchannelPager) applyFilter(query *RelayProductChannelQuery) (*RelayProductChannelQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *relayproductchannelPager) toCursor(_m *RelayProductChannel) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *relayproductchannelPager) applyCursors(query *RelayProductChannelQuery, after, before *Cursor) (*RelayProductChannelQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultRelayProductChannelOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *relayproductchannelPager) applyOrder(query *RelayProductChannelQuery) *RelayProductChannelQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultRelayProductChannelOrder.Field {
+		query = query.Order(DefaultRelayProductChannelOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *relayproductchannelPager) orderExpr(query *RelayProductChannelQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultRelayProductChannelOrder.Field {
+			b.Comma().Ident(DefaultRelayProductChannelOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to RelayProductChannel.
+func (_m *RelayProductChannelQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...RelayProductChannelPaginateOption,
+) (*RelayProductChannelConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newRelayProductChannelPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &RelayProductChannelConnection{Edges: []*RelayProductChannelEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+var (
+	// RelayProductChannelOrderFieldCreatedAt orders RelayProductChannel by created_at.
+	RelayProductChannelOrderFieldCreatedAt = &RelayProductChannelOrderField{
+		Value: func(_m *RelayProductChannel) (ent.Value, error) {
+			return _m.CreatedAt, nil
+		},
+		column: relayproductchannel.FieldCreatedAt,
+		toTerm: relayproductchannel.ByCreatedAt,
+		toCursor: func(_m *RelayProductChannel) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.CreatedAt,
+			}
+		},
+	}
+	// RelayProductChannelOrderFieldUpdatedAt orders RelayProductChannel by updated_at.
+	RelayProductChannelOrderFieldUpdatedAt = &RelayProductChannelOrderField{
+		Value: func(_m *RelayProductChannel) (ent.Value, error) {
+			return _m.UpdatedAt, nil
+		},
+		column: relayproductchannel.FieldUpdatedAt,
+		toTerm: relayproductchannel.ByUpdatedAt,
+		toCursor: func(_m *RelayProductChannel) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.UpdatedAt,
+			}
+		},
+	}
+	// RelayProductChannelOrderFieldStatus orders RelayProductChannel by status.
+	RelayProductChannelOrderFieldStatus = &RelayProductChannelOrderField{
+		Value: func(_m *RelayProductChannel) (ent.Value, error) {
+			return _m.Status, nil
+		},
+		column: relayproductchannel.FieldStatus,
+		toTerm: relayproductchannel.ByStatus,
+		toCursor: func(_m *RelayProductChannel) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.Status,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f RelayProductChannelOrderField) String() string {
+	var str string
+	switch f.column {
+	case RelayProductChannelOrderFieldCreatedAt.column:
+		str = "CREATED_AT"
+	case RelayProductChannelOrderFieldUpdatedAt.column:
+		str = "UPDATED_AT"
+	case RelayProductChannelOrderFieldStatus.column:
+		str = "STATUS"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f RelayProductChannelOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *RelayProductChannelOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("RelayProductChannelOrderField %T must be a string", v)
+	}
+	switch str {
+	case "CREATED_AT":
+		*f = *RelayProductChannelOrderFieldCreatedAt
+	case "UPDATED_AT":
+		*f = *RelayProductChannelOrderFieldUpdatedAt
+	case "STATUS":
+		*f = *RelayProductChannelOrderFieldStatus
+	default:
+		return fmt.Errorf("%s is not a valid RelayProductChannelOrderField", str)
+	}
+	return nil
+}
+
+// RelayProductChannelOrderField defines the ordering field of RelayProductChannel.
+type RelayProductChannelOrderField struct {
+	// Value extracts the ordering value from the given RelayProductChannel.
+	Value    func(*RelayProductChannel) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) relayproductchannel.OrderOption
+	toCursor func(*RelayProductChannel) Cursor
+}
+
+// RelayProductChannelOrder defines the ordering of RelayProductChannel.
+type RelayProductChannelOrder struct {
+	Direction OrderDirection                 `json:"direction"`
+	Field     *RelayProductChannelOrderField `json:"field"`
+}
+
+// DefaultRelayProductChannelOrder is the default ordering of RelayProductChannel.
+var DefaultRelayProductChannelOrder = &RelayProductChannelOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &RelayProductChannelOrderField{
+		Value: func(_m *RelayProductChannel) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: relayproductchannel.FieldID,
+		toTerm: relayproductchannel.ByID,
+		toCursor: func(_m *RelayProductChannel) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts RelayProductChannel into RelayProductChannelEdge.
+func (_m *RelayProductChannel) ToEdge(order *RelayProductChannelOrder) *RelayProductChannelEdge {
+	if order == nil {
+		order = DefaultRelayProductChannelOrder
+	}
+	return &RelayProductChannelEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// RelayWalletEdge is the edge representation of RelayWallet.
+type RelayWalletEdge struct {
+	Node   *RelayWallet `json:"node"`
+	Cursor Cursor       `json:"cursor"`
+}
+
+// RelayWalletConnection is the connection containing edges to RelayWallet.
+type RelayWalletConnection struct {
+	Edges      []*RelayWalletEdge `json:"edges"`
+	PageInfo   PageInfo           `json:"pageInfo"`
+	TotalCount int                `json:"totalCount"`
+}
+
+func (c *RelayWalletConnection) build(nodes []*RelayWallet, pager *relaywalletPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *RelayWallet
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *RelayWallet {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *RelayWallet {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*RelayWalletEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &RelayWalletEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// RelayWalletPaginateOption enables pagination customization.
+type RelayWalletPaginateOption func(*relaywalletPager) error
+
+// WithRelayWalletOrder configures pagination ordering.
+func WithRelayWalletOrder(order *RelayWalletOrder) RelayWalletPaginateOption {
+	if order == nil {
+		order = DefaultRelayWalletOrder
+	}
+	o := *order
+	return func(pager *relaywalletPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultRelayWalletOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithRelayWalletFilter configures pagination filter.
+func WithRelayWalletFilter(filter func(*RelayWalletQuery) (*RelayWalletQuery, error)) RelayWalletPaginateOption {
+	return func(pager *relaywalletPager) error {
+		if filter == nil {
+			return errors.New("RelayWalletQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type relaywalletPager struct {
+	reverse bool
+	order   *RelayWalletOrder
+	filter  func(*RelayWalletQuery) (*RelayWalletQuery, error)
+}
+
+func newRelayWalletPager(opts []RelayWalletPaginateOption, reverse bool) (*relaywalletPager, error) {
+	pager := &relaywalletPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultRelayWalletOrder
+	}
+	return pager, nil
+}
+
+func (p *relaywalletPager) applyFilter(query *RelayWalletQuery) (*RelayWalletQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *relaywalletPager) toCursor(_m *RelayWallet) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *relaywalletPager) applyCursors(query *RelayWalletQuery, after, before *Cursor) (*RelayWalletQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultRelayWalletOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *relaywalletPager) applyOrder(query *RelayWalletQuery) *RelayWalletQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultRelayWalletOrder.Field {
+		query = query.Order(DefaultRelayWalletOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *relaywalletPager) orderExpr(query *RelayWalletQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultRelayWalletOrder.Field {
+			b.Comma().Ident(DefaultRelayWalletOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to RelayWallet.
+func (_m *RelayWalletQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...RelayWalletPaginateOption,
+) (*RelayWalletConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newRelayWalletPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &RelayWalletConnection{Edges: []*RelayWalletEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+var (
+	// RelayWalletOrderFieldCreatedAt orders RelayWallet by created_at.
+	RelayWalletOrderFieldCreatedAt = &RelayWalletOrderField{
+		Value: func(_m *RelayWallet) (ent.Value, error) {
+			return _m.CreatedAt, nil
+		},
+		column: relaywallet.FieldCreatedAt,
+		toTerm: relaywallet.ByCreatedAt,
+		toCursor: func(_m *RelayWallet) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.CreatedAt,
+			}
+		},
+	}
+	// RelayWalletOrderFieldUpdatedAt orders RelayWallet by updated_at.
+	RelayWalletOrderFieldUpdatedAt = &RelayWalletOrderField{
+		Value: func(_m *RelayWallet) (ent.Value, error) {
+			return _m.UpdatedAt, nil
+		},
+		column: relaywallet.FieldUpdatedAt,
+		toTerm: relaywallet.ByUpdatedAt,
+		toCursor: func(_m *RelayWallet) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.UpdatedAt,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f RelayWalletOrderField) String() string {
+	var str string
+	switch f.column {
+	case RelayWalletOrderFieldCreatedAt.column:
+		str = "CREATED_AT"
+	case RelayWalletOrderFieldUpdatedAt.column:
+		str = "UPDATED_AT"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f RelayWalletOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *RelayWalletOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("RelayWalletOrderField %T must be a string", v)
+	}
+	switch str {
+	case "CREATED_AT":
+		*f = *RelayWalletOrderFieldCreatedAt
+	case "UPDATED_AT":
+		*f = *RelayWalletOrderFieldUpdatedAt
+	default:
+		return fmt.Errorf("%s is not a valid RelayWalletOrderField", str)
+	}
+	return nil
+}
+
+// RelayWalletOrderField defines the ordering field of RelayWallet.
+type RelayWalletOrderField struct {
+	// Value extracts the ordering value from the given RelayWallet.
+	Value    func(*RelayWallet) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) relaywallet.OrderOption
+	toCursor func(*RelayWallet) Cursor
+}
+
+// RelayWalletOrder defines the ordering of RelayWallet.
+type RelayWalletOrder struct {
+	Direction OrderDirection         `json:"direction"`
+	Field     *RelayWalletOrderField `json:"field"`
+}
+
+// DefaultRelayWalletOrder is the default ordering of RelayWallet.
+var DefaultRelayWalletOrder = &RelayWalletOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &RelayWalletOrderField{
+		Value: func(_m *RelayWallet) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: relaywallet.FieldID,
+		toTerm: relaywallet.ByID,
+		toCursor: func(_m *RelayWallet) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts RelayWallet into RelayWalletEdge.
+func (_m *RelayWallet) ToEdge(order *RelayWalletOrder) *RelayWalletEdge {
+	if order == nil {
+		order = DefaultRelayWalletOrder
+	}
+	return &RelayWalletEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// RelayWalletLedgerEntryEdge is the edge representation of RelayWalletLedgerEntry.
+type RelayWalletLedgerEntryEdge struct {
+	Node   *RelayWalletLedgerEntry `json:"node"`
+	Cursor Cursor                  `json:"cursor"`
+}
+
+// RelayWalletLedgerEntryConnection is the connection containing edges to RelayWalletLedgerEntry.
+type RelayWalletLedgerEntryConnection struct {
+	Edges      []*RelayWalletLedgerEntryEdge `json:"edges"`
+	PageInfo   PageInfo                      `json:"pageInfo"`
+	TotalCount int                           `json:"totalCount"`
+}
+
+func (c *RelayWalletLedgerEntryConnection) build(nodes []*RelayWalletLedgerEntry, pager *relaywalletledgerentryPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *RelayWalletLedgerEntry
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *RelayWalletLedgerEntry {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *RelayWalletLedgerEntry {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*RelayWalletLedgerEntryEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &RelayWalletLedgerEntryEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// RelayWalletLedgerEntryPaginateOption enables pagination customization.
+type RelayWalletLedgerEntryPaginateOption func(*relaywalletledgerentryPager) error
+
+// WithRelayWalletLedgerEntryOrder configures pagination ordering.
+func WithRelayWalletLedgerEntryOrder(order *RelayWalletLedgerEntryOrder) RelayWalletLedgerEntryPaginateOption {
+	if order == nil {
+		order = DefaultRelayWalletLedgerEntryOrder
+	}
+	o := *order
+	return func(pager *relaywalletledgerentryPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultRelayWalletLedgerEntryOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithRelayWalletLedgerEntryFilter configures pagination filter.
+func WithRelayWalletLedgerEntryFilter(filter func(*RelayWalletLedgerEntryQuery) (*RelayWalletLedgerEntryQuery, error)) RelayWalletLedgerEntryPaginateOption {
+	return func(pager *relaywalletledgerentryPager) error {
+		if filter == nil {
+			return errors.New("RelayWalletLedgerEntryQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type relaywalletledgerentryPager struct {
+	reverse bool
+	order   *RelayWalletLedgerEntryOrder
+	filter  func(*RelayWalletLedgerEntryQuery) (*RelayWalletLedgerEntryQuery, error)
+}
+
+func newRelayWalletLedgerEntryPager(opts []RelayWalletLedgerEntryPaginateOption, reverse bool) (*relaywalletledgerentryPager, error) {
+	pager := &relaywalletledgerentryPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultRelayWalletLedgerEntryOrder
+	}
+	return pager, nil
+}
+
+func (p *relaywalletledgerentryPager) applyFilter(query *RelayWalletLedgerEntryQuery) (*RelayWalletLedgerEntryQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *relaywalletledgerentryPager) toCursor(_m *RelayWalletLedgerEntry) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *relaywalletledgerentryPager) applyCursors(query *RelayWalletLedgerEntryQuery, after, before *Cursor) (*RelayWalletLedgerEntryQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultRelayWalletLedgerEntryOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *relaywalletledgerentryPager) applyOrder(query *RelayWalletLedgerEntryQuery) *RelayWalletLedgerEntryQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultRelayWalletLedgerEntryOrder.Field {
+		query = query.Order(DefaultRelayWalletLedgerEntryOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *relaywalletledgerentryPager) orderExpr(query *RelayWalletLedgerEntryQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultRelayWalletLedgerEntryOrder.Field {
+			b.Comma().Ident(DefaultRelayWalletLedgerEntryOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to RelayWalletLedgerEntry.
+func (_m *RelayWalletLedgerEntryQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...RelayWalletLedgerEntryPaginateOption,
+) (*RelayWalletLedgerEntryConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newRelayWalletLedgerEntryPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &RelayWalletLedgerEntryConnection{Edges: []*RelayWalletLedgerEntryEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+var (
+	// RelayWalletLedgerEntryOrderFieldCreatedAt orders RelayWalletLedgerEntry by created_at.
+	RelayWalletLedgerEntryOrderFieldCreatedAt = &RelayWalletLedgerEntryOrderField{
+		Value: func(_m *RelayWalletLedgerEntry) (ent.Value, error) {
+			return _m.CreatedAt, nil
+		},
+		column: relaywalletledgerentry.FieldCreatedAt,
+		toTerm: relaywalletledgerentry.ByCreatedAt,
+		toCursor: func(_m *RelayWalletLedgerEntry) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.CreatedAt,
+			}
+		},
+	}
+	// RelayWalletLedgerEntryOrderFieldUpdatedAt orders RelayWalletLedgerEntry by updated_at.
+	RelayWalletLedgerEntryOrderFieldUpdatedAt = &RelayWalletLedgerEntryOrderField{
+		Value: func(_m *RelayWalletLedgerEntry) (ent.Value, error) {
+			return _m.UpdatedAt, nil
+		},
+		column: relaywalletledgerentry.FieldUpdatedAt,
+		toTerm: relaywalletledgerentry.ByUpdatedAt,
+		toCursor: func(_m *RelayWalletLedgerEntry) Cursor {
+			return Cursor{
+				ID:    _m.ID,
+				Value: _m.UpdatedAt,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f RelayWalletLedgerEntryOrderField) String() string {
+	var str string
+	switch f.column {
+	case RelayWalletLedgerEntryOrderFieldCreatedAt.column:
+		str = "CREATED_AT"
+	case RelayWalletLedgerEntryOrderFieldUpdatedAt.column:
+		str = "UPDATED_AT"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f RelayWalletLedgerEntryOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *RelayWalletLedgerEntryOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("RelayWalletLedgerEntryOrderField %T must be a string", v)
+	}
+	switch str {
+	case "CREATED_AT":
+		*f = *RelayWalletLedgerEntryOrderFieldCreatedAt
+	case "UPDATED_AT":
+		*f = *RelayWalletLedgerEntryOrderFieldUpdatedAt
+	default:
+		return fmt.Errorf("%s is not a valid RelayWalletLedgerEntryOrderField", str)
+	}
+	return nil
+}
+
+// RelayWalletLedgerEntryOrderField defines the ordering field of RelayWalletLedgerEntry.
+type RelayWalletLedgerEntryOrderField struct {
+	// Value extracts the ordering value from the given RelayWalletLedgerEntry.
+	Value    func(*RelayWalletLedgerEntry) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) relaywalletledgerentry.OrderOption
+	toCursor func(*RelayWalletLedgerEntry) Cursor
+}
+
+// RelayWalletLedgerEntryOrder defines the ordering of RelayWalletLedgerEntry.
+type RelayWalletLedgerEntryOrder struct {
+	Direction OrderDirection                    `json:"direction"`
+	Field     *RelayWalletLedgerEntryOrderField `json:"field"`
+}
+
+// DefaultRelayWalletLedgerEntryOrder is the default ordering of RelayWalletLedgerEntry.
+var DefaultRelayWalletLedgerEntryOrder = &RelayWalletLedgerEntryOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &RelayWalletLedgerEntryOrderField{
+		Value: func(_m *RelayWalletLedgerEntry) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: relaywalletledgerentry.FieldID,
+		toTerm: relaywalletledgerentry.ByID,
+		toCursor: func(_m *RelayWalletLedgerEntry) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts RelayWalletLedgerEntry into RelayWalletLedgerEntryEdge.
+func (_m *RelayWalletLedgerEntry) ToEdge(order *RelayWalletLedgerEntryOrder) *RelayWalletLedgerEntryEdge {
+	if order == nil {
+		order = DefaultRelayWalletLedgerEntryOrder
+	}
+	return &RelayWalletLedgerEntryEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

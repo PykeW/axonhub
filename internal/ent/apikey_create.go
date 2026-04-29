@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/looplj/axonhub/internal/ent/apikey"
 	"github.com/looplj/axonhub/internal/ent/project"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/ent/user"
 	"github.com/looplj/axonhub/internal/objects"
@@ -171,6 +172,25 @@ func (_c *APIKeyCreate) AddRequests(v ...*Request) *APIKeyCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddRequestIDs(ids...)
+}
+
+// SetRelayKeyID sets the "relay_key" edge to the RelayKey entity by ID.
+func (_c *APIKeyCreate) SetRelayKeyID(id int) *APIKeyCreate {
+	_c.mutation.SetRelayKeyID(id)
+	return _c
+}
+
+// SetNillableRelayKeyID sets the "relay_key" edge to the RelayKey entity by ID if the given value is not nil.
+func (_c *APIKeyCreate) SetNillableRelayKeyID(id *int) *APIKeyCreate {
+	if id != nil {
+		_c = _c.SetRelayKeyID(*id)
+	}
+	return _c
+}
+
+// SetRelayKey sets the "relay_key" edge to the RelayKey entity.
+func (_c *APIKeyCreate) SetRelayKey(v *RelayKey) *APIKeyCreate {
+	return _c.SetRelayKeyID(v.ID)
 }
 
 // Mutation returns the APIKeyMutation object of the builder.
@@ -390,6 +410,22 @@ func (_c *APIKeyCreate) createSpec() (*APIKey, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(request.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RelayKeyIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   apikey.RelayKeyTable,
+			Columns: []string{apikey.RelayKeyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relaykey.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

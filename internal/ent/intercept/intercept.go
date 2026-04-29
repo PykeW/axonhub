@@ -21,6 +21,12 @@ import (
 	"github.com/looplj/axonhub/internal/ent/prompt"
 	"github.com/looplj/axonhub/internal/ent/promptprotectionrule"
 	"github.com/looplj/axonhub/internal/ent/providerquotastatus"
+	"github.com/looplj/axonhub/internal/ent/relaydailyusagesummary"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
+	"github.com/looplj/axonhub/internal/ent/relayproduct"
+	"github.com/looplj/axonhub/internal/ent/relayproductchannel"
+	"github.com/looplj/axonhub/internal/ent/relaywallet"
+	"github.com/looplj/axonhub/internal/ent/relaywalletledgerentry"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/ent/requestexecution"
 	"github.com/looplj/axonhub/internal/ent/role"
@@ -413,6 +419,168 @@ func (f TraverseProviderQuotaStatus) Traverse(ctx context.Context, q ent.Query) 
 	return fmt.Errorf("unexpected query type %T. expect *ent.ProviderQuotaStatusQuery", q)
 }
 
+// The RelayDailyUsageSummaryFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RelayDailyUsageSummaryFunc func(context.Context, *ent.RelayDailyUsageSummaryQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RelayDailyUsageSummaryFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RelayDailyUsageSummaryQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RelayDailyUsageSummaryQuery", q)
+}
+
+// The TraverseRelayDailyUsageSummary type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRelayDailyUsageSummary func(context.Context, *ent.RelayDailyUsageSummaryQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRelayDailyUsageSummary) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRelayDailyUsageSummary) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelayDailyUsageSummaryQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RelayDailyUsageSummaryQuery", q)
+}
+
+// The RelayKeyFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RelayKeyFunc func(context.Context, *ent.RelayKeyQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RelayKeyFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RelayKeyQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RelayKeyQuery", q)
+}
+
+// The TraverseRelayKey type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRelayKey func(context.Context, *ent.RelayKeyQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRelayKey) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRelayKey) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelayKeyQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RelayKeyQuery", q)
+}
+
+// The RelayProductFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RelayProductFunc func(context.Context, *ent.RelayProductQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RelayProductFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RelayProductQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RelayProductQuery", q)
+}
+
+// The TraverseRelayProduct type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRelayProduct func(context.Context, *ent.RelayProductQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRelayProduct) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRelayProduct) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelayProductQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RelayProductQuery", q)
+}
+
+// The RelayProductChannelFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RelayProductChannelFunc func(context.Context, *ent.RelayProductChannelQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RelayProductChannelFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RelayProductChannelQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RelayProductChannelQuery", q)
+}
+
+// The TraverseRelayProductChannel type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRelayProductChannel func(context.Context, *ent.RelayProductChannelQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRelayProductChannel) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRelayProductChannel) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelayProductChannelQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RelayProductChannelQuery", q)
+}
+
+// The RelayWalletFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RelayWalletFunc func(context.Context, *ent.RelayWalletQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RelayWalletFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RelayWalletQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RelayWalletQuery", q)
+}
+
+// The TraverseRelayWallet type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRelayWallet func(context.Context, *ent.RelayWalletQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRelayWallet) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRelayWallet) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelayWalletQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RelayWalletQuery", q)
+}
+
+// The RelayWalletLedgerEntryFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RelayWalletLedgerEntryFunc func(context.Context, *ent.RelayWalletLedgerEntryQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RelayWalletLedgerEntryFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RelayWalletLedgerEntryQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RelayWalletLedgerEntryQuery", q)
+}
+
+// The TraverseRelayWalletLedgerEntry type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRelayWalletLedgerEntry func(context.Context, *ent.RelayWalletLedgerEntryQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRelayWalletLedgerEntry) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRelayWalletLedgerEntry) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelayWalletLedgerEntryQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RelayWalletLedgerEntryQuery", q)
+}
+
 // The RequestFunc type is an adapter to allow the use of ordinary function as a Querier.
 type RequestFunc func(context.Context, *ent.RequestQuery) (ent.Value, error)
 
@@ -710,6 +878,18 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.PromptProtectionRuleQuery, predicate.PromptProtectionRule, promptprotectionrule.OrderOption]{typ: ent.TypePromptProtectionRule, tq: q}, nil
 	case *ent.ProviderQuotaStatusQuery:
 		return &query[*ent.ProviderQuotaStatusQuery, predicate.ProviderQuotaStatus, providerquotastatus.OrderOption]{typ: ent.TypeProviderQuotaStatus, tq: q}, nil
+	case *ent.RelayDailyUsageSummaryQuery:
+		return &query[*ent.RelayDailyUsageSummaryQuery, predicate.RelayDailyUsageSummary, relaydailyusagesummary.OrderOption]{typ: ent.TypeRelayDailyUsageSummary, tq: q}, nil
+	case *ent.RelayKeyQuery:
+		return &query[*ent.RelayKeyQuery, predicate.RelayKey, relaykey.OrderOption]{typ: ent.TypeRelayKey, tq: q}, nil
+	case *ent.RelayProductQuery:
+		return &query[*ent.RelayProductQuery, predicate.RelayProduct, relayproduct.OrderOption]{typ: ent.TypeRelayProduct, tq: q}, nil
+	case *ent.RelayProductChannelQuery:
+		return &query[*ent.RelayProductChannelQuery, predicate.RelayProductChannel, relayproductchannel.OrderOption]{typ: ent.TypeRelayProductChannel, tq: q}, nil
+	case *ent.RelayWalletQuery:
+		return &query[*ent.RelayWalletQuery, predicate.RelayWallet, relaywallet.OrderOption]{typ: ent.TypeRelayWallet, tq: q}, nil
+	case *ent.RelayWalletLedgerEntryQuery:
+		return &query[*ent.RelayWalletLedgerEntryQuery, predicate.RelayWalletLedgerEntry, relaywalletledgerentry.OrderOption]{typ: ent.TypeRelayWalletLedgerEntry, tq: q}, nil
 	case *ent.RequestQuery:
 		return &query[*ent.RequestQuery, predicate.Request, request.OrderOption]{typ: ent.TypeRequest, tq: q}, nil
 	case *ent.RequestExecutionQuery:

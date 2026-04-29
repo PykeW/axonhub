@@ -78,19 +78,22 @@ type ChannelEdges struct {
 	ChannelProbes []*ChannelProbe `json:"channel_probes,omitempty"`
 	// ChannelModelPrices holds the value of the channel_model_prices edge.
 	ChannelModelPrices []*ChannelModelPrice `json:"channel_model_prices,omitempty"`
+	// RelayProductBindings holds the value of the relay_product_bindings edge.
+	RelayProductBindings []*RelayProductChannel `json:"relay_product_bindings,omitempty"`
 	// ProviderQuotaStatus holds the value of the provider_quota_status edge.
 	ProviderQuotaStatus *ProviderQuotaStatus `json:"provider_quota_status,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [7]bool
 	// totalCount holds the count of the edges above.
-	totalCount [6]map[string]int
+	totalCount [7]map[string]int
 
-	namedRequests           map[string][]*Request
-	namedExecutions         map[string][]*RequestExecution
-	namedUsageLogs          map[string][]*UsageLog
-	namedChannelProbes      map[string][]*ChannelProbe
-	namedChannelModelPrices map[string][]*ChannelModelPrice
+	namedRequests             map[string][]*Request
+	namedExecutions           map[string][]*RequestExecution
+	namedUsageLogs            map[string][]*UsageLog
+	namedChannelProbes        map[string][]*ChannelProbe
+	namedChannelModelPrices   map[string][]*ChannelModelPrice
+	namedRelayProductBindings map[string][]*RelayProductChannel
 }
 
 // RequestsOrErr returns the Requests value or an error if the edge
@@ -138,12 +141,21 @@ func (e ChannelEdges) ChannelModelPricesOrErr() ([]*ChannelModelPrice, error) {
 	return nil, &NotLoadedError{edge: "channel_model_prices"}
 }
 
+// RelayProductBindingsOrErr returns the RelayProductBindings value or an error if the edge
+// was not loaded in eager-loading.
+func (e ChannelEdges) RelayProductBindingsOrErr() ([]*RelayProductChannel, error) {
+	if e.loadedTypes[5] {
+		return e.RelayProductBindings, nil
+	}
+	return nil, &NotLoadedError{edge: "relay_product_bindings"}
+}
+
 // ProviderQuotaStatusOrErr returns the ProviderQuotaStatus value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e ChannelEdges) ProviderQuotaStatusOrErr() (*ProviderQuotaStatus, error) {
 	if e.ProviderQuotaStatus != nil {
 		return e.ProviderQuotaStatus, nil
-	} else if e.loadedTypes[5] {
+	} else if e.loadedTypes[6] {
 		return nil, &NotFoundError{label: providerquotastatus.Label}
 	}
 	return nil, &NotLoadedError{edge: "provider_quota_status"}
@@ -359,6 +371,11 @@ func (_m *Channel) QueryChannelModelPrices() *ChannelModelPriceQuery {
 	return NewChannelClient(_m.config).QueryChannelModelPrices(_m)
 }
 
+// QueryRelayProductBindings queries the "relay_product_bindings" edge of the Channel entity.
+func (_m *Channel) QueryRelayProductBindings() *RelayProductChannelQuery {
+	return NewChannelClient(_m.config).QueryRelayProductBindings(_m)
+}
+
 // QueryProviderQuotaStatus queries the "provider_quota_status" edge of the Channel entity.
 func (_m *Channel) QueryProviderQuotaStatus() *ProviderQuotaStatusQuery {
 	return NewChannelClient(_m.config).QueryProviderQuotaStatus(_m)
@@ -569,6 +586,30 @@ func (_m *Channel) appendNamedChannelModelPrices(name string, edges ...*ChannelM
 		_m.Edges.namedChannelModelPrices[name] = []*ChannelModelPrice{}
 	} else {
 		_m.Edges.namedChannelModelPrices[name] = append(_m.Edges.namedChannelModelPrices[name], edges...)
+	}
+}
+
+// NamedRelayProductBindings returns the RelayProductBindings named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Channel) NamedRelayProductBindings(name string) ([]*RelayProductChannel, error) {
+	if _m.Edges.namedRelayProductBindings == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelayProductBindings[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Channel) appendNamedRelayProductBindings(name string, edges ...*RelayProductChannel) {
+	if _m.Edges.namedRelayProductBindings == nil {
+		_m.Edges.namedRelayProductBindings = make(map[string][]*RelayProductChannel)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelayProductBindings[name] = []*RelayProductChannel{}
+	} else {
+		_m.Edges.namedRelayProductBindings[name] = append(_m.Edges.namedRelayProductBindings[name], edges...)
 	}
 }
 

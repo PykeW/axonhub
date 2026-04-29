@@ -406,6 +406,311 @@ var (
 			},
 		},
 	}
+	// RelayDailyUsageSummariesColumns holds the columns for the "relay_daily_usage_summaries" table.
+	RelayDailyUsageSummariesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, Default: schema.Expr("CURRENT_TIMESTAMP")},
+		{Name: "updated_at", Type: field.TypeTime, Default: schema.Expr("CURRENT_TIMESTAMP")},
+		{Name: "project_id", Type: field.TypeInt},
+		{Name: "stat_date", Type: field.TypeTime},
+		{Name: "request_count", Type: field.TypeInt64, Default: 0},
+		{Name: "total_tokens", Type: field.TypeInt64, Default: 0},
+		{Name: "total_charge", Type: field.TypeString, Default: "0"},
+		{Name: "total_upstream_cost", Type: field.TypeString, Default: "0"},
+		{Name: "last_request_id", Type: field.TypeInt, Nullable: true},
+		{Name: "relay_key_id", Type: field.TypeInt},
+	}
+	// RelayDailyUsageSummariesTable holds the schema information for the "relay_daily_usage_summaries" table.
+	RelayDailyUsageSummariesTable = &schema.Table{
+		Name:       "relay_daily_usage_summaries",
+		Columns:    RelayDailyUsageSummariesColumns,
+		PrimaryKey: []*schema.Column{RelayDailyUsageSummariesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "relay_daily_usage_summaries_relay_keys_daily_usage_summaries",
+				Columns:    []*schema.Column{RelayDailyUsageSummariesColumns[10]},
+				RefColumns: []*schema.Column{RelayKeysColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "relay_daily_usage_summaries_by_relay_key_stat_date",
+				Unique:  true,
+				Columns: []*schema.Column{RelayDailyUsageSummariesColumns[10], RelayDailyUsageSummariesColumns[4]},
+			},
+			{
+				Name:    "relay_daily_usage_summaries_by_project_stat_date",
+				Unique:  false,
+				Columns: []*schema.Column{RelayDailyUsageSummariesColumns[3], RelayDailyUsageSummariesColumns[4]},
+			},
+			{
+				Name:    "relay_daily_usage_summaries_by_stat_date_total_charge",
+				Unique:  false,
+				Columns: []*schema.Column{RelayDailyUsageSummariesColumns[4], RelayDailyUsageSummariesColumns[7]},
+			},
+		},
+	}
+	// RelayKeysColumns holds the columns for the "relay_keys" table.
+	RelayKeysColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, Default: schema.Expr("CURRENT_TIMESTAMP")},
+		{Name: "updated_at", Type: field.TypeTime, Default: schema.Expr("CURRENT_TIMESTAMP")},
+		{Name: "deleted_at", Type: field.TypeInt, Default: 0},
+		{Name: "display_name", Type: field.TypeString},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "suspended", "exhausted", "archived"}, Default: "active"},
+		{Name: "balance_mode", Type: field.TypeEnum, Enums: []string{"prepaid", "quota_only"}, Default: "prepaid"},
+		{Name: "daily_request_limit", Type: field.TypeInt64, Nullable: true},
+		{Name: "daily_token_limit", Type: field.TypeInt64, Nullable: true},
+		{Name: "monthly_cost_limit", Type: field.TypeString, Nullable: true},
+		{Name: "concurrency_limit", Type: field.TypeInt64, Nullable: true},
+		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_used_at", Type: field.TypeTime, Nullable: true},
+		{Name: "api_key_id", Type: field.TypeInt, Unique: true},
+		{Name: "project_id", Type: field.TypeInt},
+		{Name: "product_id", Type: field.TypeInt},
+		{Name: "owner_user_id", Type: field.TypeInt, Nullable: true},
+	}
+	// RelayKeysTable holds the schema information for the "relay_keys" table.
+	RelayKeysTable = &schema.Table{
+		Name:       "relay_keys",
+		Columns:    RelayKeysColumns,
+		PrimaryKey: []*schema.Column{RelayKeysColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "relay_keys_api_keys_relay_key",
+				Columns:    []*schema.Column{RelayKeysColumns[13]},
+				RefColumns: []*schema.Column{APIKeysColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "relay_keys_projects_relay_keys",
+				Columns:    []*schema.Column{RelayKeysColumns[14]},
+				RefColumns: []*schema.Column{ProjectsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "relay_keys_relay_products_relay_keys",
+				Columns:    []*schema.Column{RelayKeysColumns[15]},
+				RefColumns: []*schema.Column{RelayProductsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "relay_keys_users_relay_keys",
+				Columns:    []*schema.Column{RelayKeysColumns[16]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "relay_keys_by_api_key_id",
+				Unique:  true,
+				Columns: []*schema.Column{RelayKeysColumns[13]},
+			},
+			{
+				Name:    "relay_keys_by_project_status",
+				Unique:  false,
+				Columns: []*schema.Column{RelayKeysColumns[14], RelayKeysColumns[5]},
+			},
+			{
+				Name:    "relay_keys_by_product_status",
+				Unique:  false,
+				Columns: []*schema.Column{RelayKeysColumns[15], RelayKeysColumns[5]},
+			},
+			{
+				Name:    "relay_keys_by_expires_at",
+				Unique:  false,
+				Columns: []*schema.Column{RelayKeysColumns[11]},
+			},
+		},
+	}
+	// RelayProductsColumns holds the columns for the "relay_products" table.
+	RelayProductsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, Default: schema.Expr("CURRENT_TIMESTAMP")},
+		{Name: "updated_at", Type: field.TypeTime, Default: schema.Expr("CURRENT_TIMESTAMP")},
+		{Name: "deleted_at", Type: field.TypeInt, Default: 0},
+		{Name: "code", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "provider_type", Type: field.TypeEnum, Enums: []string{"claudecode", "codex", "openai_compatible"}},
+		{Name: "access_mode", Type: field.TypeEnum, Enums: []string{"shared_capacity"}, Default: "shared_capacity"},
+		{Name: "billing_mode", Type: field.TypeEnum, Enums: []string{"prepaid", "quota_only"}, Default: "prepaid"},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"draft", "active", "archived"}, Default: "draft"},
+		{Name: "currency", Type: field.TypeString, Default: "USD"},
+		{Name: "list_price_config", Type: field.TypeJSON, Nullable: true},
+		{Name: "allowed_models", Type: field.TypeJSON, Nullable: true},
+		{Name: "request_timeout_seconds", Type: field.TypeInt, Default: 600},
+	}
+	// RelayProductsTable holds the schema information for the "relay_products" table.
+	RelayProductsTable = &schema.Table{
+		Name:       "relay_products",
+		Columns:    RelayProductsColumns,
+		PrimaryKey: []*schema.Column{RelayProductsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "relay_products_by_code",
+				Unique:  true,
+				Columns: []*schema.Column{RelayProductsColumns[4], RelayProductsColumns[3]},
+			},
+			{
+				Name:    "relay_products_by_status",
+				Unique:  false,
+				Columns: []*schema.Column{RelayProductsColumns[9]},
+			},
+			{
+				Name:    "relay_products_by_provider_type",
+				Unique:  false,
+				Columns: []*schema.Column{RelayProductsColumns[6]},
+			},
+		},
+	}
+	// RelayProductChannelsColumns holds the columns for the "relay_product_channels" table.
+	RelayProductChannelsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, Default: schema.Expr("CURRENT_TIMESTAMP")},
+		{Name: "updated_at", Type: field.TypeTime, Default: schema.Expr("CURRENT_TIMESTAMP")},
+		{Name: "priority", Type: field.TypeInt, Default: 0},
+		{Name: "weight", Type: field.TypeInt, Default: 100},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "paused"}, Default: "active"},
+		{Name: "allow_fallback", Type: field.TypeBool, Default: true},
+		{Name: "model_filter", Type: field.TypeJSON, Nullable: true},
+		{Name: "max_inflight", Type: field.TypeInt, Nullable: true},
+		{Name: "channel_id", Type: field.TypeInt},
+		{Name: "product_id", Type: field.TypeInt},
+	}
+	// RelayProductChannelsTable holds the schema information for the "relay_product_channels" table.
+	RelayProductChannelsTable = &schema.Table{
+		Name:       "relay_product_channels",
+		Columns:    RelayProductChannelsColumns,
+		PrimaryKey: []*schema.Column{RelayProductChannelsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "relay_product_channels_channels_relay_product_bindings",
+				Columns:    []*schema.Column{RelayProductChannelsColumns[9]},
+				RefColumns: []*schema.Column{ChannelsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "relay_product_channels_relay_products_channel_bindings",
+				Columns:    []*schema.Column{RelayProductChannelsColumns[10]},
+				RefColumns: []*schema.Column{RelayProductsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "relay_product_channels_by_product_channel",
+				Unique:  true,
+				Columns: []*schema.Column{RelayProductChannelsColumns[10], RelayProductChannelsColumns[9]},
+			},
+			{
+				Name:    "relay_product_channels_by_product_status_priority",
+				Unique:  false,
+				Columns: []*schema.Column{RelayProductChannelsColumns[10], RelayProductChannelsColumns[5], RelayProductChannelsColumns[3]},
+			},
+		},
+	}
+	// RelayWalletsColumns holds the columns for the "relay_wallets" table.
+	RelayWalletsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, Default: schema.Expr("CURRENT_TIMESTAMP")},
+		{Name: "updated_at", Type: field.TypeTime, Default: schema.Expr("CURRENT_TIMESTAMP")},
+		{Name: "project_id", Type: field.TypeInt},
+		{Name: "currency", Type: field.TypeString, Default: "USD"},
+		{Name: "available_amount", Type: field.TypeString, Default: "0"},
+		{Name: "frozen_amount", Type: field.TypeString, Default: "0"},
+		{Name: "overdraft_limit", Type: field.TypeString, Default: "0"},
+		{Name: "version", Type: field.TypeInt64, Default: 1},
+		{Name: "relay_key_id", Type: field.TypeInt, Unique: true},
+	}
+	// RelayWalletsTable holds the schema information for the "relay_wallets" table.
+	RelayWalletsTable = &schema.Table{
+		Name:       "relay_wallets",
+		Columns:    RelayWalletsColumns,
+		PrimaryKey: []*schema.Column{RelayWalletsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "relay_wallets_relay_keys_wallet",
+				Columns:    []*schema.Column{RelayWalletsColumns[9]},
+				RefColumns: []*schema.Column{RelayKeysColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "relay_wallets_by_relay_key_id",
+				Unique:  true,
+				Columns: []*schema.Column{RelayWalletsColumns[9]},
+			},
+			{
+				Name:    "relay_wallets_by_project_id",
+				Unique:  false,
+				Columns: []*schema.Column{RelayWalletsColumns[3]},
+			},
+		},
+	}
+	// RelayWalletLedgerEntriesColumns holds the columns for the "relay_wallet_ledger_entries" table.
+	RelayWalletLedgerEntriesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, Default: schema.Expr("CURRENT_TIMESTAMP")},
+		{Name: "updated_at", Type: field.TypeTime, Default: schema.Expr("CURRENT_TIMESTAMP")},
+		{Name: "project_id", Type: field.TypeInt},
+		{Name: "request_id", Type: field.TypeInt, Nullable: true},
+		{Name: "usage_log_id", Type: field.TypeInt, Nullable: true},
+		{Name: "direction", Type: field.TypeEnum, Enums: []string{"credit", "debit"}},
+		{Name: "scene", Type: field.TypeEnum, Enums: []string{"recharge", "consume", "refund", "freeze", "unfreeze", "manual_adjust"}},
+		{Name: "amount", Type: field.TypeString},
+		{Name: "balance_before", Type: field.TypeString},
+		{Name: "balance_after", Type: field.TypeString},
+		{Name: "upstream_cost", Type: field.TypeString, Nullable: true},
+		{Name: "price_snapshot", Type: field.TypeJSON, Nullable: true},
+		{Name: "idempotency_key", Type: field.TypeString},
+		{Name: "operator_user_id", Type: field.TypeInt, Nullable: true},
+		{Name: "remark", Type: field.TypeString, Nullable: true},
+		{Name: "relay_key_id", Type: field.TypeInt},
+	}
+	// RelayWalletLedgerEntriesTable holds the schema information for the "relay_wallet_ledger_entries" table.
+	RelayWalletLedgerEntriesTable = &schema.Table{
+		Name:       "relay_wallet_ledger_entries",
+		Columns:    RelayWalletLedgerEntriesColumns,
+		PrimaryKey: []*schema.Column{RelayWalletLedgerEntriesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "relay_wallet_ledger_entries_relay_keys_ledger_entries",
+				Columns:    []*schema.Column{RelayWalletLedgerEntriesColumns[16]},
+				RefColumns: []*schema.Column{RelayKeysColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "relay_wallet_ledger_entries_by_idempotency_key",
+				Unique:  true,
+				Columns: []*schema.Column{RelayWalletLedgerEntriesColumns[13]},
+			},
+			{
+				Name:    "relay_wallet_ledger_entries_by_relay_key_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{RelayWalletLedgerEntriesColumns[16], RelayWalletLedgerEntriesColumns[1]},
+			},
+			{
+				Name:    "relay_wallet_ledger_entries_by_project_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{RelayWalletLedgerEntriesColumns[3], RelayWalletLedgerEntriesColumns[1]},
+			},
+			{
+				Name:    "relay_wallet_ledger_entries_by_request_id",
+				Unique:  false,
+				Columns: []*schema.Column{RelayWalletLedgerEntriesColumns[4]},
+			},
+			{
+				Name:    "relay_wallet_ledger_entries_by_usage_log_id",
+				Unique:  false,
+				Columns: []*schema.Column{RelayWalletLedgerEntriesColumns[5]},
+			},
+		},
+	}
 	// RequestsColumns holds the columns for the "requests" table.
 	RequestsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -930,6 +1235,12 @@ var (
 		PromptsTable,
 		PromptProtectionRulesTable,
 		ProviderQuotaStatusTable,
+		RelayDailyUsageSummariesTable,
+		RelayKeysTable,
+		RelayProductsTable,
+		RelayProductChannelsTable,
+		RelayWalletsTable,
+		RelayWalletLedgerEntriesTable,
 		RequestsTable,
 		RequestExecutionsTable,
 		RolesTable,
@@ -952,6 +1263,15 @@ func init() {
 	ChannelOverrideTemplatesTable.ForeignKeys[0].RefTable = UsersTable
 	ChannelProbesTable.ForeignKeys[0].RefTable = ChannelsTable
 	ProviderQuotaStatusTable.ForeignKeys[0].RefTable = ChannelsTable
+	RelayDailyUsageSummariesTable.ForeignKeys[0].RefTable = RelayKeysTable
+	RelayKeysTable.ForeignKeys[0].RefTable = APIKeysTable
+	RelayKeysTable.ForeignKeys[1].RefTable = ProjectsTable
+	RelayKeysTable.ForeignKeys[2].RefTable = RelayProductsTable
+	RelayKeysTable.ForeignKeys[3].RefTable = UsersTable
+	RelayProductChannelsTable.ForeignKeys[0].RefTable = ChannelsTable
+	RelayProductChannelsTable.ForeignKeys[1].RefTable = RelayProductsTable
+	RelayWalletsTable.ForeignKeys[0].RefTable = RelayKeysTable
+	RelayWalletLedgerEntriesTable.ForeignKeys[0].RefTable = RelayKeysTable
 	RequestsTable.ForeignKeys[0].RefTable = APIKeysTable
 	RequestsTable.ForeignKeys[1].RefTable = ChannelsTable
 	RequestsTable.ForeignKeys[2].RefTable = DataStoragesTable

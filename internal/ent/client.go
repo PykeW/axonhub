@@ -27,6 +27,12 @@ import (
 	"github.com/looplj/axonhub/internal/ent/prompt"
 	"github.com/looplj/axonhub/internal/ent/promptprotectionrule"
 	"github.com/looplj/axonhub/internal/ent/providerquotastatus"
+	"github.com/looplj/axonhub/internal/ent/relaydailyusagesummary"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
+	"github.com/looplj/axonhub/internal/ent/relayproduct"
+	"github.com/looplj/axonhub/internal/ent/relayproductchannel"
+	"github.com/looplj/axonhub/internal/ent/relaywallet"
+	"github.com/looplj/axonhub/internal/ent/relaywalletledgerentry"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/ent/requestexecution"
 	"github.com/looplj/axonhub/internal/ent/role"
@@ -68,6 +74,18 @@ type Client struct {
 	PromptProtectionRule *PromptProtectionRuleClient
 	// ProviderQuotaStatus is the client for interacting with the ProviderQuotaStatus builders.
 	ProviderQuotaStatus *ProviderQuotaStatusClient
+	// RelayDailyUsageSummary is the client for interacting with the RelayDailyUsageSummary builders.
+	RelayDailyUsageSummary *RelayDailyUsageSummaryClient
+	// RelayKey is the client for interacting with the RelayKey builders.
+	RelayKey *RelayKeyClient
+	// RelayProduct is the client for interacting with the RelayProduct builders.
+	RelayProduct *RelayProductClient
+	// RelayProductChannel is the client for interacting with the RelayProductChannel builders.
+	RelayProductChannel *RelayProductChannelClient
+	// RelayWallet is the client for interacting with the RelayWallet builders.
+	RelayWallet *RelayWalletClient
+	// RelayWalletLedgerEntry is the client for interacting with the RelayWalletLedgerEntry builders.
+	RelayWalletLedgerEntry *RelayWalletLedgerEntryClient
 	// Request is the client for interacting with the Request builders.
 	Request *RequestClient
 	// RequestExecution is the client for interacting with the RequestExecution builders.
@@ -113,6 +131,12 @@ func (c *Client) init() {
 	c.Prompt = NewPromptClient(c.config)
 	c.PromptProtectionRule = NewPromptProtectionRuleClient(c.config)
 	c.ProviderQuotaStatus = NewProviderQuotaStatusClient(c.config)
+	c.RelayDailyUsageSummary = NewRelayDailyUsageSummaryClient(c.config)
+	c.RelayKey = NewRelayKeyClient(c.config)
+	c.RelayProduct = NewRelayProductClient(c.config)
+	c.RelayProductChannel = NewRelayProductChannelClient(c.config)
+	c.RelayWallet = NewRelayWalletClient(c.config)
+	c.RelayWalletLedgerEntry = NewRelayWalletLedgerEntryClient(c.config)
 	c.Request = NewRequestClient(c.config)
 	c.RequestExecution = NewRequestExecutionClient(c.config)
 	c.Role = NewRoleClient(c.config)
@@ -227,6 +251,12 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Prompt:                   NewPromptClient(cfg),
 		PromptProtectionRule:     NewPromptProtectionRuleClient(cfg),
 		ProviderQuotaStatus:      NewProviderQuotaStatusClient(cfg),
+		RelayDailyUsageSummary:   NewRelayDailyUsageSummaryClient(cfg),
+		RelayKey:                 NewRelayKeyClient(cfg),
+		RelayProduct:             NewRelayProductClient(cfg),
+		RelayProductChannel:      NewRelayProductChannelClient(cfg),
+		RelayWallet:              NewRelayWalletClient(cfg),
+		RelayWalletLedgerEntry:   NewRelayWalletLedgerEntryClient(cfg),
 		Request:                  NewRequestClient(cfg),
 		RequestExecution:         NewRequestExecutionClient(cfg),
 		Role:                     NewRoleClient(cfg),
@@ -268,6 +298,12 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Prompt:                   NewPromptClient(cfg),
 		PromptProtectionRule:     NewPromptProtectionRuleClient(cfg),
 		ProviderQuotaStatus:      NewProviderQuotaStatusClient(cfg),
+		RelayDailyUsageSummary:   NewRelayDailyUsageSummaryClient(cfg),
+		RelayKey:                 NewRelayKeyClient(cfg),
+		RelayProduct:             NewRelayProductClient(cfg),
+		RelayProductChannel:      NewRelayProductChannelClient(cfg),
+		RelayWallet:              NewRelayWalletClient(cfg),
+		RelayWalletLedgerEntry:   NewRelayWalletLedgerEntryClient(cfg),
 		Request:                  NewRequestClient(cfg),
 		RequestExecution:         NewRequestExecutionClient(cfg),
 		Role:                     NewRoleClient(cfg),
@@ -309,9 +345,10 @@ func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.APIKey, c.Channel, c.ChannelModelPrice, c.ChannelModelPriceVersion,
 		c.ChannelOverrideTemplate, c.ChannelProbe, c.DataStorage, c.Model, c.Project,
-		c.Prompt, c.PromptProtectionRule, c.ProviderQuotaStatus, c.Request,
-		c.RequestExecution, c.Role, c.System, c.Thread, c.Trace, c.UsageLog, c.User,
-		c.UserProject, c.UserRole,
+		c.Prompt, c.PromptProtectionRule, c.ProviderQuotaStatus,
+		c.RelayDailyUsageSummary, c.RelayKey, c.RelayProduct, c.RelayProductChannel,
+		c.RelayWallet, c.RelayWalletLedgerEntry, c.Request, c.RequestExecution, c.Role,
+		c.System, c.Thread, c.Trace, c.UsageLog, c.User, c.UserProject, c.UserRole,
 	} {
 		n.Use(hooks...)
 	}
@@ -323,9 +360,10 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.APIKey, c.Channel, c.ChannelModelPrice, c.ChannelModelPriceVersion,
 		c.ChannelOverrideTemplate, c.ChannelProbe, c.DataStorage, c.Model, c.Project,
-		c.Prompt, c.PromptProtectionRule, c.ProviderQuotaStatus, c.Request,
-		c.RequestExecution, c.Role, c.System, c.Thread, c.Trace, c.UsageLog, c.User,
-		c.UserProject, c.UserRole,
+		c.Prompt, c.PromptProtectionRule, c.ProviderQuotaStatus,
+		c.RelayDailyUsageSummary, c.RelayKey, c.RelayProduct, c.RelayProductChannel,
+		c.RelayWallet, c.RelayWalletLedgerEntry, c.Request, c.RequestExecution, c.Role,
+		c.System, c.Thread, c.Trace, c.UsageLog, c.User, c.UserProject, c.UserRole,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -358,6 +396,18 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.PromptProtectionRule.mutate(ctx, m)
 	case *ProviderQuotaStatusMutation:
 		return c.ProviderQuotaStatus.mutate(ctx, m)
+	case *RelayDailyUsageSummaryMutation:
+		return c.RelayDailyUsageSummary.mutate(ctx, m)
+	case *RelayKeyMutation:
+		return c.RelayKey.mutate(ctx, m)
+	case *RelayProductMutation:
+		return c.RelayProduct.mutate(ctx, m)
+	case *RelayProductChannelMutation:
+		return c.RelayProductChannel.mutate(ctx, m)
+	case *RelayWalletMutation:
+		return c.RelayWallet.mutate(ctx, m)
+	case *RelayWalletLedgerEntryMutation:
+		return c.RelayWalletLedgerEntry.mutate(ctx, m)
 	case *RequestMutation:
 		return c.Request.mutate(ctx, m)
 	case *RequestExecutionMutation:
@@ -532,6 +582,22 @@ func (c *APIKeyClient) QueryRequests(_m *APIKey) *RequestQuery {
 			sqlgraph.From(apikey.Table, apikey.FieldID, id),
 			sqlgraph.To(request.Table, request.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, apikey.RequestsTable, apikey.RequestsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelayKey queries the relay_key edge of a APIKey.
+func (c *APIKeyClient) QueryRelayKey(_m *APIKey) *RelayKeyQuery {
+	query := (&RelayKeyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apikey.Table, apikey.FieldID, id),
+			sqlgraph.To(relaykey.Table, relaykey.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, apikey.RelayKeyTable, apikey.RelayKeyColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -747,6 +813,22 @@ func (c *ChannelClient) QueryChannelModelPrices(_m *Channel) *ChannelModelPriceQ
 			sqlgraph.From(channel.Table, channel.FieldID, id),
 			sqlgraph.To(channelmodelprice.Table, channelmodelprice.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, channel.ChannelModelPricesTable, channel.ChannelModelPricesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelayProductBindings queries the relay_product_bindings edge of a Channel.
+func (c *ChannelClient) QueryRelayProductBindings(_m *Channel) *RelayProductChannelQuery {
+	query := (&RelayProductChannelClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(channel.Table, channel.FieldID, id),
+			sqlgraph.To(relayproductchannel.Table, relayproductchannel.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, channel.RelayProductBindingsTable, channel.RelayProductBindingsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -1872,6 +1954,22 @@ func (c *ProjectClient) QueryAPIKeys(_m *Project) *APIKeyQuery {
 	return query
 }
 
+// QueryRelayKeys queries the relay_keys edge of a Project.
+func (c *ProjectClient) QueryRelayKeys(_m *Project) *RelayKeyQuery {
+	query := (&RelayKeyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(project.Table, project.FieldID, id),
+			sqlgraph.To(relaykey.Table, relaykey.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, project.RelayKeysTable, project.RelayKeysColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryRequests queries the requests edge of a Project.
 func (c *ProjectClient) QueryRequests(_m *Project) *RequestQuery {
 	query := (&RequestClient{config: c.config}).Query()
@@ -2429,6 +2527,1036 @@ func (c *ProviderQuotaStatusClient) mutate(ctx context.Context, m *ProviderQuota
 		return (&ProviderQuotaStatusDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown ProviderQuotaStatus mutation op: %q", m.Op())
+	}
+}
+
+// RelayDailyUsageSummaryClient is a client for the RelayDailyUsageSummary schema.
+type RelayDailyUsageSummaryClient struct {
+	config
+}
+
+// NewRelayDailyUsageSummaryClient returns a client for the RelayDailyUsageSummary from the given config.
+func NewRelayDailyUsageSummaryClient(c config) *RelayDailyUsageSummaryClient {
+	return &RelayDailyUsageSummaryClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `relaydailyusagesummary.Hooks(f(g(h())))`.
+func (c *RelayDailyUsageSummaryClient) Use(hooks ...Hook) {
+	c.hooks.RelayDailyUsageSummary = append(c.hooks.RelayDailyUsageSummary, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `relaydailyusagesummary.Intercept(f(g(h())))`.
+func (c *RelayDailyUsageSummaryClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RelayDailyUsageSummary = append(c.inters.RelayDailyUsageSummary, interceptors...)
+}
+
+// Create returns a builder for creating a RelayDailyUsageSummary entity.
+func (c *RelayDailyUsageSummaryClient) Create() *RelayDailyUsageSummaryCreate {
+	mutation := newRelayDailyUsageSummaryMutation(c.config, OpCreate)
+	return &RelayDailyUsageSummaryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RelayDailyUsageSummary entities.
+func (c *RelayDailyUsageSummaryClient) CreateBulk(builders ...*RelayDailyUsageSummaryCreate) *RelayDailyUsageSummaryCreateBulk {
+	return &RelayDailyUsageSummaryCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RelayDailyUsageSummaryClient) MapCreateBulk(slice any, setFunc func(*RelayDailyUsageSummaryCreate, int)) *RelayDailyUsageSummaryCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RelayDailyUsageSummaryCreateBulk{err: fmt.Errorf("calling to RelayDailyUsageSummaryClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RelayDailyUsageSummaryCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RelayDailyUsageSummaryCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RelayDailyUsageSummary.
+func (c *RelayDailyUsageSummaryClient) Update() *RelayDailyUsageSummaryUpdate {
+	mutation := newRelayDailyUsageSummaryMutation(c.config, OpUpdate)
+	return &RelayDailyUsageSummaryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RelayDailyUsageSummaryClient) UpdateOne(_m *RelayDailyUsageSummary) *RelayDailyUsageSummaryUpdateOne {
+	mutation := newRelayDailyUsageSummaryMutation(c.config, OpUpdateOne, withRelayDailyUsageSummary(_m))
+	return &RelayDailyUsageSummaryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RelayDailyUsageSummaryClient) UpdateOneID(id int) *RelayDailyUsageSummaryUpdateOne {
+	mutation := newRelayDailyUsageSummaryMutation(c.config, OpUpdateOne, withRelayDailyUsageSummaryID(id))
+	return &RelayDailyUsageSummaryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RelayDailyUsageSummary.
+func (c *RelayDailyUsageSummaryClient) Delete() *RelayDailyUsageSummaryDelete {
+	mutation := newRelayDailyUsageSummaryMutation(c.config, OpDelete)
+	return &RelayDailyUsageSummaryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RelayDailyUsageSummaryClient) DeleteOne(_m *RelayDailyUsageSummary) *RelayDailyUsageSummaryDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RelayDailyUsageSummaryClient) DeleteOneID(id int) *RelayDailyUsageSummaryDeleteOne {
+	builder := c.Delete().Where(relaydailyusagesummary.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RelayDailyUsageSummaryDeleteOne{builder}
+}
+
+// Query returns a query builder for RelayDailyUsageSummary.
+func (c *RelayDailyUsageSummaryClient) Query() *RelayDailyUsageSummaryQuery {
+	return &RelayDailyUsageSummaryQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRelayDailyUsageSummary},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RelayDailyUsageSummary entity by its id.
+func (c *RelayDailyUsageSummaryClient) Get(ctx context.Context, id int) (*RelayDailyUsageSummary, error) {
+	return c.Query().Where(relaydailyusagesummary.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RelayDailyUsageSummaryClient) GetX(ctx context.Context, id int) *RelayDailyUsageSummary {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryRelayKey queries the relay_key edge of a RelayDailyUsageSummary.
+func (c *RelayDailyUsageSummaryClient) QueryRelayKey(_m *RelayDailyUsageSummary) *RelayKeyQuery {
+	query := (&RelayKeyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relaydailyusagesummary.Table, relaydailyusagesummary.FieldID, id),
+			sqlgraph.To(relaykey.Table, relaykey.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relaydailyusagesummary.RelayKeyTable, relaydailyusagesummary.RelayKeyColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RelayDailyUsageSummaryClient) Hooks() []Hook {
+	hooks := c.hooks.RelayDailyUsageSummary
+	return append(hooks[:len(hooks):len(hooks)], relaydailyusagesummary.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *RelayDailyUsageSummaryClient) Interceptors() []Interceptor {
+	return c.inters.RelayDailyUsageSummary
+}
+
+func (c *RelayDailyUsageSummaryClient) mutate(ctx context.Context, m *RelayDailyUsageSummaryMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RelayDailyUsageSummaryCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RelayDailyUsageSummaryUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RelayDailyUsageSummaryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RelayDailyUsageSummaryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RelayDailyUsageSummary mutation op: %q", m.Op())
+	}
+}
+
+// RelayKeyClient is a client for the RelayKey schema.
+type RelayKeyClient struct {
+	config
+}
+
+// NewRelayKeyClient returns a client for the RelayKey from the given config.
+func NewRelayKeyClient(c config) *RelayKeyClient {
+	return &RelayKeyClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `relaykey.Hooks(f(g(h())))`.
+func (c *RelayKeyClient) Use(hooks ...Hook) {
+	c.hooks.RelayKey = append(c.hooks.RelayKey, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `relaykey.Intercept(f(g(h())))`.
+func (c *RelayKeyClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RelayKey = append(c.inters.RelayKey, interceptors...)
+}
+
+// Create returns a builder for creating a RelayKey entity.
+func (c *RelayKeyClient) Create() *RelayKeyCreate {
+	mutation := newRelayKeyMutation(c.config, OpCreate)
+	return &RelayKeyCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RelayKey entities.
+func (c *RelayKeyClient) CreateBulk(builders ...*RelayKeyCreate) *RelayKeyCreateBulk {
+	return &RelayKeyCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RelayKeyClient) MapCreateBulk(slice any, setFunc func(*RelayKeyCreate, int)) *RelayKeyCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RelayKeyCreateBulk{err: fmt.Errorf("calling to RelayKeyClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RelayKeyCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RelayKeyCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RelayKey.
+func (c *RelayKeyClient) Update() *RelayKeyUpdate {
+	mutation := newRelayKeyMutation(c.config, OpUpdate)
+	return &RelayKeyUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RelayKeyClient) UpdateOne(_m *RelayKey) *RelayKeyUpdateOne {
+	mutation := newRelayKeyMutation(c.config, OpUpdateOne, withRelayKey(_m))
+	return &RelayKeyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RelayKeyClient) UpdateOneID(id int) *RelayKeyUpdateOne {
+	mutation := newRelayKeyMutation(c.config, OpUpdateOne, withRelayKeyID(id))
+	return &RelayKeyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RelayKey.
+func (c *RelayKeyClient) Delete() *RelayKeyDelete {
+	mutation := newRelayKeyMutation(c.config, OpDelete)
+	return &RelayKeyDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RelayKeyClient) DeleteOne(_m *RelayKey) *RelayKeyDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RelayKeyClient) DeleteOneID(id int) *RelayKeyDeleteOne {
+	builder := c.Delete().Where(relaykey.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RelayKeyDeleteOne{builder}
+}
+
+// Query returns a query builder for RelayKey.
+func (c *RelayKeyClient) Query() *RelayKeyQuery {
+	return &RelayKeyQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRelayKey},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RelayKey entity by its id.
+func (c *RelayKeyClient) Get(ctx context.Context, id int) (*RelayKey, error) {
+	return c.Query().Where(relaykey.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RelayKeyClient) GetX(ctx context.Context, id int) *RelayKey {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryAPIKey queries the api_key edge of a RelayKey.
+func (c *RelayKeyClient) QueryAPIKey(_m *RelayKey) *APIKeyQuery {
+	query := (&APIKeyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relaykey.Table, relaykey.FieldID, id),
+			sqlgraph.To(apikey.Table, apikey.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, relaykey.APIKeyTable, relaykey.APIKeyColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryProject queries the project edge of a RelayKey.
+func (c *RelayKeyClient) QueryProject(_m *RelayKey) *ProjectQuery {
+	query := (&ProjectClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relaykey.Table, relaykey.FieldID, id),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relaykey.ProjectTable, relaykey.ProjectColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryProduct queries the product edge of a RelayKey.
+func (c *RelayKeyClient) QueryProduct(_m *RelayKey) *RelayProductQuery {
+	query := (&RelayProductClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relaykey.Table, relaykey.FieldID, id),
+			sqlgraph.To(relayproduct.Table, relayproduct.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relaykey.ProductTable, relaykey.ProductColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOwnerUser queries the owner_user edge of a RelayKey.
+func (c *RelayKeyClient) QueryOwnerUser(_m *RelayKey) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relaykey.Table, relaykey.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relaykey.OwnerUserTable, relaykey.OwnerUserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryWallet queries the wallet edge of a RelayKey.
+func (c *RelayKeyClient) QueryWallet(_m *RelayKey) *RelayWalletQuery {
+	query := (&RelayWalletClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relaykey.Table, relaykey.FieldID, id),
+			sqlgraph.To(relaywallet.Table, relaywallet.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, relaykey.WalletTable, relaykey.WalletColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryLedgerEntries queries the ledger_entries edge of a RelayKey.
+func (c *RelayKeyClient) QueryLedgerEntries(_m *RelayKey) *RelayWalletLedgerEntryQuery {
+	query := (&RelayWalletLedgerEntryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relaykey.Table, relaykey.FieldID, id),
+			sqlgraph.To(relaywalletledgerentry.Table, relaywalletledgerentry.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relaykey.LedgerEntriesTable, relaykey.LedgerEntriesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryDailyUsageSummaries queries the daily_usage_summaries edge of a RelayKey.
+func (c *RelayKeyClient) QueryDailyUsageSummaries(_m *RelayKey) *RelayDailyUsageSummaryQuery {
+	query := (&RelayDailyUsageSummaryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relaykey.Table, relaykey.FieldID, id),
+			sqlgraph.To(relaydailyusagesummary.Table, relaydailyusagesummary.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relaykey.DailyUsageSummariesTable, relaykey.DailyUsageSummariesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RelayKeyClient) Hooks() []Hook {
+	hooks := c.hooks.RelayKey
+	return append(hooks[:len(hooks):len(hooks)], relaykey.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *RelayKeyClient) Interceptors() []Interceptor {
+	inters := c.inters.RelayKey
+	return append(inters[:len(inters):len(inters)], relaykey.Interceptors[:]...)
+}
+
+func (c *RelayKeyClient) mutate(ctx context.Context, m *RelayKeyMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RelayKeyCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RelayKeyUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RelayKeyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RelayKeyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RelayKey mutation op: %q", m.Op())
+	}
+}
+
+// RelayProductClient is a client for the RelayProduct schema.
+type RelayProductClient struct {
+	config
+}
+
+// NewRelayProductClient returns a client for the RelayProduct from the given config.
+func NewRelayProductClient(c config) *RelayProductClient {
+	return &RelayProductClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `relayproduct.Hooks(f(g(h())))`.
+func (c *RelayProductClient) Use(hooks ...Hook) {
+	c.hooks.RelayProduct = append(c.hooks.RelayProduct, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `relayproduct.Intercept(f(g(h())))`.
+func (c *RelayProductClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RelayProduct = append(c.inters.RelayProduct, interceptors...)
+}
+
+// Create returns a builder for creating a RelayProduct entity.
+func (c *RelayProductClient) Create() *RelayProductCreate {
+	mutation := newRelayProductMutation(c.config, OpCreate)
+	return &RelayProductCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RelayProduct entities.
+func (c *RelayProductClient) CreateBulk(builders ...*RelayProductCreate) *RelayProductCreateBulk {
+	return &RelayProductCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RelayProductClient) MapCreateBulk(slice any, setFunc func(*RelayProductCreate, int)) *RelayProductCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RelayProductCreateBulk{err: fmt.Errorf("calling to RelayProductClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RelayProductCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RelayProductCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RelayProduct.
+func (c *RelayProductClient) Update() *RelayProductUpdate {
+	mutation := newRelayProductMutation(c.config, OpUpdate)
+	return &RelayProductUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RelayProductClient) UpdateOne(_m *RelayProduct) *RelayProductUpdateOne {
+	mutation := newRelayProductMutation(c.config, OpUpdateOne, withRelayProduct(_m))
+	return &RelayProductUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RelayProductClient) UpdateOneID(id int) *RelayProductUpdateOne {
+	mutation := newRelayProductMutation(c.config, OpUpdateOne, withRelayProductID(id))
+	return &RelayProductUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RelayProduct.
+func (c *RelayProductClient) Delete() *RelayProductDelete {
+	mutation := newRelayProductMutation(c.config, OpDelete)
+	return &RelayProductDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RelayProductClient) DeleteOne(_m *RelayProduct) *RelayProductDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RelayProductClient) DeleteOneID(id int) *RelayProductDeleteOne {
+	builder := c.Delete().Where(relayproduct.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RelayProductDeleteOne{builder}
+}
+
+// Query returns a query builder for RelayProduct.
+func (c *RelayProductClient) Query() *RelayProductQuery {
+	return &RelayProductQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRelayProduct},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RelayProduct entity by its id.
+func (c *RelayProductClient) Get(ctx context.Context, id int) (*RelayProduct, error) {
+	return c.Query().Where(relayproduct.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RelayProductClient) GetX(ctx context.Context, id int) *RelayProduct {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryChannelBindings queries the channel_bindings edge of a RelayProduct.
+func (c *RelayProductClient) QueryChannelBindings(_m *RelayProduct) *RelayProductChannelQuery {
+	query := (&RelayProductChannelClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relayproduct.Table, relayproduct.FieldID, id),
+			sqlgraph.To(relayproductchannel.Table, relayproductchannel.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relayproduct.ChannelBindingsTable, relayproduct.ChannelBindingsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelayKeys queries the relay_keys edge of a RelayProduct.
+func (c *RelayProductClient) QueryRelayKeys(_m *RelayProduct) *RelayKeyQuery {
+	query := (&RelayKeyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relayproduct.Table, relayproduct.FieldID, id),
+			sqlgraph.To(relaykey.Table, relaykey.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relayproduct.RelayKeysTable, relayproduct.RelayKeysColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RelayProductClient) Hooks() []Hook {
+	hooks := c.hooks.RelayProduct
+	return append(hooks[:len(hooks):len(hooks)], relayproduct.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *RelayProductClient) Interceptors() []Interceptor {
+	inters := c.inters.RelayProduct
+	return append(inters[:len(inters):len(inters)], relayproduct.Interceptors[:]...)
+}
+
+func (c *RelayProductClient) mutate(ctx context.Context, m *RelayProductMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RelayProductCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RelayProductUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RelayProductUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RelayProductDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RelayProduct mutation op: %q", m.Op())
+	}
+}
+
+// RelayProductChannelClient is a client for the RelayProductChannel schema.
+type RelayProductChannelClient struct {
+	config
+}
+
+// NewRelayProductChannelClient returns a client for the RelayProductChannel from the given config.
+func NewRelayProductChannelClient(c config) *RelayProductChannelClient {
+	return &RelayProductChannelClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `relayproductchannel.Hooks(f(g(h())))`.
+func (c *RelayProductChannelClient) Use(hooks ...Hook) {
+	c.hooks.RelayProductChannel = append(c.hooks.RelayProductChannel, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `relayproductchannel.Intercept(f(g(h())))`.
+func (c *RelayProductChannelClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RelayProductChannel = append(c.inters.RelayProductChannel, interceptors...)
+}
+
+// Create returns a builder for creating a RelayProductChannel entity.
+func (c *RelayProductChannelClient) Create() *RelayProductChannelCreate {
+	mutation := newRelayProductChannelMutation(c.config, OpCreate)
+	return &RelayProductChannelCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RelayProductChannel entities.
+func (c *RelayProductChannelClient) CreateBulk(builders ...*RelayProductChannelCreate) *RelayProductChannelCreateBulk {
+	return &RelayProductChannelCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RelayProductChannelClient) MapCreateBulk(slice any, setFunc func(*RelayProductChannelCreate, int)) *RelayProductChannelCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RelayProductChannelCreateBulk{err: fmt.Errorf("calling to RelayProductChannelClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RelayProductChannelCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RelayProductChannelCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RelayProductChannel.
+func (c *RelayProductChannelClient) Update() *RelayProductChannelUpdate {
+	mutation := newRelayProductChannelMutation(c.config, OpUpdate)
+	return &RelayProductChannelUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RelayProductChannelClient) UpdateOne(_m *RelayProductChannel) *RelayProductChannelUpdateOne {
+	mutation := newRelayProductChannelMutation(c.config, OpUpdateOne, withRelayProductChannel(_m))
+	return &RelayProductChannelUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RelayProductChannelClient) UpdateOneID(id int) *RelayProductChannelUpdateOne {
+	mutation := newRelayProductChannelMutation(c.config, OpUpdateOne, withRelayProductChannelID(id))
+	return &RelayProductChannelUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RelayProductChannel.
+func (c *RelayProductChannelClient) Delete() *RelayProductChannelDelete {
+	mutation := newRelayProductChannelMutation(c.config, OpDelete)
+	return &RelayProductChannelDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RelayProductChannelClient) DeleteOne(_m *RelayProductChannel) *RelayProductChannelDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RelayProductChannelClient) DeleteOneID(id int) *RelayProductChannelDeleteOne {
+	builder := c.Delete().Where(relayproductchannel.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RelayProductChannelDeleteOne{builder}
+}
+
+// Query returns a query builder for RelayProductChannel.
+func (c *RelayProductChannelClient) Query() *RelayProductChannelQuery {
+	return &RelayProductChannelQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRelayProductChannel},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RelayProductChannel entity by its id.
+func (c *RelayProductChannelClient) Get(ctx context.Context, id int) (*RelayProductChannel, error) {
+	return c.Query().Where(relayproductchannel.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RelayProductChannelClient) GetX(ctx context.Context, id int) *RelayProductChannel {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryProduct queries the product edge of a RelayProductChannel.
+func (c *RelayProductChannelClient) QueryProduct(_m *RelayProductChannel) *RelayProductQuery {
+	query := (&RelayProductClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relayproductchannel.Table, relayproductchannel.FieldID, id),
+			sqlgraph.To(relayproduct.Table, relayproduct.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relayproductchannel.ProductTable, relayproductchannel.ProductColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryChannel queries the channel edge of a RelayProductChannel.
+func (c *RelayProductChannelClient) QueryChannel(_m *RelayProductChannel) *ChannelQuery {
+	query := (&ChannelClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relayproductchannel.Table, relayproductchannel.FieldID, id),
+			sqlgraph.To(channel.Table, channel.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relayproductchannel.ChannelTable, relayproductchannel.ChannelColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RelayProductChannelClient) Hooks() []Hook {
+	hooks := c.hooks.RelayProductChannel
+	return append(hooks[:len(hooks):len(hooks)], relayproductchannel.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *RelayProductChannelClient) Interceptors() []Interceptor {
+	return c.inters.RelayProductChannel
+}
+
+func (c *RelayProductChannelClient) mutate(ctx context.Context, m *RelayProductChannelMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RelayProductChannelCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RelayProductChannelUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RelayProductChannelUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RelayProductChannelDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RelayProductChannel mutation op: %q", m.Op())
+	}
+}
+
+// RelayWalletClient is a client for the RelayWallet schema.
+type RelayWalletClient struct {
+	config
+}
+
+// NewRelayWalletClient returns a client for the RelayWallet from the given config.
+func NewRelayWalletClient(c config) *RelayWalletClient {
+	return &RelayWalletClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `relaywallet.Hooks(f(g(h())))`.
+func (c *RelayWalletClient) Use(hooks ...Hook) {
+	c.hooks.RelayWallet = append(c.hooks.RelayWallet, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `relaywallet.Intercept(f(g(h())))`.
+func (c *RelayWalletClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RelayWallet = append(c.inters.RelayWallet, interceptors...)
+}
+
+// Create returns a builder for creating a RelayWallet entity.
+func (c *RelayWalletClient) Create() *RelayWalletCreate {
+	mutation := newRelayWalletMutation(c.config, OpCreate)
+	return &RelayWalletCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RelayWallet entities.
+func (c *RelayWalletClient) CreateBulk(builders ...*RelayWalletCreate) *RelayWalletCreateBulk {
+	return &RelayWalletCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RelayWalletClient) MapCreateBulk(slice any, setFunc func(*RelayWalletCreate, int)) *RelayWalletCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RelayWalletCreateBulk{err: fmt.Errorf("calling to RelayWalletClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RelayWalletCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RelayWalletCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RelayWallet.
+func (c *RelayWalletClient) Update() *RelayWalletUpdate {
+	mutation := newRelayWalletMutation(c.config, OpUpdate)
+	return &RelayWalletUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RelayWalletClient) UpdateOne(_m *RelayWallet) *RelayWalletUpdateOne {
+	mutation := newRelayWalletMutation(c.config, OpUpdateOne, withRelayWallet(_m))
+	return &RelayWalletUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RelayWalletClient) UpdateOneID(id int) *RelayWalletUpdateOne {
+	mutation := newRelayWalletMutation(c.config, OpUpdateOne, withRelayWalletID(id))
+	return &RelayWalletUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RelayWallet.
+func (c *RelayWalletClient) Delete() *RelayWalletDelete {
+	mutation := newRelayWalletMutation(c.config, OpDelete)
+	return &RelayWalletDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RelayWalletClient) DeleteOne(_m *RelayWallet) *RelayWalletDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RelayWalletClient) DeleteOneID(id int) *RelayWalletDeleteOne {
+	builder := c.Delete().Where(relaywallet.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RelayWalletDeleteOne{builder}
+}
+
+// Query returns a query builder for RelayWallet.
+func (c *RelayWalletClient) Query() *RelayWalletQuery {
+	return &RelayWalletQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRelayWallet},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RelayWallet entity by its id.
+func (c *RelayWalletClient) Get(ctx context.Context, id int) (*RelayWallet, error) {
+	return c.Query().Where(relaywallet.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RelayWalletClient) GetX(ctx context.Context, id int) *RelayWallet {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryRelayKey queries the relay_key edge of a RelayWallet.
+func (c *RelayWalletClient) QueryRelayKey(_m *RelayWallet) *RelayKeyQuery {
+	query := (&RelayKeyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relaywallet.Table, relaywallet.FieldID, id),
+			sqlgraph.To(relaykey.Table, relaykey.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, relaywallet.RelayKeyTable, relaywallet.RelayKeyColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RelayWalletClient) Hooks() []Hook {
+	hooks := c.hooks.RelayWallet
+	return append(hooks[:len(hooks):len(hooks)], relaywallet.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *RelayWalletClient) Interceptors() []Interceptor {
+	return c.inters.RelayWallet
+}
+
+func (c *RelayWalletClient) mutate(ctx context.Context, m *RelayWalletMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RelayWalletCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RelayWalletUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RelayWalletUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RelayWalletDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RelayWallet mutation op: %q", m.Op())
+	}
+}
+
+// RelayWalletLedgerEntryClient is a client for the RelayWalletLedgerEntry schema.
+type RelayWalletLedgerEntryClient struct {
+	config
+}
+
+// NewRelayWalletLedgerEntryClient returns a client for the RelayWalletLedgerEntry from the given config.
+func NewRelayWalletLedgerEntryClient(c config) *RelayWalletLedgerEntryClient {
+	return &RelayWalletLedgerEntryClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `relaywalletledgerentry.Hooks(f(g(h())))`.
+func (c *RelayWalletLedgerEntryClient) Use(hooks ...Hook) {
+	c.hooks.RelayWalletLedgerEntry = append(c.hooks.RelayWalletLedgerEntry, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `relaywalletledgerentry.Intercept(f(g(h())))`.
+func (c *RelayWalletLedgerEntryClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RelayWalletLedgerEntry = append(c.inters.RelayWalletLedgerEntry, interceptors...)
+}
+
+// Create returns a builder for creating a RelayWalletLedgerEntry entity.
+func (c *RelayWalletLedgerEntryClient) Create() *RelayWalletLedgerEntryCreate {
+	mutation := newRelayWalletLedgerEntryMutation(c.config, OpCreate)
+	return &RelayWalletLedgerEntryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RelayWalletLedgerEntry entities.
+func (c *RelayWalletLedgerEntryClient) CreateBulk(builders ...*RelayWalletLedgerEntryCreate) *RelayWalletLedgerEntryCreateBulk {
+	return &RelayWalletLedgerEntryCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RelayWalletLedgerEntryClient) MapCreateBulk(slice any, setFunc func(*RelayWalletLedgerEntryCreate, int)) *RelayWalletLedgerEntryCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RelayWalletLedgerEntryCreateBulk{err: fmt.Errorf("calling to RelayWalletLedgerEntryClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RelayWalletLedgerEntryCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RelayWalletLedgerEntryCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RelayWalletLedgerEntry.
+func (c *RelayWalletLedgerEntryClient) Update() *RelayWalletLedgerEntryUpdate {
+	mutation := newRelayWalletLedgerEntryMutation(c.config, OpUpdate)
+	return &RelayWalletLedgerEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RelayWalletLedgerEntryClient) UpdateOne(_m *RelayWalletLedgerEntry) *RelayWalletLedgerEntryUpdateOne {
+	mutation := newRelayWalletLedgerEntryMutation(c.config, OpUpdateOne, withRelayWalletLedgerEntry(_m))
+	return &RelayWalletLedgerEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RelayWalletLedgerEntryClient) UpdateOneID(id int) *RelayWalletLedgerEntryUpdateOne {
+	mutation := newRelayWalletLedgerEntryMutation(c.config, OpUpdateOne, withRelayWalletLedgerEntryID(id))
+	return &RelayWalletLedgerEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RelayWalletLedgerEntry.
+func (c *RelayWalletLedgerEntryClient) Delete() *RelayWalletLedgerEntryDelete {
+	mutation := newRelayWalletLedgerEntryMutation(c.config, OpDelete)
+	return &RelayWalletLedgerEntryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RelayWalletLedgerEntryClient) DeleteOne(_m *RelayWalletLedgerEntry) *RelayWalletLedgerEntryDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RelayWalletLedgerEntryClient) DeleteOneID(id int) *RelayWalletLedgerEntryDeleteOne {
+	builder := c.Delete().Where(relaywalletledgerentry.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RelayWalletLedgerEntryDeleteOne{builder}
+}
+
+// Query returns a query builder for RelayWalletLedgerEntry.
+func (c *RelayWalletLedgerEntryClient) Query() *RelayWalletLedgerEntryQuery {
+	return &RelayWalletLedgerEntryQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRelayWalletLedgerEntry},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RelayWalletLedgerEntry entity by its id.
+func (c *RelayWalletLedgerEntryClient) Get(ctx context.Context, id int) (*RelayWalletLedgerEntry, error) {
+	return c.Query().Where(relaywalletledgerentry.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RelayWalletLedgerEntryClient) GetX(ctx context.Context, id int) *RelayWalletLedgerEntry {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryRelayKey queries the relay_key edge of a RelayWalletLedgerEntry.
+func (c *RelayWalletLedgerEntryClient) QueryRelayKey(_m *RelayWalletLedgerEntry) *RelayKeyQuery {
+	query := (&RelayKeyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relaywalletledgerentry.Table, relaywalletledgerentry.FieldID, id),
+			sqlgraph.To(relaykey.Table, relaykey.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relaywalletledgerentry.RelayKeyTable, relaywalletledgerentry.RelayKeyColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RelayWalletLedgerEntryClient) Hooks() []Hook {
+	hooks := c.hooks.RelayWalletLedgerEntry
+	return append(hooks[:len(hooks):len(hooks)], relaywalletledgerentry.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *RelayWalletLedgerEntryClient) Interceptors() []Interceptor {
+	return c.inters.RelayWalletLedgerEntry
+}
+
+func (c *RelayWalletLedgerEntryClient) mutate(ctx context.Context, m *RelayWalletLedgerEntryMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RelayWalletLedgerEntryCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RelayWalletLedgerEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RelayWalletLedgerEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RelayWalletLedgerEntryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RelayWalletLedgerEntry mutation op: %q", m.Op())
 	}
 }
 
@@ -3847,6 +4975,22 @@ func (c *UserClient) QueryAPIKeys(_m *User) *APIKeyQuery {
 	return query
 }
 
+// QueryRelayKeys queries the relay_keys edge of a User.
+func (c *UserClient) QueryRelayKeys(_m *User) *RelayKeyQuery {
+	query := (&RelayKeyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(relaykey.Table, relaykey.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RelayKeysTable, user.RelayKeysColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryRoles queries the roles edge of a User.
 func (c *UserClient) QueryRoles(_m *User) *RoleQuery {
 	query := (&RoleClient{config: c.config}).Query()
@@ -4274,13 +5418,17 @@ type (
 	hooks struct {
 		APIKey, Channel, ChannelModelPrice, ChannelModelPriceVersion,
 		ChannelOverrideTemplate, ChannelProbe, DataStorage, Model, Project, Prompt,
-		PromptProtectionRule, ProviderQuotaStatus, Request, RequestExecution, Role,
-		System, Thread, Trace, UsageLog, User, UserProject, UserRole []ent.Hook
+		PromptProtectionRule, ProviderQuotaStatus, RelayDailyUsageSummary, RelayKey,
+		RelayProduct, RelayProductChannel, RelayWallet, RelayWalletLedgerEntry,
+		Request, RequestExecution, Role, System, Thread, Trace, UsageLog, User,
+		UserProject, UserRole []ent.Hook
 	}
 	inters struct {
 		APIKey, Channel, ChannelModelPrice, ChannelModelPriceVersion,
 		ChannelOverrideTemplate, ChannelProbe, DataStorage, Model, Project, Prompt,
-		PromptProtectionRule, ProviderQuotaStatus, Request, RequestExecution, Role,
-		System, Thread, Trace, UsageLog, User, UserProject, UserRole []ent.Interceptor
+		PromptProtectionRule, ProviderQuotaStatus, RelayDailyUsageSummary, RelayKey,
+		RelayProduct, RelayProductChannel, RelayWallet, RelayWalletLedgerEntry,
+		Request, RequestExecution, Role, System, Thread, Trace, UsageLog, User,
+		UserProject, UserRole []ent.Interceptor
 	}
 )

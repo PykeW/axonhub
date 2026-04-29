@@ -711,6 +711,29 @@ func HasAPIKeysWith(preds ...predicate.APIKey) predicate.User {
 	})
 }
 
+// HasRelayKeys applies the HasEdge predicate on the "relay_keys" edge.
+func HasRelayKeys() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RelayKeysTable, RelayKeysColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRelayKeysWith applies the HasEdge predicate on the "relay_keys" edge with a given conditions (other predicates).
+func HasRelayKeysWith(preds ...predicate.RelayKey) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newRelayKeysStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasRoles applies the HasEdge predicate on the "roles" edge.
 func HasRoles() predicate.User {
 	return predicate.User(func(s *sql.Selector) {

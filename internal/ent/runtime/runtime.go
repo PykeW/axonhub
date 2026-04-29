@@ -17,6 +17,12 @@ import (
 	"github.com/looplj/axonhub/internal/ent/prompt"
 	"github.com/looplj/axonhub/internal/ent/promptprotectionrule"
 	"github.com/looplj/axonhub/internal/ent/providerquotastatus"
+	"github.com/looplj/axonhub/internal/ent/relaydailyusagesummary"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
+	"github.com/looplj/axonhub/internal/ent/relayproduct"
+	"github.com/looplj/axonhub/internal/ent/relayproductchannel"
+	"github.com/looplj/axonhub/internal/ent/relaywallet"
+	"github.com/looplj/axonhub/internal/ent/relaywalletledgerentry"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/ent/requestexecution"
 	"github.com/looplj/axonhub/internal/ent/role"
@@ -494,6 +500,244 @@ func init() {
 	providerquotastatusDescReady := providerquotastatusFields[5].Descriptor()
 	// providerquotastatus.DefaultReady holds the default value on creation for the ready field.
 	providerquotastatus.DefaultReady = providerquotastatusDescReady.Default.(bool)
+	relaydailyusagesummaryMixin := schema.RelayDailyUsageSummary{}.Mixin()
+	relaydailyusagesummary.Policy = privacy.NewPolicies(schema.RelayDailyUsageSummary{})
+	relaydailyusagesummary.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := relaydailyusagesummary.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	relaydailyusagesummaryMixinFields0 := relaydailyusagesummaryMixin[0].Fields()
+	_ = relaydailyusagesummaryMixinFields0
+	relaydailyusagesummaryFields := schema.RelayDailyUsageSummary{}.Fields()
+	_ = relaydailyusagesummaryFields
+	// relaydailyusagesummaryDescCreatedAt is the schema descriptor for created_at field.
+	relaydailyusagesummaryDescCreatedAt := relaydailyusagesummaryMixinFields0[0].Descriptor()
+	// relaydailyusagesummary.DefaultCreatedAt holds the default value on creation for the created_at field.
+	relaydailyusagesummary.DefaultCreatedAt = relaydailyusagesummaryDescCreatedAt.Default.(func() time.Time)
+	// relaydailyusagesummaryDescUpdatedAt is the schema descriptor for updated_at field.
+	relaydailyusagesummaryDescUpdatedAt := relaydailyusagesummaryMixinFields0[1].Descriptor()
+	// relaydailyusagesummary.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	relaydailyusagesummary.DefaultUpdatedAt = relaydailyusagesummaryDescUpdatedAt.Default.(func() time.Time)
+	// relaydailyusagesummary.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	relaydailyusagesummary.UpdateDefaultUpdatedAt = relaydailyusagesummaryDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// relaydailyusagesummaryDescRequestCount is the schema descriptor for request_count field.
+	relaydailyusagesummaryDescRequestCount := relaydailyusagesummaryFields[3].Descriptor()
+	// relaydailyusagesummary.DefaultRequestCount holds the default value on creation for the request_count field.
+	relaydailyusagesummary.DefaultRequestCount = relaydailyusagesummaryDescRequestCount.Default.(int64)
+	// relaydailyusagesummaryDescTotalTokens is the schema descriptor for total_tokens field.
+	relaydailyusagesummaryDescTotalTokens := relaydailyusagesummaryFields[4].Descriptor()
+	// relaydailyusagesummary.DefaultTotalTokens holds the default value on creation for the total_tokens field.
+	relaydailyusagesummary.DefaultTotalTokens = relaydailyusagesummaryDescTotalTokens.Default.(int64)
+	// relaydailyusagesummaryDescTotalCharge is the schema descriptor for total_charge field.
+	relaydailyusagesummaryDescTotalCharge := relaydailyusagesummaryFields[5].Descriptor()
+	// relaydailyusagesummary.DefaultTotalCharge holds the default value on creation for the total_charge field.
+	relaydailyusagesummary.DefaultTotalCharge = relaydailyusagesummaryDescTotalCharge.Default.(string)
+	// relaydailyusagesummaryDescTotalUpstreamCost is the schema descriptor for total_upstream_cost field.
+	relaydailyusagesummaryDescTotalUpstreamCost := relaydailyusagesummaryFields[6].Descriptor()
+	// relaydailyusagesummary.DefaultTotalUpstreamCost holds the default value on creation for the total_upstream_cost field.
+	relaydailyusagesummary.DefaultTotalUpstreamCost = relaydailyusagesummaryDescTotalUpstreamCost.Default.(string)
+	relaykeyMixin := schema.RelayKey{}.Mixin()
+	relaykey.Policy = privacy.NewPolicies(schema.RelayKey{})
+	relaykey.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := relaykey.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	relaykeyMixinHooks1 := relaykeyMixin[1].Hooks()
+
+	relaykey.Hooks[1] = relaykeyMixinHooks1[0]
+	relaykeyMixinInters1 := relaykeyMixin[1].Interceptors()
+	relaykey.Interceptors[0] = relaykeyMixinInters1[0]
+	relaykeyMixinFields0 := relaykeyMixin[0].Fields()
+	_ = relaykeyMixinFields0
+	relaykeyMixinFields1 := relaykeyMixin[1].Fields()
+	_ = relaykeyMixinFields1
+	relaykeyFields := schema.RelayKey{}.Fields()
+	_ = relaykeyFields
+	// relaykeyDescCreatedAt is the schema descriptor for created_at field.
+	relaykeyDescCreatedAt := relaykeyMixinFields0[0].Descriptor()
+	// relaykey.DefaultCreatedAt holds the default value on creation for the created_at field.
+	relaykey.DefaultCreatedAt = relaykeyDescCreatedAt.Default.(func() time.Time)
+	// relaykeyDescUpdatedAt is the schema descriptor for updated_at field.
+	relaykeyDescUpdatedAt := relaykeyMixinFields0[1].Descriptor()
+	// relaykey.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	relaykey.DefaultUpdatedAt = relaykeyDescUpdatedAt.Default.(func() time.Time)
+	// relaykey.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	relaykey.UpdateDefaultUpdatedAt = relaykeyDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// relaykeyDescDeletedAt is the schema descriptor for deleted_at field.
+	relaykeyDescDeletedAt := relaykeyMixinFields1[0].Descriptor()
+	// relaykey.DefaultDeletedAt holds the default value on creation for the deleted_at field.
+	relaykey.DefaultDeletedAt = relaykeyDescDeletedAt.Default.(int)
+	relayproductMixin := schema.RelayProduct{}.Mixin()
+	relayproduct.Policy = privacy.NewPolicies(schema.RelayProduct{})
+	relayproduct.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := relayproduct.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	relayproductMixinHooks1 := relayproductMixin[1].Hooks()
+
+	relayproduct.Hooks[1] = relayproductMixinHooks1[0]
+	relayproductMixinInters1 := relayproductMixin[1].Interceptors()
+	relayproduct.Interceptors[0] = relayproductMixinInters1[0]
+	relayproductMixinFields0 := relayproductMixin[0].Fields()
+	_ = relayproductMixinFields0
+	relayproductMixinFields1 := relayproductMixin[1].Fields()
+	_ = relayproductMixinFields1
+	relayproductFields := schema.RelayProduct{}.Fields()
+	_ = relayproductFields
+	// relayproductDescCreatedAt is the schema descriptor for created_at field.
+	relayproductDescCreatedAt := relayproductMixinFields0[0].Descriptor()
+	// relayproduct.DefaultCreatedAt holds the default value on creation for the created_at field.
+	relayproduct.DefaultCreatedAt = relayproductDescCreatedAt.Default.(func() time.Time)
+	// relayproductDescUpdatedAt is the schema descriptor for updated_at field.
+	relayproductDescUpdatedAt := relayproductMixinFields0[1].Descriptor()
+	// relayproduct.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	relayproduct.DefaultUpdatedAt = relayproductDescUpdatedAt.Default.(func() time.Time)
+	// relayproduct.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	relayproduct.UpdateDefaultUpdatedAt = relayproductDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// relayproductDescDeletedAt is the schema descriptor for deleted_at field.
+	relayproductDescDeletedAt := relayproductMixinFields1[0].Descriptor()
+	// relayproduct.DefaultDeletedAt holds the default value on creation for the deleted_at field.
+	relayproduct.DefaultDeletedAt = relayproductDescDeletedAt.Default.(int)
+	// relayproductDescCurrency is the schema descriptor for currency field.
+	relayproductDescCurrency := relayproductFields[6].Descriptor()
+	// relayproduct.DefaultCurrency holds the default value on creation for the currency field.
+	relayproduct.DefaultCurrency = relayproductDescCurrency.Default.(string)
+	// relayproductDescListPriceConfig is the schema descriptor for list_price_config field.
+	relayproductDescListPriceConfig := relayproductFields[7].Descriptor()
+	// relayproduct.DefaultListPriceConfig holds the default value on creation for the list_price_config field.
+	relayproduct.DefaultListPriceConfig = relayproductDescListPriceConfig.Default.(map[string]interface{})
+	// relayproductDescAllowedModels is the schema descriptor for allowed_models field.
+	relayproductDescAllowedModels := relayproductFields[8].Descriptor()
+	// relayproduct.DefaultAllowedModels holds the default value on creation for the allowed_models field.
+	relayproduct.DefaultAllowedModels = relayproductDescAllowedModels.Default.([]string)
+	// relayproductDescRequestTimeoutSeconds is the schema descriptor for request_timeout_seconds field.
+	relayproductDescRequestTimeoutSeconds := relayproductFields[9].Descriptor()
+	// relayproduct.DefaultRequestTimeoutSeconds holds the default value on creation for the request_timeout_seconds field.
+	relayproduct.DefaultRequestTimeoutSeconds = relayproductDescRequestTimeoutSeconds.Default.(int)
+	relayproductchannelMixin := schema.RelayProductChannel{}.Mixin()
+	relayproductchannel.Policy = privacy.NewPolicies(schema.RelayProductChannel{})
+	relayproductchannel.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := relayproductchannel.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	relayproductchannelMixinFields0 := relayproductchannelMixin[0].Fields()
+	_ = relayproductchannelMixinFields0
+	relayproductchannelFields := schema.RelayProductChannel{}.Fields()
+	_ = relayproductchannelFields
+	// relayproductchannelDescCreatedAt is the schema descriptor for created_at field.
+	relayproductchannelDescCreatedAt := relayproductchannelMixinFields0[0].Descriptor()
+	// relayproductchannel.DefaultCreatedAt holds the default value on creation for the created_at field.
+	relayproductchannel.DefaultCreatedAt = relayproductchannelDescCreatedAt.Default.(func() time.Time)
+	// relayproductchannelDescUpdatedAt is the schema descriptor for updated_at field.
+	relayproductchannelDescUpdatedAt := relayproductchannelMixinFields0[1].Descriptor()
+	// relayproductchannel.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	relayproductchannel.DefaultUpdatedAt = relayproductchannelDescUpdatedAt.Default.(func() time.Time)
+	// relayproductchannel.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	relayproductchannel.UpdateDefaultUpdatedAt = relayproductchannelDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// relayproductchannelDescPriority is the schema descriptor for priority field.
+	relayproductchannelDescPriority := relayproductchannelFields[2].Descriptor()
+	// relayproductchannel.DefaultPriority holds the default value on creation for the priority field.
+	relayproductchannel.DefaultPriority = relayproductchannelDescPriority.Default.(int)
+	// relayproductchannelDescWeight is the schema descriptor for weight field.
+	relayproductchannelDescWeight := relayproductchannelFields[3].Descriptor()
+	// relayproductchannel.DefaultWeight holds the default value on creation for the weight field.
+	relayproductchannel.DefaultWeight = relayproductchannelDescWeight.Default.(int)
+	// relayproductchannelDescAllowFallback is the schema descriptor for allow_fallback field.
+	relayproductchannelDescAllowFallback := relayproductchannelFields[5].Descriptor()
+	// relayproductchannel.DefaultAllowFallback holds the default value on creation for the allow_fallback field.
+	relayproductchannel.DefaultAllowFallback = relayproductchannelDescAllowFallback.Default.(bool)
+	// relayproductchannelDescModelFilter is the schema descriptor for model_filter field.
+	relayproductchannelDescModelFilter := relayproductchannelFields[6].Descriptor()
+	// relayproductchannel.DefaultModelFilter holds the default value on creation for the model_filter field.
+	relayproductchannel.DefaultModelFilter = relayproductchannelDescModelFilter.Default.(map[string]interface{})
+	relaywalletMixin := schema.RelayWallet{}.Mixin()
+	relaywallet.Policy = privacy.NewPolicies(schema.RelayWallet{})
+	relaywallet.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := relaywallet.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	relaywalletMixinFields0 := relaywalletMixin[0].Fields()
+	_ = relaywalletMixinFields0
+	relaywalletFields := schema.RelayWallet{}.Fields()
+	_ = relaywalletFields
+	// relaywalletDescCreatedAt is the schema descriptor for created_at field.
+	relaywalletDescCreatedAt := relaywalletMixinFields0[0].Descriptor()
+	// relaywallet.DefaultCreatedAt holds the default value on creation for the created_at field.
+	relaywallet.DefaultCreatedAt = relaywalletDescCreatedAt.Default.(func() time.Time)
+	// relaywalletDescUpdatedAt is the schema descriptor for updated_at field.
+	relaywalletDescUpdatedAt := relaywalletMixinFields0[1].Descriptor()
+	// relaywallet.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	relaywallet.DefaultUpdatedAt = relaywalletDescUpdatedAt.Default.(func() time.Time)
+	// relaywallet.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	relaywallet.UpdateDefaultUpdatedAt = relaywalletDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// relaywalletDescCurrency is the schema descriptor for currency field.
+	relaywalletDescCurrency := relaywalletFields[2].Descriptor()
+	// relaywallet.DefaultCurrency holds the default value on creation for the currency field.
+	relaywallet.DefaultCurrency = relaywalletDescCurrency.Default.(string)
+	// relaywalletDescAvailableAmount is the schema descriptor for available_amount field.
+	relaywalletDescAvailableAmount := relaywalletFields[3].Descriptor()
+	// relaywallet.DefaultAvailableAmount holds the default value on creation for the available_amount field.
+	relaywallet.DefaultAvailableAmount = relaywalletDescAvailableAmount.Default.(string)
+	// relaywalletDescFrozenAmount is the schema descriptor for frozen_amount field.
+	relaywalletDescFrozenAmount := relaywalletFields[4].Descriptor()
+	// relaywallet.DefaultFrozenAmount holds the default value on creation for the frozen_amount field.
+	relaywallet.DefaultFrozenAmount = relaywalletDescFrozenAmount.Default.(string)
+	// relaywalletDescOverdraftLimit is the schema descriptor for overdraft_limit field.
+	relaywalletDescOverdraftLimit := relaywalletFields[5].Descriptor()
+	// relaywallet.DefaultOverdraftLimit holds the default value on creation for the overdraft_limit field.
+	relaywallet.DefaultOverdraftLimit = relaywalletDescOverdraftLimit.Default.(string)
+	// relaywalletDescVersion is the schema descriptor for version field.
+	relaywalletDescVersion := relaywalletFields[6].Descriptor()
+	// relaywallet.DefaultVersion holds the default value on creation for the version field.
+	relaywallet.DefaultVersion = relaywalletDescVersion.Default.(int64)
+	relaywalletledgerentryMixin := schema.RelayWalletLedgerEntry{}.Mixin()
+	relaywalletledgerentry.Policy = privacy.NewPolicies(schema.RelayWalletLedgerEntry{})
+	relaywalletledgerentry.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := relaywalletledgerentry.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	relaywalletledgerentryMixinFields0 := relaywalletledgerentryMixin[0].Fields()
+	_ = relaywalletledgerentryMixinFields0
+	relaywalletledgerentryFields := schema.RelayWalletLedgerEntry{}.Fields()
+	_ = relaywalletledgerentryFields
+	// relaywalletledgerentryDescCreatedAt is the schema descriptor for created_at field.
+	relaywalletledgerentryDescCreatedAt := relaywalletledgerentryMixinFields0[0].Descriptor()
+	// relaywalletledgerentry.DefaultCreatedAt holds the default value on creation for the created_at field.
+	relaywalletledgerentry.DefaultCreatedAt = relaywalletledgerentryDescCreatedAt.Default.(func() time.Time)
+	// relaywalletledgerentryDescUpdatedAt is the schema descriptor for updated_at field.
+	relaywalletledgerentryDescUpdatedAt := relaywalletledgerentryMixinFields0[1].Descriptor()
+	// relaywalletledgerentry.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	relaywalletledgerentry.DefaultUpdatedAt = relaywalletledgerentryDescUpdatedAt.Default.(func() time.Time)
+	// relaywalletledgerentry.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	relaywalletledgerentry.UpdateDefaultUpdatedAt = relaywalletledgerentryDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// relaywalletledgerentryDescPriceSnapshot is the schema descriptor for price_snapshot field.
+	relaywalletledgerentryDescPriceSnapshot := relaywalletledgerentryFields[10].Descriptor()
+	// relaywalletledgerentry.DefaultPriceSnapshot holds the default value on creation for the price_snapshot field.
+	relaywalletledgerentry.DefaultPriceSnapshot = relaywalletledgerentryDescPriceSnapshot.Default.(map[string]interface{})
 	requestMixin := schema.Request{}.Mixin()
 	request.Policy = privacy.NewPolicies(schema.Request{})
 	request.Hooks[0] = func(next ent.Mutator) ent.Mutator {

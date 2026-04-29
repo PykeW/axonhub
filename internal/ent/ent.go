@@ -24,6 +24,12 @@ import (
 	"github.com/looplj/axonhub/internal/ent/prompt"
 	"github.com/looplj/axonhub/internal/ent/promptprotectionrule"
 	"github.com/looplj/axonhub/internal/ent/providerquotastatus"
+	"github.com/looplj/axonhub/internal/ent/relaydailyusagesummary"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
+	"github.com/looplj/axonhub/internal/ent/relayproduct"
+	"github.com/looplj/axonhub/internal/ent/relayproductchannel"
+	"github.com/looplj/axonhub/internal/ent/relaywallet"
+	"github.com/looplj/axonhub/internal/ent/relaywalletledgerentry"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/ent/requestexecution"
 	"github.com/looplj/axonhub/internal/ent/role"
@@ -106,6 +112,12 @@ func checkColumn(t, c string) error {
 			prompt.Table:                   prompt.ValidColumn,
 			promptprotectionrule.Table:     promptprotectionrule.ValidColumn,
 			providerquotastatus.Table:      providerquotastatus.ValidColumn,
+			relaydailyusagesummary.Table:   relaydailyusagesummary.ValidColumn,
+			relaykey.Table:                 relaykey.ValidColumn,
+			relayproduct.Table:             relayproduct.ValidColumn,
+			relayproductchannel.Table:      relayproductchannel.ValidColumn,
+			relaywallet.Table:              relaywallet.ValidColumn,
+			relaywalletledgerentry.Table:   relaywalletledgerentry.ValidColumn,
 			request.Table:                  request.ValidColumn,
 			requestexecution.Table:         requestexecution.ValidColumn,
 			role.Table:                     role.ValidColumn,

@@ -45,6 +45,14 @@ func (_m *APIKey) Requests(
 	return _m.QueryRequests().Paginate(ctx, after, first, before, last, opts...)
 }
 
+func (_m *APIKey) RelayKey(ctx context.Context) (*RelayKey, error) {
+	result, err := _m.Edges.RelayKeyOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelayKey().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
 func (_m *Channel) Requests(
 	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *RequestOrder, where *RequestWhereInput,
 ) (*RequestConnection, error) {
@@ -130,6 +138,27 @@ func (_m *Channel) ChannelModelPrices(ctx context.Context) (result []*ChannelMod
 		result, err = _m.QueryChannelModelPrices().All(ctx)
 	}
 	return result, err
+}
+
+func (_m *Channel) RelayProductBindings(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *RelayProductChannelOrder, where *RelayProductChannelWhereInput,
+) (*RelayProductChannelConnection, error) {
+	opts := []RelayProductChannelPaginateOption{
+		WithRelayProductChannelOrder(orderBy),
+		WithRelayProductChannelFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[5][alias]
+	if nodes, err := _m.NamedRelayProductBindings(alias); err == nil || hasTotalCount {
+		pager, err := newRelayProductChannelPager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &RelayProductChannelConnection{Edges: []*RelayProductChannelEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QueryRelayProductBindings().Paginate(ctx, after, first, before, last, opts...)
 }
 
 func (_m *Channel) ProviderQuotaStatus(ctx context.Context) (*ProviderQuotaStatus, error) {
@@ -289,6 +318,27 @@ func (_m *Project) APIKeys(
 	return _m.QueryAPIKeys().Paginate(ctx, after, first, before, last, opts...)
 }
 
+func (_m *Project) RelayKeys(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *RelayKeyOrder, where *RelayKeyWhereInput,
+) (*RelayKeyConnection, error) {
+	opts := []RelayKeyPaginateOption{
+		WithRelayKeyOrder(orderBy),
+		WithRelayKeyFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[3][alias]
+	if nodes, err := _m.NamedRelayKeys(alias); err == nil || hasTotalCount {
+		pager, err := newRelayKeyPager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &RelayKeyConnection{Edges: []*RelayKeyEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QueryRelayKeys().Paginate(ctx, after, first, before, last, opts...)
+}
+
 func (_m *Project) Requests(
 	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *RequestOrder, where *RequestWhereInput,
 ) (*RequestConnection, error) {
@@ -297,7 +347,7 @@ func (_m *Project) Requests(
 		WithRequestFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[3][alias]
+	totalCount, hasTotalCount := _m.Edges.totalCount[4][alias]
 	if nodes, err := _m.NamedRequests(alias); err == nil || hasTotalCount {
 		pager, err := newRequestPager(opts, last != nil)
 		if err != nil {
@@ -318,7 +368,7 @@ func (_m *Project) UsageLogs(
 		WithUsageLogFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[4][alias]
+	totalCount, hasTotalCount := _m.Edges.totalCount[5][alias]
 	if nodes, err := _m.NamedUsageLogs(alias); err == nil || hasTotalCount {
 		pager, err := newUsageLogPager(opts, last != nil)
 		if err != nil {
@@ -339,7 +389,7 @@ func (_m *Project) Threads(
 		WithThreadFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[5][alias]
+	totalCount, hasTotalCount := _m.Edges.totalCount[6][alias]
 	if nodes, err := _m.NamedThreads(alias); err == nil || hasTotalCount {
 		pager, err := newThreadPager(opts, last != nil)
 		if err != nil {
@@ -360,7 +410,7 @@ func (_m *Project) Traces(
 		WithTraceFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[6][alias]
+	totalCount, hasTotalCount := _m.Edges.totalCount[7][alias]
 	if nodes, err := _m.NamedTraces(alias); err == nil || hasTotalCount {
 		pager, err := newTracePager(opts, last != nil)
 		if err != nil {
@@ -381,7 +431,7 @@ func (_m *Project) Prompts(
 		WithPromptFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[7][alias]
+	totalCount, hasTotalCount := _m.Edges.totalCount[8][alias]
 	if nodes, err := _m.NamedPrompts(alias); err == nil || hasTotalCount {
 		pager, err := newPromptPager(opts, last != nil)
 		if err != nil {
@@ -402,7 +452,7 @@ func (_m *Project) ProjectUsers(
 		WithUserProjectFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[8][alias]
+	totalCount, hasTotalCount := _m.Edges.totalCount[9][alias]
 	if nodes, err := _m.NamedProjectUsers(alias); err == nil || hasTotalCount {
 		pager, err := newUserProjectPager(opts, last != nil)
 		if err != nil {
@@ -440,6 +490,170 @@ func (_m *ProviderQuotaStatus) Channel(ctx context.Context) (*Channel, error) {
 	result, err := _m.Edges.ChannelOrErr()
 	if IsNotLoaded(err) {
 		result, err = _m.QueryChannel().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelayDailyUsageSummary) RelayKey(ctx context.Context) (*RelayKey, error) {
+	result, err := _m.Edges.RelayKeyOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelayKey().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelayKey) APIKey(ctx context.Context) (*APIKey, error) {
+	result, err := _m.Edges.APIKeyOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryAPIKey().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelayKey) Project(ctx context.Context) (*Project, error) {
+	result, err := _m.Edges.ProjectOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryProject().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelayKey) Product(ctx context.Context) (*RelayProduct, error) {
+	result, err := _m.Edges.ProductOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryProduct().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelayKey) OwnerUser(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.OwnerUserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryOwnerUser().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *RelayKey) Wallet(ctx context.Context) (*RelayWallet, error) {
+	result, err := _m.Edges.WalletOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWallet().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *RelayKey) LedgerEntries(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *RelayWalletLedgerEntryOrder, where *RelayWalletLedgerEntryWhereInput,
+) (*RelayWalletLedgerEntryConnection, error) {
+	opts := []RelayWalletLedgerEntryPaginateOption{
+		WithRelayWalletLedgerEntryOrder(orderBy),
+		WithRelayWalletLedgerEntryFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[5][alias]
+	if nodes, err := _m.NamedLedgerEntries(alias); err == nil || hasTotalCount {
+		pager, err := newRelayWalletLedgerEntryPager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &RelayWalletLedgerEntryConnection{Edges: []*RelayWalletLedgerEntryEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QueryLedgerEntries().Paginate(ctx, after, first, before, last, opts...)
+}
+
+func (_m *RelayKey) DailyUsageSummaries(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *RelayDailyUsageSummaryOrder, where *RelayDailyUsageSummaryWhereInput,
+) (*RelayDailyUsageSummaryConnection, error) {
+	opts := []RelayDailyUsageSummaryPaginateOption{
+		WithRelayDailyUsageSummaryOrder(orderBy),
+		WithRelayDailyUsageSummaryFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[6][alias]
+	if nodes, err := _m.NamedDailyUsageSummaries(alias); err == nil || hasTotalCount {
+		pager, err := newRelayDailyUsageSummaryPager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &RelayDailyUsageSummaryConnection{Edges: []*RelayDailyUsageSummaryEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QueryDailyUsageSummaries().Paginate(ctx, after, first, before, last, opts...)
+}
+
+func (_m *RelayProduct) ChannelBindings(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *RelayProductChannelOrder, where *RelayProductChannelWhereInput,
+) (*RelayProductChannelConnection, error) {
+	opts := []RelayProductChannelPaginateOption{
+		WithRelayProductChannelOrder(orderBy),
+		WithRelayProductChannelFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[0][alias]
+	if nodes, err := _m.NamedChannelBindings(alias); err == nil || hasTotalCount {
+		pager, err := newRelayProductChannelPager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &RelayProductChannelConnection{Edges: []*RelayProductChannelEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QueryChannelBindings().Paginate(ctx, after, first, before, last, opts...)
+}
+
+func (_m *RelayProduct) RelayKeys(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *RelayKeyOrder, where *RelayKeyWhereInput,
+) (*RelayKeyConnection, error) {
+	opts := []RelayKeyPaginateOption{
+		WithRelayKeyOrder(orderBy),
+		WithRelayKeyFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[1][alias]
+	if nodes, err := _m.NamedRelayKeys(alias); err == nil || hasTotalCount {
+		pager, err := newRelayKeyPager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &RelayKeyConnection{Edges: []*RelayKeyEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QueryRelayKeys().Paginate(ctx, after, first, before, last, opts...)
+}
+
+func (_m *RelayProductChannel) Product(ctx context.Context) (*RelayProduct, error) {
+	result, err := _m.Edges.ProductOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryProduct().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelayProductChannel) Channel(ctx context.Context) (*Channel, error) {
+	result, err := _m.Edges.ChannelOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryChannel().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelayWallet) RelayKey(ctx context.Context) (*RelayKey, error) {
+	result, err := _m.Edges.RelayKeyOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelayKey().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelayWalletLedgerEntry) RelayKey(ctx context.Context) (*RelayKey, error) {
+	result, err := _m.Edges.RelayKeyOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelayKey().Only(ctx)
 	}
 	return result, err
 }
@@ -732,6 +946,27 @@ func (_m *User) APIKeys(
 	return _m.QueryAPIKeys().Paginate(ctx, after, first, before, last, opts...)
 }
 
+func (_m *User) RelayKeys(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *RelayKeyOrder, where *RelayKeyWhereInput,
+) (*RelayKeyConnection, error) {
+	opts := []RelayKeyPaginateOption{
+		WithRelayKeyOrder(orderBy),
+		WithRelayKeyFilter(where.Filter),
+	}
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := _m.Edges.totalCount[2][alias]
+	if nodes, err := _m.NamedRelayKeys(alias); err == nil || hasTotalCount {
+		pager, err := newRelayKeyPager(opts, last != nil)
+		if err != nil {
+			return nil, err
+		}
+		conn := &RelayKeyConnection{Edges: []*RelayKeyEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return _m.QueryRelayKeys().Paginate(ctx, after, first, before, last, opts...)
+}
+
 func (_m *User) Roles(
 	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *RoleOrder, where *RoleWhereInput,
 ) (*RoleConnection, error) {
@@ -740,7 +975,7 @@ func (_m *User) Roles(
 		WithRoleFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[2][alias]
+	totalCount, hasTotalCount := _m.Edges.totalCount[3][alias]
 	if nodes, err := _m.NamedRoles(alias); err == nil || hasTotalCount {
 		pager, err := newRolePager(opts, last != nil)
 		if err != nil {
@@ -761,7 +996,7 @@ func (_m *User) ChannelOverrideTemplates(
 		WithChannelOverrideTemplateFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[3][alias]
+	totalCount, hasTotalCount := _m.Edges.totalCount[4][alias]
 	if nodes, err := _m.NamedChannelOverrideTemplates(alias); err == nil || hasTotalCount {
 		pager, err := newChannelOverrideTemplatePager(opts, last != nil)
 		if err != nil {
@@ -782,7 +1017,7 @@ func (_m *User) ProjectUsers(
 		WithUserProjectFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[4][alias]
+	totalCount, hasTotalCount := _m.Edges.totalCount[5][alias]
 	if nodes, err := _m.NamedProjectUsers(alias); err == nil || hasTotalCount {
 		pager, err := newUserProjectPager(opts, last != nil)
 		if err != nil {
@@ -803,7 +1038,7 @@ func (_m *User) UserRoles(
 		WithUserRoleFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[5][alias]
+	totalCount, hasTotalCount := _m.Edges.totalCount[6][alias]
 	if nodes, err := _m.NamedUserRoles(alias); err == nil || hasTotalCount {
 		pager, err := newUserRolePager(opts, last != nil)
 		if err != nil {

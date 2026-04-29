@@ -15,6 +15,7 @@ import (
 	"github.com/looplj/axonhub/internal/ent/channelmodelprice"
 	"github.com/looplj/axonhub/internal/ent/channelprobe"
 	"github.com/looplj/axonhub/internal/ent/providerquotastatus"
+	"github.com/looplj/axonhub/internal/ent/relayproductchannel"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/ent/requestexecution"
 	"github.com/looplj/axonhub/internal/ent/usagelog"
@@ -310,6 +311,21 @@ func (_c *ChannelCreate) AddChannelModelPrices(v ...*ChannelModelPrice) *Channel
 		ids[i] = v[i].ID
 	}
 	return _c.AddChannelModelPriceIDs(ids...)
+}
+
+// AddRelayProductBindingIDs adds the "relay_product_bindings" edge to the RelayProductChannel entity by IDs.
+func (_c *ChannelCreate) AddRelayProductBindingIDs(ids ...int) *ChannelCreate {
+	_c.mutation.AddRelayProductBindingIDs(ids...)
+	return _c
+}
+
+// AddRelayProductBindings adds the "relay_product_bindings" edges to the RelayProductChannel entity.
+func (_c *ChannelCreate) AddRelayProductBindings(v ...*RelayProductChannel) *ChannelCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRelayProductBindingIDs(ids...)
 }
 
 // SetProviderQuotaStatusID sets the "provider_quota_status" edge to the ProviderQuotaStatus entity by ID.
@@ -644,6 +660,22 @@ func (_c *ChannelCreate) createSpec() (*Channel, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(channelmodelprice.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RelayProductBindingsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   channel.RelayProductBindingsTable,
+			Columns: []string{channel.RelayProductBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relayproductchannel.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

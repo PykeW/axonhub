@@ -26,6 +26,12 @@ import (
 	"github.com/looplj/axonhub/internal/ent/prompt"
 	"github.com/looplj/axonhub/internal/ent/promptprotectionrule"
 	"github.com/looplj/axonhub/internal/ent/providerquotastatus"
+	"github.com/looplj/axonhub/internal/ent/relaydailyusagesummary"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
+	"github.com/looplj/axonhub/internal/ent/relayproduct"
+	"github.com/looplj/axonhub/internal/ent/relayproductchannel"
+	"github.com/looplj/axonhub/internal/ent/relaywallet"
+	"github.com/looplj/axonhub/internal/ent/relaywalletledgerentry"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/ent/requestexecution"
 	"github.com/looplj/axonhub/internal/ent/role"
@@ -104,6 +110,36 @@ var providerquotastatusImplementors = []string{"ProviderQuotaStatus", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*ProviderQuotaStatus) IsNode() {}
+
+var relaydailyusagesummaryImplementors = []string{"RelayDailyUsageSummary", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RelayDailyUsageSummary) IsNode() {}
+
+var relaykeyImplementors = []string{"RelayKey", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RelayKey) IsNode() {}
+
+var relayproductImplementors = []string{"RelayProduct", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RelayProduct) IsNode() {}
+
+var relayproductchannelImplementors = []string{"RelayProductChannel", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RelayProductChannel) IsNode() {}
+
+var relaywalletImplementors = []string{"RelayWallet", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RelayWallet) IsNode() {}
+
+var relaywalletledgerentryImplementors = []string{"RelayWalletLedgerEntry", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RelayWalletLedgerEntry) IsNode() {}
 
 var requestImplementors = []string{"Request", "Node"}
 
@@ -317,6 +353,60 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			Where(providerquotastatus.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, providerquotastatusImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case relaydailyusagesummary.Table:
+		query := c.RelayDailyUsageSummary.Query().
+			Where(relaydailyusagesummary.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relaydailyusagesummaryImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case relaykey.Table:
+		query := c.RelayKey.Query().
+			Where(relaykey.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relaykeyImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case relayproduct.Table:
+		query := c.RelayProduct.Query().
+			Where(relayproduct.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relayproductImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case relayproductchannel.Table:
+		query := c.RelayProductChannel.Query().
+			Where(relayproductchannel.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relayproductchannelImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case relaywallet.Table:
+		query := c.RelayWallet.Query().
+			Where(relaywallet.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relaywalletImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case relaywalletledgerentry.Table:
+		query := c.RelayWalletLedgerEntry.Query().
+			Where(relaywalletledgerentry.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relaywalletledgerentryImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -664,6 +754,102 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		query := c.ProviderQuotaStatus.Query().
 			Where(providerquotastatus.IDIn(ids...))
 		query, err := query.CollectFields(ctx, providerquotastatusImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case relaydailyusagesummary.Table:
+		query := c.RelayDailyUsageSummary.Query().
+			Where(relaydailyusagesummary.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relaydailyusagesummaryImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case relaykey.Table:
+		query := c.RelayKey.Query().
+			Where(relaykey.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relaykeyImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case relayproduct.Table:
+		query := c.RelayProduct.Query().
+			Where(relayproduct.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relayproductImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case relayproductchannel.Table:
+		query := c.RelayProductChannel.Query().
+			Where(relayproductchannel.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relayproductchannelImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case relaywallet.Table:
+		query := c.RelayWallet.Query().
+			Where(relaywallet.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relaywalletImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case relaywalletledgerentry.Table:
+		query := c.RelayWalletLedgerEntry.Query().
+			Where(relaywalletledgerentry.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relaywalletledgerentryImplementors...)
 		if err != nil {
 			return nil, err
 		}

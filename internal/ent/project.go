@@ -47,6 +47,8 @@ type ProjectEdges struct {
 	Roles []*Role `json:"roles,omitempty"`
 	// APIKeys holds the value of the api_keys edge.
 	APIKeys []*APIKey `json:"api_keys,omitempty"`
+	// RelayKeys holds the value of the relay_keys edge.
+	RelayKeys []*RelayKey `json:"relay_keys,omitempty"`
 	// Requests holds the value of the requests edge.
 	Requests []*Request `json:"requests,omitempty"`
 	// UsageLogs holds the value of the usage_logs edge.
@@ -61,13 +63,14 @@ type ProjectEdges struct {
 	ProjectUsers []*UserProject `json:"project_users,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [9]bool
+	loadedTypes [10]bool
 	// totalCount holds the count of the edges above.
-	totalCount [9]map[string]int
+	totalCount [10]map[string]int
 
 	namedUsers        map[string][]*User
 	namedRoles        map[string][]*Role
 	namedAPIKeys      map[string][]*APIKey
+	namedRelayKeys    map[string][]*RelayKey
 	namedRequests     map[string][]*Request
 	namedUsageLogs    map[string][]*UsageLog
 	namedThreads      map[string][]*Thread
@@ -103,10 +106,19 @@ func (e ProjectEdges) APIKeysOrErr() ([]*APIKey, error) {
 	return nil, &NotLoadedError{edge: "api_keys"}
 }
 
+// RelayKeysOrErr returns the RelayKeys value or an error if the edge
+// was not loaded in eager-loading.
+func (e ProjectEdges) RelayKeysOrErr() ([]*RelayKey, error) {
+	if e.loadedTypes[3] {
+		return e.RelayKeys, nil
+	}
+	return nil, &NotLoadedError{edge: "relay_keys"}
+}
+
 // RequestsOrErr returns the Requests value or an error if the edge
 // was not loaded in eager-loading.
 func (e ProjectEdges) RequestsOrErr() ([]*Request, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[4] {
 		return e.Requests, nil
 	}
 	return nil, &NotLoadedError{edge: "requests"}
@@ -115,7 +127,7 @@ func (e ProjectEdges) RequestsOrErr() ([]*Request, error) {
 // UsageLogsOrErr returns the UsageLogs value or an error if the edge
 // was not loaded in eager-loading.
 func (e ProjectEdges) UsageLogsOrErr() ([]*UsageLog, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[5] {
 		return e.UsageLogs, nil
 	}
 	return nil, &NotLoadedError{edge: "usage_logs"}
@@ -124,7 +136,7 @@ func (e ProjectEdges) UsageLogsOrErr() ([]*UsageLog, error) {
 // ThreadsOrErr returns the Threads value or an error if the edge
 // was not loaded in eager-loading.
 func (e ProjectEdges) ThreadsOrErr() ([]*Thread, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[6] {
 		return e.Threads, nil
 	}
 	return nil, &NotLoadedError{edge: "threads"}
@@ -133,7 +145,7 @@ func (e ProjectEdges) ThreadsOrErr() ([]*Thread, error) {
 // TracesOrErr returns the Traces value or an error if the edge
 // was not loaded in eager-loading.
 func (e ProjectEdges) TracesOrErr() ([]*Trace, error) {
-	if e.loadedTypes[6] {
+	if e.loadedTypes[7] {
 		return e.Traces, nil
 	}
 	return nil, &NotLoadedError{edge: "traces"}
@@ -142,7 +154,7 @@ func (e ProjectEdges) TracesOrErr() ([]*Trace, error) {
 // PromptsOrErr returns the Prompts value or an error if the edge
 // was not loaded in eager-loading.
 func (e ProjectEdges) PromptsOrErr() ([]*Prompt, error) {
-	if e.loadedTypes[7] {
+	if e.loadedTypes[8] {
 		return e.Prompts, nil
 	}
 	return nil, &NotLoadedError{edge: "prompts"}
@@ -151,7 +163,7 @@ func (e ProjectEdges) PromptsOrErr() ([]*Prompt, error) {
 // ProjectUsersOrErr returns the ProjectUsers value or an error if the edge
 // was not loaded in eager-loading.
 func (e ProjectEdges) ProjectUsersOrErr() ([]*UserProject, error) {
-	if e.loadedTypes[8] {
+	if e.loadedTypes[9] {
 		return e.ProjectUsers, nil
 	}
 	return nil, &NotLoadedError{edge: "project_users"}
@@ -261,6 +273,11 @@ func (_m *Project) QueryRoles() *RoleQuery {
 // QueryAPIKeys queries the "api_keys" edge of the Project entity.
 func (_m *Project) QueryAPIKeys() *APIKeyQuery {
 	return NewProjectClient(_m.config).QueryAPIKeys(_m)
+}
+
+// QueryRelayKeys queries the "relay_keys" edge of the Project entity.
+func (_m *Project) QueryRelayKeys() *RelayKeyQuery {
+	return NewProjectClient(_m.config).QueryRelayKeys(_m)
 }
 
 // QueryRequests queries the "requests" edge of the Project entity.
@@ -409,6 +426,30 @@ func (_m *Project) appendNamedAPIKeys(name string, edges ...*APIKey) {
 		_m.Edges.namedAPIKeys[name] = []*APIKey{}
 	} else {
 		_m.Edges.namedAPIKeys[name] = append(_m.Edges.namedAPIKeys[name], edges...)
+	}
+}
+
+// NamedRelayKeys returns the RelayKeys named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Project) NamedRelayKeys(name string) ([]*RelayKey, error) {
+	if _m.Edges.namedRelayKeys == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelayKeys[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Project) appendNamedRelayKeys(name string, edges ...*RelayKey) {
+	if _m.Edges.namedRelayKeys == nil {
+		_m.Edges.namedRelayKeys = make(map[string][]*RelayKey)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelayKeys[name] = []*RelayKey{}
+	} else {
+		_m.Edges.namedRelayKeys[name] = append(_m.Edges.namedRelayKeys[name], edges...)
 	}
 }
 

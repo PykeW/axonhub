@@ -36,6 +36,18 @@ type Tx struct {
 	PromptProtectionRule *PromptProtectionRuleClient
 	// ProviderQuotaStatus is the client for interacting with the ProviderQuotaStatus builders.
 	ProviderQuotaStatus *ProviderQuotaStatusClient
+	// RelayDailyUsageSummary is the client for interacting with the RelayDailyUsageSummary builders.
+	RelayDailyUsageSummary *RelayDailyUsageSummaryClient
+	// RelayKey is the client for interacting with the RelayKey builders.
+	RelayKey *RelayKeyClient
+	// RelayProduct is the client for interacting with the RelayProduct builders.
+	RelayProduct *RelayProductClient
+	// RelayProductChannel is the client for interacting with the RelayProductChannel builders.
+	RelayProductChannel *RelayProductChannelClient
+	// RelayWallet is the client for interacting with the RelayWallet builders.
+	RelayWallet *RelayWalletClient
+	// RelayWalletLedgerEntry is the client for interacting with the RelayWalletLedgerEntry builders.
+	RelayWalletLedgerEntry *RelayWalletLedgerEntryClient
 	// Request is the client for interacting with the Request builders.
 	Request *RequestClient
 	// RequestExecution is the client for interacting with the RequestExecution builders.
@@ -199,6 +211,12 @@ func (tx *Tx) init() {
 	tx.Prompt = NewPromptClient(tx.config)
 	tx.PromptProtectionRule = NewPromptProtectionRuleClient(tx.config)
 	tx.ProviderQuotaStatus = NewProviderQuotaStatusClient(tx.config)
+	tx.RelayDailyUsageSummary = NewRelayDailyUsageSummaryClient(tx.config)
+	tx.RelayKey = NewRelayKeyClient(tx.config)
+	tx.RelayProduct = NewRelayProductClient(tx.config)
+	tx.RelayProductChannel = NewRelayProductChannelClient(tx.config)
+	tx.RelayWallet = NewRelayWalletClient(tx.config)
+	tx.RelayWalletLedgerEntry = NewRelayWalletLedgerEntryClient(tx.config)
 	tx.Request = NewRequestClient(tx.config)
 	tx.RequestExecution = NewRequestExecutionClient(tx.config)
 	tx.Role = NewRoleClient(tx.config)

@@ -47,6 +47,8 @@ const (
 	EdgeProject = "project"
 	// EdgeRequests holds the string denoting the requests edge name in mutations.
 	EdgeRequests = "requests"
+	// EdgeRelayKey holds the string denoting the relay_key edge name in mutations.
+	EdgeRelayKey = "relay_key"
 	// Table holds the table name of the apikey in the database.
 	Table = "api_keys"
 	// UserTable is the table that holds the user relation/edge.
@@ -70,6 +72,13 @@ const (
 	RequestsInverseTable = "requests"
 	// RequestsColumn is the table column denoting the requests relation/edge.
 	RequestsColumn = "api_key_id"
+	// RelayKeyTable is the table that holds the relay_key relation/edge.
+	RelayKeyTable = "relay_keys"
+	// RelayKeyInverseTable is the table name for the RelayKey entity.
+	// It exists in this package in order to avoid circular dependency with the "relaykey" package.
+	RelayKeyInverseTable = "relay_keys"
+	// RelayKeyColumn is the table column denoting the relay_key relation/edge.
+	RelayKeyColumn = "api_key_id"
 )
 
 // Columns holds all SQL columns for apikey fields.
@@ -257,6 +266,13 @@ func ByRequests(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newRequestsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByRelayKeyField orders the results by relay_key field.
+func ByRelayKeyField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRelayKeyStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -276,6 +292,13 @@ func newRequestsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(RequestsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, RequestsTable, RequestsColumn),
+	)
+}
+func newRelayKeyStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RelayKeyInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, RelayKeyTable, RelayKeyColumn),
 	)
 }
 

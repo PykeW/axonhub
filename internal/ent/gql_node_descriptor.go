@@ -16,6 +16,12 @@ import (
 	"github.com/looplj/axonhub/internal/ent/project"
 	"github.com/looplj/axonhub/internal/ent/prompt"
 	"github.com/looplj/axonhub/internal/ent/providerquotastatus"
+	"github.com/looplj/axonhub/internal/ent/relaydailyusagesummary"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
+	"github.com/looplj/axonhub/internal/ent/relayproduct"
+	"github.com/looplj/axonhub/internal/ent/relayproductchannel"
+	"github.com/looplj/axonhub/internal/ent/relaywallet"
+	"github.com/looplj/axonhub/internal/ent/relaywalletledgerentry"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/ent/requestexecution"
 	"github.com/looplj/axonhub/internal/ent/role"
@@ -55,7 +61,7 @@ func (_m *APIKey) Node(ctx context.Context) (node *Node, err error) {
 		ID:     _m.ID,
 		Type:   "APIKey",
 		Fields: make([]*Field, 10),
-		Edges:  make([]*Edge, 3),
+		Edges:  make([]*Edge, 4),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(_m.CreatedAt); err != nil {
@@ -168,6 +174,16 @@ func (_m *APIKey) Node(ctx context.Context) (node *Node, err error) {
 	if err != nil {
 		return nil, err
 	}
+	node.Edges[3] = &Edge{
+		Type: "RelayKey",
+		Name: "relay_key",
+	}
+	err = _m.QueryRelayKey().
+		Select(relaykey.FieldID).
+		Scan(ctx, &node.Edges[3].IDs)
+	if err != nil {
+		return nil, err
+	}
 	return node, nil
 }
 
@@ -177,7 +193,7 @@ func (_m *Channel) Node(ctx context.Context) (node *Node, err error) {
 		ID:     _m.ID,
 		Type:   "Channel",
 		Fields: make([]*Field, 19),
-		Edges:  make([]*Edge, 6),
+		Edges:  make([]*Edge, 7),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(_m.CreatedAt); err != nil {
@@ -383,12 +399,22 @@ func (_m *Channel) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[5] = &Edge{
+		Type: "RelayProductChannel",
+		Name: "relay_product_bindings",
+	}
+	err = _m.QueryRelayProductBindings().
+		Select(relayproductchannel.FieldID).
+		Scan(ctx, &node.Edges[5].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[6] = &Edge{
 		Type: "ProviderQuotaStatus",
 		Name: "provider_quota_status",
 	}
 	err = _m.QueryProviderQuotaStatus().
 		Select(providerquotastatus.FieldID).
-		Scan(ctx, &node.Edges[5].IDs)
+		Scan(ctx, &node.Edges[6].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -951,7 +977,7 @@ func (_m *Project) Node(ctx context.Context) (node *Node, err error) {
 		ID:     _m.ID,
 		Type:   "Project",
 		Fields: make([]*Field, 6),
-		Edges:  make([]*Edge, 9),
+		Edges:  make([]*Edge, 10),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(_m.CreatedAt); err != nil {
@@ -1033,62 +1059,72 @@ func (_m *Project) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[3] = &Edge{
-		Type: "Request",
-		Name: "requests",
+		Type: "RelayKey",
+		Name: "relay_keys",
 	}
-	err = _m.QueryRequests().
-		Select(request.FieldID).
+	err = _m.QueryRelayKeys().
+		Select(relaykey.FieldID).
 		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[4] = &Edge{
-		Type: "UsageLog",
-		Name: "usage_logs",
+		Type: "Request",
+		Name: "requests",
 	}
-	err = _m.QueryUsageLogs().
-		Select(usagelog.FieldID).
+	err = _m.QueryRequests().
+		Select(request.FieldID).
 		Scan(ctx, &node.Edges[4].IDs)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[5] = &Edge{
-		Type: "Thread",
-		Name: "threads",
+		Type: "UsageLog",
+		Name: "usage_logs",
 	}
-	err = _m.QueryThreads().
-		Select(thread.FieldID).
+	err = _m.QueryUsageLogs().
+		Select(usagelog.FieldID).
 		Scan(ctx, &node.Edges[5].IDs)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[6] = &Edge{
-		Type: "Trace",
-		Name: "traces",
+		Type: "Thread",
+		Name: "threads",
 	}
-	err = _m.QueryTraces().
-		Select(trace.FieldID).
+	err = _m.QueryThreads().
+		Select(thread.FieldID).
 		Scan(ctx, &node.Edges[6].IDs)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[7] = &Edge{
-		Type: "Prompt",
-		Name: "prompts",
+		Type: "Trace",
+		Name: "traces",
 	}
-	err = _m.QueryPrompts().
-		Select(prompt.FieldID).
+	err = _m.QueryTraces().
+		Select(trace.FieldID).
 		Scan(ctx, &node.Edges[7].IDs)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[8] = &Edge{
+		Type: "Prompt",
+		Name: "prompts",
+	}
+	err = _m.QueryPrompts().
+		Select(prompt.FieldID).
+		Scan(ctx, &node.Edges[8].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[9] = &Edge{
 		Type: "UserProject",
 		Name: "project_users",
 	}
 	err = _m.QueryProjectUsers().
 		Select(userproject.FieldID).
-		Scan(ctx, &node.Edges[8].IDs)
+		Scan(ctx, &node.Edges[9].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1352,6 +1388,794 @@ func (_m *ProviderQuotaStatus) Node(ctx context.Context) (node *Node, err error)
 	}
 	err = _m.QueryChannel().
 		Select(channel.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
+// Node implements Noder interface
+func (_m *RelayDailyUsageSummary) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     _m.ID,
+		Type:   "RelayDailyUsageSummary",
+		Fields: make([]*Field, 10),
+		Edges:  make([]*Edge, 1),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(_m.CreatedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "time.Time",
+		Name:  "created_at",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.UpdatedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "time.Time",
+		Name:  "updated_at",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.RelayKeyID); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "int",
+		Name:  "relay_key_id",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.ProjectID); err != nil {
+		return nil, err
+	}
+	node.Fields[3] = &Field{
+		Type:  "int",
+		Name:  "project_id",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.StatDate); err != nil {
+		return nil, err
+	}
+	node.Fields[4] = &Field{
+		Type:  "time.Time",
+		Name:  "stat_date",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.RequestCount); err != nil {
+		return nil, err
+	}
+	node.Fields[5] = &Field{
+		Type:  "int64",
+		Name:  "request_count",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.TotalTokens); err != nil {
+		return nil, err
+	}
+	node.Fields[6] = &Field{
+		Type:  "int64",
+		Name:  "total_tokens",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.TotalCharge); err != nil {
+		return nil, err
+	}
+	node.Fields[7] = &Field{
+		Type:  "string",
+		Name:  "total_charge",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.TotalUpstreamCost); err != nil {
+		return nil, err
+	}
+	node.Fields[8] = &Field{
+		Type:  "string",
+		Name:  "total_upstream_cost",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.LastRequestID); err != nil {
+		return nil, err
+	}
+	node.Fields[9] = &Field{
+		Type:  "int",
+		Name:  "last_request_id",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "RelayKey",
+		Name: "relay_key",
+	}
+	err = _m.QueryRelayKey().
+		Select(relaykey.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
+// Node implements Noder interface
+func (_m *RelayKey) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     _m.ID,
+		Type:   "RelayKey",
+		Fields: make([]*Field, 15),
+		Edges:  make([]*Edge, 7),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(_m.CreatedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "time.Time",
+		Name:  "created_at",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.UpdatedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "time.Time",
+		Name:  "updated_at",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.APIKeyID); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "int",
+		Name:  "api_key_id",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.ProjectID); err != nil {
+		return nil, err
+	}
+	node.Fields[3] = &Field{
+		Type:  "int",
+		Name:  "project_id",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.ProductID); err != nil {
+		return nil, err
+	}
+	node.Fields[4] = &Field{
+		Type:  "int",
+		Name:  "product_id",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.OwnerUserID); err != nil {
+		return nil, err
+	}
+	node.Fields[5] = &Field{
+		Type:  "int",
+		Name:  "owner_user_id",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.DisplayName); err != nil {
+		return nil, err
+	}
+	node.Fields[6] = &Field{
+		Type:  "string",
+		Name:  "display_name",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.Status); err != nil {
+		return nil, err
+	}
+	node.Fields[7] = &Field{
+		Type:  "relaykey.Status",
+		Name:  "status",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.BalanceMode); err != nil {
+		return nil, err
+	}
+	node.Fields[8] = &Field{
+		Type:  "relaykey.BalanceMode",
+		Name:  "balance_mode",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.DailyRequestLimit); err != nil {
+		return nil, err
+	}
+	node.Fields[9] = &Field{
+		Type:  "int64",
+		Name:  "daily_request_limit",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.DailyTokenLimit); err != nil {
+		return nil, err
+	}
+	node.Fields[10] = &Field{
+		Type:  "int64",
+		Name:  "daily_token_limit",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.MonthlyCostLimit); err != nil {
+		return nil, err
+	}
+	node.Fields[11] = &Field{
+		Type:  "string",
+		Name:  "monthly_cost_limit",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.ConcurrencyLimit); err != nil {
+		return nil, err
+	}
+	node.Fields[12] = &Field{
+		Type:  "int64",
+		Name:  "concurrency_limit",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.ExpiresAt); err != nil {
+		return nil, err
+	}
+	node.Fields[13] = &Field{
+		Type:  "time.Time",
+		Name:  "expires_at",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.LastUsedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[14] = &Field{
+		Type:  "time.Time",
+		Name:  "last_used_at",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "APIKey",
+		Name: "api_key",
+	}
+	err = _m.QueryAPIKey().
+		Select(apikey.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "Project",
+		Name: "project",
+	}
+	err = _m.QueryProject().
+		Select(project.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[2] = &Edge{
+		Type: "RelayProduct",
+		Name: "product",
+	}
+	err = _m.QueryProduct().
+		Select(relayproduct.FieldID).
+		Scan(ctx, &node.Edges[2].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[3] = &Edge{
+		Type: "User",
+		Name: "owner_user",
+	}
+	err = _m.QueryOwnerUser().
+		Select(user.FieldID).
+		Scan(ctx, &node.Edges[3].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[4] = &Edge{
+		Type: "RelayWallet",
+		Name: "wallet",
+	}
+	err = _m.QueryWallet().
+		Select(relaywallet.FieldID).
+		Scan(ctx, &node.Edges[4].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[5] = &Edge{
+		Type: "RelayWalletLedgerEntry",
+		Name: "ledger_entries",
+	}
+	err = _m.QueryLedgerEntries().
+		Select(relaywalletledgerentry.FieldID).
+		Scan(ctx, &node.Edges[5].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[6] = &Edge{
+		Type: "RelayDailyUsageSummary",
+		Name: "daily_usage_summaries",
+	}
+	err = _m.QueryDailyUsageSummaries().
+		Select(relaydailyusagesummary.FieldID).
+		Scan(ctx, &node.Edges[6].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
+// Node implements Noder interface
+func (_m *RelayProduct) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     _m.ID,
+		Type:   "RelayProduct",
+		Fields: make([]*Field, 12),
+		Edges:  make([]*Edge, 2),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(_m.CreatedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "time.Time",
+		Name:  "created_at",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.UpdatedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "time.Time",
+		Name:  "updated_at",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.Code); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "string",
+		Name:  "code",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.Name); err != nil {
+		return nil, err
+	}
+	node.Fields[3] = &Field{
+		Type:  "string",
+		Name:  "name",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.ProviderType); err != nil {
+		return nil, err
+	}
+	node.Fields[4] = &Field{
+		Type:  "relayproduct.ProviderType",
+		Name:  "provider_type",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.AccessMode); err != nil {
+		return nil, err
+	}
+	node.Fields[5] = &Field{
+		Type:  "relayproduct.AccessMode",
+		Name:  "access_mode",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.BillingMode); err != nil {
+		return nil, err
+	}
+	node.Fields[6] = &Field{
+		Type:  "relayproduct.BillingMode",
+		Name:  "billing_mode",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.Status); err != nil {
+		return nil, err
+	}
+	node.Fields[7] = &Field{
+		Type:  "relayproduct.Status",
+		Name:  "status",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.Currency); err != nil {
+		return nil, err
+	}
+	node.Fields[8] = &Field{
+		Type:  "string",
+		Name:  "currency",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.ListPriceConfig); err != nil {
+		return nil, err
+	}
+	node.Fields[9] = &Field{
+		Type:  "map[string]interface {}",
+		Name:  "list_price_config",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.AllowedModels); err != nil {
+		return nil, err
+	}
+	node.Fields[10] = &Field{
+		Type:  "[]string",
+		Name:  "allowed_models",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.RequestTimeoutSeconds); err != nil {
+		return nil, err
+	}
+	node.Fields[11] = &Field{
+		Type:  "int",
+		Name:  "request_timeout_seconds",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "RelayProductChannel",
+		Name: "channel_bindings",
+	}
+	err = _m.QueryChannelBindings().
+		Select(relayproductchannel.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "RelayKey",
+		Name: "relay_keys",
+	}
+	err = _m.QueryRelayKeys().
+		Select(relaykey.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
+// Node implements Noder interface
+func (_m *RelayProductChannel) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     _m.ID,
+		Type:   "RelayProductChannel",
+		Fields: make([]*Field, 10),
+		Edges:  make([]*Edge, 2),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(_m.CreatedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "time.Time",
+		Name:  "created_at",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.UpdatedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "time.Time",
+		Name:  "updated_at",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.ProductID); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "int",
+		Name:  "product_id",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.ChannelID); err != nil {
+		return nil, err
+	}
+	node.Fields[3] = &Field{
+		Type:  "int",
+		Name:  "channel_id",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.Priority); err != nil {
+		return nil, err
+	}
+	node.Fields[4] = &Field{
+		Type:  "int",
+		Name:  "priority",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.Weight); err != nil {
+		return nil, err
+	}
+	node.Fields[5] = &Field{
+		Type:  "int",
+		Name:  "weight",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.Status); err != nil {
+		return nil, err
+	}
+	node.Fields[6] = &Field{
+		Type:  "relayproductchannel.Status",
+		Name:  "status",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.AllowFallback); err != nil {
+		return nil, err
+	}
+	node.Fields[7] = &Field{
+		Type:  "bool",
+		Name:  "allow_fallback",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.ModelFilter); err != nil {
+		return nil, err
+	}
+	node.Fields[8] = &Field{
+		Type:  "map[string]interface {}",
+		Name:  "model_filter",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.MaxInflight); err != nil {
+		return nil, err
+	}
+	node.Fields[9] = &Field{
+		Type:  "int",
+		Name:  "max_inflight",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "RelayProduct",
+		Name: "product",
+	}
+	err = _m.QueryProduct().
+		Select(relayproduct.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "Channel",
+		Name: "channel",
+	}
+	err = _m.QueryChannel().
+		Select(channel.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
+// Node implements Noder interface
+func (_m *RelayWallet) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     _m.ID,
+		Type:   "RelayWallet",
+		Fields: make([]*Field, 9),
+		Edges:  make([]*Edge, 1),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(_m.CreatedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "time.Time",
+		Name:  "created_at",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.UpdatedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "time.Time",
+		Name:  "updated_at",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.RelayKeyID); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "int",
+		Name:  "relay_key_id",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.ProjectID); err != nil {
+		return nil, err
+	}
+	node.Fields[3] = &Field{
+		Type:  "int",
+		Name:  "project_id",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.Currency); err != nil {
+		return nil, err
+	}
+	node.Fields[4] = &Field{
+		Type:  "string",
+		Name:  "currency",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.AvailableAmount); err != nil {
+		return nil, err
+	}
+	node.Fields[5] = &Field{
+		Type:  "string",
+		Name:  "available_amount",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.FrozenAmount); err != nil {
+		return nil, err
+	}
+	node.Fields[6] = &Field{
+		Type:  "string",
+		Name:  "frozen_amount",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.OverdraftLimit); err != nil {
+		return nil, err
+	}
+	node.Fields[7] = &Field{
+		Type:  "string",
+		Name:  "overdraft_limit",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.Version); err != nil {
+		return nil, err
+	}
+	node.Fields[8] = &Field{
+		Type:  "int64",
+		Name:  "version",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "RelayKey",
+		Name: "relay_key",
+	}
+	err = _m.QueryRelayKey().
+		Select(relaykey.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
+// Node implements Noder interface
+func (_m *RelayWalletLedgerEntry) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     _m.ID,
+		Type:   "RelayWalletLedgerEntry",
+		Fields: make([]*Field, 16),
+		Edges:  make([]*Edge, 1),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(_m.CreatedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "time.Time",
+		Name:  "created_at",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.UpdatedAt); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "time.Time",
+		Name:  "updated_at",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.RelayKeyID); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "int",
+		Name:  "relay_key_id",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.ProjectID); err != nil {
+		return nil, err
+	}
+	node.Fields[3] = &Field{
+		Type:  "int",
+		Name:  "project_id",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.RequestID); err != nil {
+		return nil, err
+	}
+	node.Fields[4] = &Field{
+		Type:  "int",
+		Name:  "request_id",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.UsageLogID); err != nil {
+		return nil, err
+	}
+	node.Fields[5] = &Field{
+		Type:  "int",
+		Name:  "usage_log_id",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.Direction); err != nil {
+		return nil, err
+	}
+	node.Fields[6] = &Field{
+		Type:  "relaywalletledgerentry.Direction",
+		Name:  "direction",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.Scene); err != nil {
+		return nil, err
+	}
+	node.Fields[7] = &Field{
+		Type:  "relaywalletledgerentry.Scene",
+		Name:  "scene",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.Amount); err != nil {
+		return nil, err
+	}
+	node.Fields[8] = &Field{
+		Type:  "string",
+		Name:  "amount",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.BalanceBefore); err != nil {
+		return nil, err
+	}
+	node.Fields[9] = &Field{
+		Type:  "string",
+		Name:  "balance_before",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.BalanceAfter); err != nil {
+		return nil, err
+	}
+	node.Fields[10] = &Field{
+		Type:  "string",
+		Name:  "balance_after",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.UpstreamCost); err != nil {
+		return nil, err
+	}
+	node.Fields[11] = &Field{
+		Type:  "string",
+		Name:  "upstream_cost",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.PriceSnapshot); err != nil {
+		return nil, err
+	}
+	node.Fields[12] = &Field{
+		Type:  "map[string]interface {}",
+		Name:  "price_snapshot",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.IdempotencyKey); err != nil {
+		return nil, err
+	}
+	node.Fields[13] = &Field{
+		Type:  "string",
+		Name:  "idempotency_key",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.OperatorUserID); err != nil {
+		return nil, err
+	}
+	node.Fields[14] = &Field{
+		Type:  "int",
+		Name:  "operator_user_id",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(_m.Remark); err != nil {
+		return nil, err
+	}
+	node.Fields[15] = &Field{
+		Type:  "string",
+		Name:  "remark",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "RelayKey",
+		Name: "relay_key",
+	}
+	err = _m.QueryRelayKey().
+		Select(relaykey.FieldID).
 		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
@@ -2363,7 +3187,7 @@ func (_m *User) Node(ctx context.Context) (node *Node, err error) {
 		ID:     _m.ID,
 		Type:   "User",
 		Fields: make([]*Field, 11),
-		Edges:  make([]*Edge, 6),
+		Edges:  make([]*Edge, 7),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(_m.CreatedAt); err != nil {
@@ -2475,42 +3299,52 @@ func (_m *User) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[2] = &Edge{
-		Type: "Role",
-		Name: "roles",
+		Type: "RelayKey",
+		Name: "relay_keys",
 	}
-	err = _m.QueryRoles().
-		Select(role.FieldID).
+	err = _m.QueryRelayKeys().
+		Select(relaykey.FieldID).
 		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[3] = &Edge{
-		Type: "ChannelOverrideTemplate",
-		Name: "channel_override_templates",
+		Type: "Role",
+		Name: "roles",
 	}
-	err = _m.QueryChannelOverrideTemplates().
-		Select(channeloverridetemplate.FieldID).
+	err = _m.QueryRoles().
+		Select(role.FieldID).
 		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[4] = &Edge{
-		Type: "UserProject",
-		Name: "project_users",
+		Type: "ChannelOverrideTemplate",
+		Name: "channel_override_templates",
 	}
-	err = _m.QueryProjectUsers().
-		Select(userproject.FieldID).
+	err = _m.QueryChannelOverrideTemplates().
+		Select(channeloverridetemplate.FieldID).
 		Scan(ctx, &node.Edges[4].IDs)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[5] = &Edge{
+		Type: "UserProject",
+		Name: "project_users",
+	}
+	err = _m.QueryProjectUsers().
+		Select(userproject.FieldID).
+		Scan(ctx, &node.Edges[5].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[6] = &Edge{
 		Type: "UserRole",
 		Name: "user_roles",
 	}
 	err = _m.QueryUserRoles().
 		Select(userrole.FieldID).
-		Scan(ctx, &node.Edges[5].IDs)
+		Scan(ctx, &node.Edges[6].IDs)
 	if err != nil {
 		return nil, err
 	}

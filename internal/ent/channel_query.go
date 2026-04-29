@@ -18,6 +18,7 @@ import (
 	"github.com/looplj/axonhub/internal/ent/channelprobe"
 	"github.com/looplj/axonhub/internal/ent/predicate"
 	"github.com/looplj/axonhub/internal/ent/providerquotastatus"
+	"github.com/looplj/axonhub/internal/ent/relayproductchannel"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/ent/requestexecution"
 	"github.com/looplj/axonhub/internal/ent/usagelog"
@@ -26,23 +27,25 @@ import (
 // ChannelQuery is the builder for querying Channel entities.
 type ChannelQuery struct {
 	config
-	ctx                         *QueryContext
-	order                       []channel.OrderOption
-	inters                      []Interceptor
-	predicates                  []predicate.Channel
-	withRequests                *RequestQuery
-	withExecutions              *RequestExecutionQuery
-	withUsageLogs               *UsageLogQuery
-	withChannelProbes           *ChannelProbeQuery
-	withChannelModelPrices      *ChannelModelPriceQuery
-	withProviderQuotaStatus     *ProviderQuotaStatusQuery
-	loadTotal                   []func(context.Context, []*Channel) error
-	modifiers                   []func(*sql.Selector)
-	withNamedRequests           map[string]*RequestQuery
-	withNamedExecutions         map[string]*RequestExecutionQuery
-	withNamedUsageLogs          map[string]*UsageLogQuery
-	withNamedChannelProbes      map[string]*ChannelProbeQuery
-	withNamedChannelModelPrices map[string]*ChannelModelPriceQuery
+	ctx                           *QueryContext
+	order                         []channel.OrderOption
+	inters                        []Interceptor
+	predicates                    []predicate.Channel
+	withRequests                  *RequestQuery
+	withExecutions                *RequestExecutionQuery
+	withUsageLogs                 *UsageLogQuery
+	withChannelProbes             *ChannelProbeQuery
+	withChannelModelPrices        *ChannelModelPriceQuery
+	withRelayProductBindings      *RelayProductChannelQuery
+	withProviderQuotaStatus       *ProviderQuotaStatusQuery
+	loadTotal                     []func(context.Context, []*Channel) error
+	modifiers                     []func(*sql.Selector)
+	withNamedRequests             map[string]*RequestQuery
+	withNamedExecutions           map[string]*RequestExecutionQuery
+	withNamedUsageLogs            map[string]*UsageLogQuery
+	withNamedChannelProbes        map[string]*ChannelProbeQuery
+	withNamedChannelModelPrices   map[string]*ChannelModelPriceQuery
+	withNamedRelayProductBindings map[string]*RelayProductChannelQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -182,6 +185,28 @@ func (_q *ChannelQuery) QueryChannelModelPrices() *ChannelModelPriceQuery {
 			sqlgraph.From(channel.Table, channel.FieldID, selector),
 			sqlgraph.To(channelmodelprice.Table, channelmodelprice.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, channel.ChannelModelPricesTable, channel.ChannelModelPricesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRelayProductBindings chains the current query on the "relay_product_bindings" edge.
+func (_q *ChannelQuery) QueryRelayProductBindings() *RelayProductChannelQuery {
+	query := (&RelayProductChannelClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(channel.Table, channel.FieldID, selector),
+			sqlgraph.To(relayproductchannel.Table, relayproductchannel.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, channel.RelayProductBindingsTable, channel.RelayProductBindingsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -398,17 +423,18 @@ func (_q *ChannelQuery) Clone() *ChannelQuery {
 		return nil
 	}
 	return &ChannelQuery{
-		config:                  _q.config,
-		ctx:                     _q.ctx.Clone(),
-		order:                   append([]channel.OrderOption{}, _q.order...),
-		inters:                  append([]Interceptor{}, _q.inters...),
-		predicates:              append([]predicate.Channel{}, _q.predicates...),
-		withRequests:            _q.withRequests.Clone(),
-		withExecutions:          _q.withExecutions.Clone(),
-		withUsageLogs:           _q.withUsageLogs.Clone(),
-		withChannelProbes:       _q.withChannelProbes.Clone(),
-		withChannelModelPrices:  _q.withChannelModelPrices.Clone(),
-		withProviderQuotaStatus: _q.withProviderQuotaStatus.Clone(),
+		config:                   _q.config,
+		ctx:                      _q.ctx.Clone(),
+		order:                    append([]channel.OrderOption{}, _q.order...),
+		inters:                   append([]Interceptor{}, _q.inters...),
+		predicates:               append([]predicate.Channel{}, _q.predicates...),
+		withRequests:             _q.withRequests.Clone(),
+		withExecutions:           _q.withExecutions.Clone(),
+		withUsageLogs:            _q.withUsageLogs.Clone(),
+		withChannelProbes:        _q.withChannelProbes.Clone(),
+		withChannelModelPrices:   _q.withChannelModelPrices.Clone(),
+		withRelayProductBindings: _q.withRelayProductBindings.Clone(),
+		withProviderQuotaStatus:  _q.withProviderQuotaStatus.Clone(),
 		// clone intermediate query.
 		sql:       _q.sql.Clone(),
 		path:      _q.path,
@@ -468,6 +494,17 @@ func (_q *ChannelQuery) WithChannelModelPrices(opts ...func(*ChannelModelPriceQu
 		opt(query)
 	}
 	_q.withChannelModelPrices = query
+	return _q
+}
+
+// WithRelayProductBindings tells the query-builder to eager-load the nodes that are connected to
+// the "relay_product_bindings" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ChannelQuery) WithRelayProductBindings(opts ...func(*RelayProductChannelQuery)) *ChannelQuery {
+	query := (&RelayProductChannelClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRelayProductBindings = query
 	return _q
 }
 
@@ -566,12 +603,13 @@ func (_q *ChannelQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Chan
 	var (
 		nodes       = []*Channel{}
 		_spec       = _q.querySpec()
-		loadedTypes = [6]bool{
+		loadedTypes = [7]bool{
 			_q.withRequests != nil,
 			_q.withExecutions != nil,
 			_q.withUsageLogs != nil,
 			_q.withChannelProbes != nil,
 			_q.withChannelModelPrices != nil,
+			_q.withRelayProductBindings != nil,
 			_q.withProviderQuotaStatus != nil,
 		}
 	)
@@ -633,6 +671,15 @@ func (_q *ChannelQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Chan
 			return nil, err
 		}
 	}
+	if query := _q.withRelayProductBindings; query != nil {
+		if err := _q.loadRelayProductBindings(ctx, query, nodes,
+			func(n *Channel) { n.Edges.RelayProductBindings = []*RelayProductChannel{} },
+			func(n *Channel, e *RelayProductChannel) {
+				n.Edges.RelayProductBindings = append(n.Edges.RelayProductBindings, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	if query := _q.withProviderQuotaStatus; query != nil {
 		if err := _q.loadProviderQuotaStatus(ctx, query, nodes, nil,
 			func(n *Channel, e *ProviderQuotaStatus) { n.Edges.ProviderQuotaStatus = e }); err != nil {
@@ -671,6 +718,13 @@ func (_q *ChannelQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Chan
 		if err := _q.loadChannelModelPrices(ctx, query, nodes,
 			func(n *Channel) { n.appendNamedChannelModelPrices(name) },
 			func(n *Channel, e *ChannelModelPrice) { n.appendNamedChannelModelPrices(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRelayProductBindings {
+		if err := _q.loadRelayProductBindings(ctx, query, nodes,
+			func(n *Channel) { n.appendNamedRelayProductBindings(name) },
+			func(n *Channel, e *RelayProductChannel) { n.appendNamedRelayProductBindings(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -817,6 +871,36 @@ func (_q *ChannelQuery) loadChannelModelPrices(ctx context.Context, query *Chann
 	}
 	query.Where(predicate.ChannelModelPrice(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(channel.ChannelModelPricesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ChannelID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "channel_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *ChannelQuery) loadRelayProductBindings(ctx context.Context, query *RelayProductChannelQuery, nodes []*Channel, init func(*Channel), assign func(*Channel, *RelayProductChannel)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Channel)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(relayproductchannel.FieldChannelID)
+	}
+	query.Where(predicate.RelayProductChannel(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(channel.RelayProductBindingsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -1020,6 +1104,20 @@ func (_q *ChannelQuery) WithNamedChannelModelPrices(name string, opts ...func(*C
 		_q.withNamedChannelModelPrices = make(map[string]*ChannelModelPriceQuery)
 	}
 	_q.withNamedChannelModelPrices[name] = query
+	return _q
+}
+
+// WithNamedRelayProductBindings tells the query-builder to eager-load the nodes that are connected to the "relay_product_bindings"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *ChannelQuery) WithNamedRelayProductBindings(name string, opts ...func(*RelayProductChannelQuery)) *ChannelQuery {
+	query := (&RelayProductChannelClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRelayProductBindings == nil {
+		_q.withNamedRelayProductBindings = make(map[string]*RelayProductChannelQuery)
+	}
+	_q.withNamedRelayProductBindings[name] = query
 	return _q
 }
 

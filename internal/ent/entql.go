@@ -16,6 +16,12 @@ import (
 	"github.com/looplj/axonhub/internal/ent/prompt"
 	"github.com/looplj/axonhub/internal/ent/promptprotectionrule"
 	"github.com/looplj/axonhub/internal/ent/providerquotastatus"
+	"github.com/looplj/axonhub/internal/ent/relaydailyusagesummary"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
+	"github.com/looplj/axonhub/internal/ent/relayproduct"
+	"github.com/looplj/axonhub/internal/ent/relayproductchannel"
+	"github.com/looplj/axonhub/internal/ent/relaywallet"
+	"github.com/looplj/axonhub/internal/ent/relaywalletledgerentry"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/ent/requestexecution"
 	"github.com/looplj/axonhub/internal/ent/role"
@@ -35,7 +41,7 @@ import (
 
 // schemaGraph holds a representation of ent/schema at runtime.
 var schemaGraph = func() *sqlgraph.Schema {
-	graph := &sqlgraph.Schema{Nodes: make([]*sqlgraph.Node, 22)}
+	graph := &sqlgraph.Schema{Nodes: make([]*sqlgraph.Node, 28)}
 	graph.Nodes[0] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   apikey.Table,
@@ -316,6 +322,158 @@ var schemaGraph = func() *sqlgraph.Schema {
 	}
 	graph.Nodes[12] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
+			Table:   relaydailyusagesummary.Table,
+			Columns: relaydailyusagesummary.Columns,
+			ID: &sqlgraph.FieldSpec{
+				Type:   field.TypeInt,
+				Column: relaydailyusagesummary.FieldID,
+			},
+		},
+		Type: "RelayDailyUsageSummary",
+		Fields: map[string]*sqlgraph.FieldSpec{
+			relaydailyusagesummary.FieldCreatedAt:         {Type: field.TypeTime, Column: relaydailyusagesummary.FieldCreatedAt},
+			relaydailyusagesummary.FieldUpdatedAt:         {Type: field.TypeTime, Column: relaydailyusagesummary.FieldUpdatedAt},
+			relaydailyusagesummary.FieldRelayKeyID:        {Type: field.TypeInt, Column: relaydailyusagesummary.FieldRelayKeyID},
+			relaydailyusagesummary.FieldProjectID:         {Type: field.TypeInt, Column: relaydailyusagesummary.FieldProjectID},
+			relaydailyusagesummary.FieldStatDate:          {Type: field.TypeTime, Column: relaydailyusagesummary.FieldStatDate},
+			relaydailyusagesummary.FieldRequestCount:      {Type: field.TypeInt64, Column: relaydailyusagesummary.FieldRequestCount},
+			relaydailyusagesummary.FieldTotalTokens:       {Type: field.TypeInt64, Column: relaydailyusagesummary.FieldTotalTokens},
+			relaydailyusagesummary.FieldTotalCharge:       {Type: field.TypeString, Column: relaydailyusagesummary.FieldTotalCharge},
+			relaydailyusagesummary.FieldTotalUpstreamCost: {Type: field.TypeString, Column: relaydailyusagesummary.FieldTotalUpstreamCost},
+			relaydailyusagesummary.FieldLastRequestID:     {Type: field.TypeInt, Column: relaydailyusagesummary.FieldLastRequestID},
+		},
+	}
+	graph.Nodes[13] = &sqlgraph.Node{
+		NodeSpec: sqlgraph.NodeSpec{
+			Table:   relaykey.Table,
+			Columns: relaykey.Columns,
+			ID: &sqlgraph.FieldSpec{
+				Type:   field.TypeInt,
+				Column: relaykey.FieldID,
+			},
+		},
+		Type: "RelayKey",
+		Fields: map[string]*sqlgraph.FieldSpec{
+			relaykey.FieldCreatedAt:         {Type: field.TypeTime, Column: relaykey.FieldCreatedAt},
+			relaykey.FieldUpdatedAt:         {Type: field.TypeTime, Column: relaykey.FieldUpdatedAt},
+			relaykey.FieldDeletedAt:         {Type: field.TypeInt, Column: relaykey.FieldDeletedAt},
+			relaykey.FieldAPIKeyID:          {Type: field.TypeInt, Column: relaykey.FieldAPIKeyID},
+			relaykey.FieldProjectID:         {Type: field.TypeInt, Column: relaykey.FieldProjectID},
+			relaykey.FieldProductID:         {Type: field.TypeInt, Column: relaykey.FieldProductID},
+			relaykey.FieldOwnerUserID:       {Type: field.TypeInt, Column: relaykey.FieldOwnerUserID},
+			relaykey.FieldDisplayName:       {Type: field.TypeString, Column: relaykey.FieldDisplayName},
+			relaykey.FieldStatus:            {Type: field.TypeEnum, Column: relaykey.FieldStatus},
+			relaykey.FieldBalanceMode:       {Type: field.TypeEnum, Column: relaykey.FieldBalanceMode},
+			relaykey.FieldDailyRequestLimit: {Type: field.TypeInt64, Column: relaykey.FieldDailyRequestLimit},
+			relaykey.FieldDailyTokenLimit:   {Type: field.TypeInt64, Column: relaykey.FieldDailyTokenLimit},
+			relaykey.FieldMonthlyCostLimit:  {Type: field.TypeString, Column: relaykey.FieldMonthlyCostLimit},
+			relaykey.FieldConcurrencyLimit:  {Type: field.TypeInt64, Column: relaykey.FieldConcurrencyLimit},
+			relaykey.FieldExpiresAt:         {Type: field.TypeTime, Column: relaykey.FieldExpiresAt},
+			relaykey.FieldLastUsedAt:        {Type: field.TypeTime, Column: relaykey.FieldLastUsedAt},
+		},
+	}
+	graph.Nodes[14] = &sqlgraph.Node{
+		NodeSpec: sqlgraph.NodeSpec{
+			Table:   relayproduct.Table,
+			Columns: relayproduct.Columns,
+			ID: &sqlgraph.FieldSpec{
+				Type:   field.TypeInt,
+				Column: relayproduct.FieldID,
+			},
+		},
+		Type: "RelayProduct",
+		Fields: map[string]*sqlgraph.FieldSpec{
+			relayproduct.FieldCreatedAt:             {Type: field.TypeTime, Column: relayproduct.FieldCreatedAt},
+			relayproduct.FieldUpdatedAt:             {Type: field.TypeTime, Column: relayproduct.FieldUpdatedAt},
+			relayproduct.FieldDeletedAt:             {Type: field.TypeInt, Column: relayproduct.FieldDeletedAt},
+			relayproduct.FieldCode:                  {Type: field.TypeString, Column: relayproduct.FieldCode},
+			relayproduct.FieldName:                  {Type: field.TypeString, Column: relayproduct.FieldName},
+			relayproduct.FieldProviderType:          {Type: field.TypeEnum, Column: relayproduct.FieldProviderType},
+			relayproduct.FieldAccessMode:            {Type: field.TypeEnum, Column: relayproduct.FieldAccessMode},
+			relayproduct.FieldBillingMode:           {Type: field.TypeEnum, Column: relayproduct.FieldBillingMode},
+			relayproduct.FieldStatus:                {Type: field.TypeEnum, Column: relayproduct.FieldStatus},
+			relayproduct.FieldCurrency:              {Type: field.TypeString, Column: relayproduct.FieldCurrency},
+			relayproduct.FieldListPriceConfig:       {Type: field.TypeJSON, Column: relayproduct.FieldListPriceConfig},
+			relayproduct.FieldAllowedModels:         {Type: field.TypeJSON, Column: relayproduct.FieldAllowedModels},
+			relayproduct.FieldRequestTimeoutSeconds: {Type: field.TypeInt, Column: relayproduct.FieldRequestTimeoutSeconds},
+		},
+	}
+	graph.Nodes[15] = &sqlgraph.Node{
+		NodeSpec: sqlgraph.NodeSpec{
+			Table:   relayproductchannel.Table,
+			Columns: relayproductchannel.Columns,
+			ID: &sqlgraph.FieldSpec{
+				Type:   field.TypeInt,
+				Column: relayproductchannel.FieldID,
+			},
+		},
+		Type: "RelayProductChannel",
+		Fields: map[string]*sqlgraph.FieldSpec{
+			relayproductchannel.FieldCreatedAt:     {Type: field.TypeTime, Column: relayproductchannel.FieldCreatedAt},
+			relayproductchannel.FieldUpdatedAt:     {Type: field.TypeTime, Column: relayproductchannel.FieldUpdatedAt},
+			relayproductchannel.FieldProductID:     {Type: field.TypeInt, Column: relayproductchannel.FieldProductID},
+			relayproductchannel.FieldChannelID:     {Type: field.TypeInt, Column: relayproductchannel.FieldChannelID},
+			relayproductchannel.FieldPriority:      {Type: field.TypeInt, Column: relayproductchannel.FieldPriority},
+			relayproductchannel.FieldWeight:        {Type: field.TypeInt, Column: relayproductchannel.FieldWeight},
+			relayproductchannel.FieldStatus:        {Type: field.TypeEnum, Column: relayproductchannel.FieldStatus},
+			relayproductchannel.FieldAllowFallback: {Type: field.TypeBool, Column: relayproductchannel.FieldAllowFallback},
+			relayproductchannel.FieldModelFilter:   {Type: field.TypeJSON, Column: relayproductchannel.FieldModelFilter},
+			relayproductchannel.FieldMaxInflight:   {Type: field.TypeInt, Column: relayproductchannel.FieldMaxInflight},
+		},
+	}
+	graph.Nodes[16] = &sqlgraph.Node{
+		NodeSpec: sqlgraph.NodeSpec{
+			Table:   relaywallet.Table,
+			Columns: relaywallet.Columns,
+			ID: &sqlgraph.FieldSpec{
+				Type:   field.TypeInt,
+				Column: relaywallet.FieldID,
+			},
+		},
+		Type: "RelayWallet",
+		Fields: map[string]*sqlgraph.FieldSpec{
+			relaywallet.FieldCreatedAt:       {Type: field.TypeTime, Column: relaywallet.FieldCreatedAt},
+			relaywallet.FieldUpdatedAt:       {Type: field.TypeTime, Column: relaywallet.FieldUpdatedAt},
+			relaywallet.FieldRelayKeyID:      {Type: field.TypeInt, Column: relaywallet.FieldRelayKeyID},
+			relaywallet.FieldProjectID:       {Type: field.TypeInt, Column: relaywallet.FieldProjectID},
+			relaywallet.FieldCurrency:        {Type: field.TypeString, Column: relaywallet.FieldCurrency},
+			relaywallet.FieldAvailableAmount: {Type: field.TypeString, Column: relaywallet.FieldAvailableAmount},
+			relaywallet.FieldFrozenAmount:    {Type: field.TypeString, Column: relaywallet.FieldFrozenAmount},
+			relaywallet.FieldOverdraftLimit:  {Type: field.TypeString, Column: relaywallet.FieldOverdraftLimit},
+			relaywallet.FieldVersion:         {Type: field.TypeInt64, Column: relaywallet.FieldVersion},
+		},
+	}
+	graph.Nodes[17] = &sqlgraph.Node{
+		NodeSpec: sqlgraph.NodeSpec{
+			Table:   relaywalletledgerentry.Table,
+			Columns: relaywalletledgerentry.Columns,
+			ID: &sqlgraph.FieldSpec{
+				Type:   field.TypeInt,
+				Column: relaywalletledgerentry.FieldID,
+			},
+		},
+		Type: "RelayWalletLedgerEntry",
+		Fields: map[string]*sqlgraph.FieldSpec{
+			relaywalletledgerentry.FieldCreatedAt:      {Type: field.TypeTime, Column: relaywalletledgerentry.FieldCreatedAt},
+			relaywalletledgerentry.FieldUpdatedAt:      {Type: field.TypeTime, Column: relaywalletledgerentry.FieldUpdatedAt},
+			relaywalletledgerentry.FieldRelayKeyID:     {Type: field.TypeInt, Column: relaywalletledgerentry.FieldRelayKeyID},
+			relaywalletledgerentry.FieldProjectID:      {Type: field.TypeInt, Column: relaywalletledgerentry.FieldProjectID},
+			relaywalletledgerentry.FieldRequestID:      {Type: field.TypeInt, Column: relaywalletledgerentry.FieldRequestID},
+			relaywalletledgerentry.FieldUsageLogID:     {Type: field.TypeInt, Column: relaywalletledgerentry.FieldUsageLogID},
+			relaywalletledgerentry.FieldDirection:      {Type: field.TypeEnum, Column: relaywalletledgerentry.FieldDirection},
+			relaywalletledgerentry.FieldScene:          {Type: field.TypeEnum, Column: relaywalletledgerentry.FieldScene},
+			relaywalletledgerentry.FieldAmount:         {Type: field.TypeString, Column: relaywalletledgerentry.FieldAmount},
+			relaywalletledgerentry.FieldBalanceBefore:  {Type: field.TypeString, Column: relaywalletledgerentry.FieldBalanceBefore},
+			relaywalletledgerentry.FieldBalanceAfter:   {Type: field.TypeString, Column: relaywalletledgerentry.FieldBalanceAfter},
+			relaywalletledgerentry.FieldUpstreamCost:   {Type: field.TypeString, Column: relaywalletledgerentry.FieldUpstreamCost},
+			relaywalletledgerentry.FieldPriceSnapshot:  {Type: field.TypeJSON, Column: relaywalletledgerentry.FieldPriceSnapshot},
+			relaywalletledgerentry.FieldIdempotencyKey: {Type: field.TypeString, Column: relaywalletledgerentry.FieldIdempotencyKey},
+			relaywalletledgerentry.FieldOperatorUserID: {Type: field.TypeInt, Column: relaywalletledgerentry.FieldOperatorUserID},
+			relaywalletledgerentry.FieldRemark:         {Type: field.TypeString, Column: relaywalletledgerentry.FieldRemark},
+		},
+	}
+	graph.Nodes[18] = &sqlgraph.Node{
+		NodeSpec: sqlgraph.NodeSpec{
 			Table:   request.Table,
 			Columns: request.Columns,
 			ID: &sqlgraph.FieldSpec{
@@ -352,7 +510,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			request.FieldContentSavedAt:             {Type: field.TypeTime, Column: request.FieldContentSavedAt},
 		},
 	}
-	graph.Nodes[13] = &sqlgraph.Node{
+	graph.Nodes[19] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   requestexecution.Table,
 			Columns: requestexecution.Columns,
@@ -385,7 +543,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			requestexecution.FieldRequestHeaders:             {Type: field.TypeJSON, Column: requestexecution.FieldRequestHeaders},
 		},
 	}
-	graph.Nodes[14] = &sqlgraph.Node{
+	graph.Nodes[20] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   role.Table,
 			Columns: role.Columns,
@@ -405,7 +563,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			role.FieldScopes:    {Type: field.TypeJSON, Column: role.FieldScopes},
 		},
 	}
-	graph.Nodes[15] = &sqlgraph.Node{
+	graph.Nodes[21] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   system.Table,
 			Columns: system.Columns,
@@ -423,7 +581,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			system.FieldValue:     {Type: field.TypeString, Column: system.FieldValue},
 		},
 	}
-	graph.Nodes[16] = &sqlgraph.Node{
+	graph.Nodes[22] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   thread.Table,
 			Columns: thread.Columns,
@@ -440,7 +598,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			thread.FieldThreadID:  {Type: field.TypeString, Column: thread.FieldThreadID},
 		},
 	}
-	graph.Nodes[17] = &sqlgraph.Node{
+	graph.Nodes[23] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   trace.Table,
 			Columns: trace.Columns,
@@ -458,7 +616,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			trace.FieldThreadID:  {Type: field.TypeInt, Column: trace.FieldThreadID},
 		},
 	}
-	graph.Nodes[18] = &sqlgraph.Node{
+	graph.Nodes[24] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   usagelog.Table,
 			Columns: usagelog.Columns,
@@ -495,7 +653,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			usagelog.FieldCostPriceReferenceID:               {Type: field.TypeString, Column: usagelog.FieldCostPriceReferenceID},
 		},
 	}
-	graph.Nodes[19] = &sqlgraph.Node{
+	graph.Nodes[25] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   user.Table,
 			Columns: user.Columns,
@@ -520,7 +678,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			user.FieldScopes:         {Type: field.TypeJSON, Column: user.FieldScopes},
 		},
 	}
-	graph.Nodes[20] = &sqlgraph.Node{
+	graph.Nodes[26] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   userproject.Table,
 			Columns: userproject.Columns,
@@ -539,7 +697,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			userproject.FieldScopes:    {Type: field.TypeJSON, Column: userproject.FieldScopes},
 		},
 	}
-	graph.Nodes[21] = &sqlgraph.Node{
+	graph.Nodes[27] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   userrole.Table,
 			Columns: userrole.Columns,
@@ -591,6 +749,18 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 		"APIKey",
 		"Request",
+	)
+	graph.MustAddE(
+		"relay_key",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   apikey.RelayKeyTable,
+			Columns: []string{apikey.RelayKeyColumn},
+			Bidi:    false,
+		},
+		"APIKey",
+		"RelayKey",
 	)
 	graph.MustAddE(
 		"requests",
@@ -651,6 +821,18 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 		"Channel",
 		"ChannelModelPrice",
+	)
+	graph.MustAddE(
+		"relay_product_bindings",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   channel.RelayProductBindingsTable,
+			Columns: []string{channel.RelayProductBindingsColumn},
+			Bidi:    false,
+		},
+		"Channel",
+		"RelayProductChannel",
 	)
 	graph.MustAddE(
 		"provider_quota_status",
@@ -785,6 +967,18 @@ var schemaGraph = func() *sqlgraph.Schema {
 		"APIKey",
 	)
 	graph.MustAddE(
+		"relay_keys",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   project.RelayKeysTable,
+			Columns: []string{project.RelayKeysColumn},
+			Bidi:    false,
+		},
+		"Project",
+		"RelayKey",
+	)
+	graph.MustAddE(
 		"requests",
 		&sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -879,6 +1073,174 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 		"ProviderQuotaStatus",
 		"Channel",
+	)
+	graph.MustAddE(
+		"relay_key",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   relaydailyusagesummary.RelayKeyTable,
+			Columns: []string{relaydailyusagesummary.RelayKeyColumn},
+			Bidi:    false,
+		},
+		"RelayDailyUsageSummary",
+		"RelayKey",
+	)
+	graph.MustAddE(
+		"api_key",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   relaykey.APIKeyTable,
+			Columns: []string{relaykey.APIKeyColumn},
+			Bidi:    false,
+		},
+		"RelayKey",
+		"APIKey",
+	)
+	graph.MustAddE(
+		"project",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   relaykey.ProjectTable,
+			Columns: []string{relaykey.ProjectColumn},
+			Bidi:    false,
+		},
+		"RelayKey",
+		"Project",
+	)
+	graph.MustAddE(
+		"product",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   relaykey.ProductTable,
+			Columns: []string{relaykey.ProductColumn},
+			Bidi:    false,
+		},
+		"RelayKey",
+		"RelayProduct",
+	)
+	graph.MustAddE(
+		"owner_user",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   relaykey.OwnerUserTable,
+			Columns: []string{relaykey.OwnerUserColumn},
+			Bidi:    false,
+		},
+		"RelayKey",
+		"User",
+	)
+	graph.MustAddE(
+		"wallet",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   relaykey.WalletTable,
+			Columns: []string{relaykey.WalletColumn},
+			Bidi:    false,
+		},
+		"RelayKey",
+		"RelayWallet",
+	)
+	graph.MustAddE(
+		"ledger_entries",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relaykey.LedgerEntriesTable,
+			Columns: []string{relaykey.LedgerEntriesColumn},
+			Bidi:    false,
+		},
+		"RelayKey",
+		"RelayWalletLedgerEntry",
+	)
+	graph.MustAddE(
+		"daily_usage_summaries",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relaykey.DailyUsageSummariesTable,
+			Columns: []string{relaykey.DailyUsageSummariesColumn},
+			Bidi:    false,
+		},
+		"RelayKey",
+		"RelayDailyUsageSummary",
+	)
+	graph.MustAddE(
+		"channel_bindings",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relayproduct.ChannelBindingsTable,
+			Columns: []string{relayproduct.ChannelBindingsColumn},
+			Bidi:    false,
+		},
+		"RelayProduct",
+		"RelayProductChannel",
+	)
+	graph.MustAddE(
+		"relay_keys",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relayproduct.RelayKeysTable,
+			Columns: []string{relayproduct.RelayKeysColumn},
+			Bidi:    false,
+		},
+		"RelayProduct",
+		"RelayKey",
+	)
+	graph.MustAddE(
+		"product",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   relayproductchannel.ProductTable,
+			Columns: []string{relayproductchannel.ProductColumn},
+			Bidi:    false,
+		},
+		"RelayProductChannel",
+		"RelayProduct",
+	)
+	graph.MustAddE(
+		"channel",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   relayproductchannel.ChannelTable,
+			Columns: []string{relayproductchannel.ChannelColumn},
+			Bidi:    false,
+		},
+		"RelayProductChannel",
+		"Channel",
+	)
+	graph.MustAddE(
+		"relay_key",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   relaywallet.RelayKeyTable,
+			Columns: []string{relaywallet.RelayKeyColumn},
+			Bidi:    false,
+		},
+		"RelayWallet",
+		"RelayKey",
+	)
+	graph.MustAddE(
+		"relay_key",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   relaywalletledgerentry.RelayKeyTable,
+			Columns: []string{relaywalletledgerentry.RelayKeyColumn},
+			Bidi:    false,
+		},
+		"RelayWalletLedgerEntry",
+		"RelayKey",
 	)
 	graph.MustAddE(
 		"api_key",
@@ -1157,6 +1519,18 @@ var schemaGraph = func() *sqlgraph.Schema {
 		"APIKey",
 	)
 	graph.MustAddE(
+		"relay_keys",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelayKeysTable,
+			Columns: []string{user.RelayKeysColumn},
+			Bidi:    false,
+		},
+		"User",
+		"RelayKey",
+	)
+	graph.MustAddE(
 		"roles",
 		&sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -1398,6 +1772,20 @@ func (f *APIKeyFilter) WhereHasRequestsWith(preds ...predicate.Request) {
 	})))
 }
 
+// WhereHasRelayKey applies a predicate to check if query has an edge relay_key.
+func (f *APIKeyFilter) WhereHasRelayKey() {
+	f.Where(entql.HasEdge("relay_key"))
+}
+
+// WhereHasRelayKeyWith applies a predicate to check if query has an edge relay_key with a given conditions (other predicates).
+func (f *APIKeyFilter) WhereHasRelayKeyWith(preds ...predicate.RelayKey) {
+	f.Where(entql.HasEdgeWith("relay_key", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
 // addPredicate implements the predicateAdder interface.
 func (_q *ChannelQuery) addPredicate(pred func(s *sql.Selector)) {
 	_q.predicates = append(_q.predicates, pred)
@@ -1602,6 +1990,20 @@ func (f *ChannelFilter) WhereHasChannelModelPrices() {
 // WhereHasChannelModelPricesWith applies a predicate to check if query has an edge channel_model_prices with a given conditions (other predicates).
 func (f *ChannelFilter) WhereHasChannelModelPricesWith(preds ...predicate.ChannelModelPrice) {
 	f.Where(entql.HasEdgeWith("channel_model_prices", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasRelayProductBindings applies a predicate to check if query has an edge relay_product_bindings.
+func (f *ChannelFilter) WhereHasRelayProductBindings() {
+	f.Where(entql.HasEdge("relay_product_bindings"))
+}
+
+// WhereHasRelayProductBindingsWith applies a predicate to check if query has an edge relay_product_bindings with a given conditions (other predicates).
+func (f *ChannelFilter) WhereHasRelayProductBindingsWith(preds ...predicate.RelayProductChannel) {
+	f.Where(entql.HasEdgeWith("relay_product_bindings", sqlgraph.WrapFunc(func(s *sql.Selector) {
 		for _, p := range preds {
 			p(s)
 		}
@@ -2352,6 +2754,20 @@ func (f *ProjectFilter) WhereHasAPIKeysWith(preds ...predicate.APIKey) {
 	})))
 }
 
+// WhereHasRelayKeys applies a predicate to check if query has an edge relay_keys.
+func (f *ProjectFilter) WhereHasRelayKeys() {
+	f.Where(entql.HasEdge("relay_keys"))
+}
+
+// WhereHasRelayKeysWith applies a predicate to check if query has an edge relay_keys with a given conditions (other predicates).
+func (f *ProjectFilter) WhereHasRelayKeysWith(preds ...predicate.RelayKey) {
+	f.Where(entql.HasEdgeWith("relay_keys", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
 // WhereHasRequests applies a predicate to check if query has an edge requests.
 func (f *ProjectFilter) WhereHasRequests() {
 	f.Where(entql.HasEdge("requests"))
@@ -2730,6 +3146,812 @@ func (f *ProviderQuotaStatusFilter) WhereHasChannelWith(preds ...predicate.Chann
 }
 
 // addPredicate implements the predicateAdder interface.
+func (_q *RelayDailyUsageSummaryQuery) addPredicate(pred func(s *sql.Selector)) {
+	_q.predicates = append(_q.predicates, pred)
+}
+
+// Filter returns a Filter implementation to apply filters on the RelayDailyUsageSummaryQuery builder.
+func (_q *RelayDailyUsageSummaryQuery) Filter() *RelayDailyUsageSummaryFilter {
+	return &RelayDailyUsageSummaryFilter{config: _q.config, predicateAdder: _q}
+}
+
+// addPredicate implements the predicateAdder interface.
+func (m *RelayDailyUsageSummaryMutation) addPredicate(pred func(s *sql.Selector)) {
+	m.predicates = append(m.predicates, pred)
+}
+
+// Filter returns an entql.Where implementation to apply filters on the RelayDailyUsageSummaryMutation builder.
+func (m *RelayDailyUsageSummaryMutation) Filter() *RelayDailyUsageSummaryFilter {
+	return &RelayDailyUsageSummaryFilter{config: m.config, predicateAdder: m}
+}
+
+// RelayDailyUsageSummaryFilter provides a generic filtering capability at runtime for RelayDailyUsageSummaryQuery.
+type RelayDailyUsageSummaryFilter struct {
+	predicateAdder
+	config
+}
+
+// Where applies the entql predicate on the query filter.
+func (f *RelayDailyUsageSummaryFilter) Where(p entql.P) {
+	f.addPredicate(func(s *sql.Selector) {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[12].Type, p, s); err != nil {
+			s.AddError(err)
+		}
+	})
+}
+
+// WhereID applies the entql int predicate on the id field.
+func (f *RelayDailyUsageSummaryFilter) WhereID(p entql.IntP) {
+	f.Where(p.Field(relaydailyusagesummary.FieldID))
+}
+
+// WhereCreatedAt applies the entql time.Time predicate on the created_at field.
+func (f *RelayDailyUsageSummaryFilter) WhereCreatedAt(p entql.TimeP) {
+	f.Where(p.Field(relaydailyusagesummary.FieldCreatedAt))
+}
+
+// WhereUpdatedAt applies the entql time.Time predicate on the updated_at field.
+func (f *RelayDailyUsageSummaryFilter) WhereUpdatedAt(p entql.TimeP) {
+	f.Where(p.Field(relaydailyusagesummary.FieldUpdatedAt))
+}
+
+// WhereRelayKeyID applies the entql int predicate on the relay_key_id field.
+func (f *RelayDailyUsageSummaryFilter) WhereRelayKeyID(p entql.IntP) {
+	f.Where(p.Field(relaydailyusagesummary.FieldRelayKeyID))
+}
+
+// WhereProjectID applies the entql int predicate on the project_id field.
+func (f *RelayDailyUsageSummaryFilter) WhereProjectID(p entql.IntP) {
+	f.Where(p.Field(relaydailyusagesummary.FieldProjectID))
+}
+
+// WhereStatDate applies the entql time.Time predicate on the stat_date field.
+func (f *RelayDailyUsageSummaryFilter) WhereStatDate(p entql.TimeP) {
+	f.Where(p.Field(relaydailyusagesummary.FieldStatDate))
+}
+
+// WhereRequestCount applies the entql int64 predicate on the request_count field.
+func (f *RelayDailyUsageSummaryFilter) WhereRequestCount(p entql.Int64P) {
+	f.Where(p.Field(relaydailyusagesummary.FieldRequestCount))
+}
+
+// WhereTotalTokens applies the entql int64 predicate on the total_tokens field.
+func (f *RelayDailyUsageSummaryFilter) WhereTotalTokens(p entql.Int64P) {
+	f.Where(p.Field(relaydailyusagesummary.FieldTotalTokens))
+}
+
+// WhereTotalCharge applies the entql string predicate on the total_charge field.
+func (f *RelayDailyUsageSummaryFilter) WhereTotalCharge(p entql.StringP) {
+	f.Where(p.Field(relaydailyusagesummary.FieldTotalCharge))
+}
+
+// WhereTotalUpstreamCost applies the entql string predicate on the total_upstream_cost field.
+func (f *RelayDailyUsageSummaryFilter) WhereTotalUpstreamCost(p entql.StringP) {
+	f.Where(p.Field(relaydailyusagesummary.FieldTotalUpstreamCost))
+}
+
+// WhereLastRequestID applies the entql int predicate on the last_request_id field.
+func (f *RelayDailyUsageSummaryFilter) WhereLastRequestID(p entql.IntP) {
+	f.Where(p.Field(relaydailyusagesummary.FieldLastRequestID))
+}
+
+// WhereHasRelayKey applies a predicate to check if query has an edge relay_key.
+func (f *RelayDailyUsageSummaryFilter) WhereHasRelayKey() {
+	f.Where(entql.HasEdge("relay_key"))
+}
+
+// WhereHasRelayKeyWith applies a predicate to check if query has an edge relay_key with a given conditions (other predicates).
+func (f *RelayDailyUsageSummaryFilter) WhereHasRelayKeyWith(preds ...predicate.RelayKey) {
+	f.Where(entql.HasEdgeWith("relay_key", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// addPredicate implements the predicateAdder interface.
+func (_q *RelayKeyQuery) addPredicate(pred func(s *sql.Selector)) {
+	_q.predicates = append(_q.predicates, pred)
+}
+
+// Filter returns a Filter implementation to apply filters on the RelayKeyQuery builder.
+func (_q *RelayKeyQuery) Filter() *RelayKeyFilter {
+	return &RelayKeyFilter{config: _q.config, predicateAdder: _q}
+}
+
+// addPredicate implements the predicateAdder interface.
+func (m *RelayKeyMutation) addPredicate(pred func(s *sql.Selector)) {
+	m.predicates = append(m.predicates, pred)
+}
+
+// Filter returns an entql.Where implementation to apply filters on the RelayKeyMutation builder.
+func (m *RelayKeyMutation) Filter() *RelayKeyFilter {
+	return &RelayKeyFilter{config: m.config, predicateAdder: m}
+}
+
+// RelayKeyFilter provides a generic filtering capability at runtime for RelayKeyQuery.
+type RelayKeyFilter struct {
+	predicateAdder
+	config
+}
+
+// Where applies the entql predicate on the query filter.
+func (f *RelayKeyFilter) Where(p entql.P) {
+	f.addPredicate(func(s *sql.Selector) {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[13].Type, p, s); err != nil {
+			s.AddError(err)
+		}
+	})
+}
+
+// WhereID applies the entql int predicate on the id field.
+func (f *RelayKeyFilter) WhereID(p entql.IntP) {
+	f.Where(p.Field(relaykey.FieldID))
+}
+
+// WhereCreatedAt applies the entql time.Time predicate on the created_at field.
+func (f *RelayKeyFilter) WhereCreatedAt(p entql.TimeP) {
+	f.Where(p.Field(relaykey.FieldCreatedAt))
+}
+
+// WhereUpdatedAt applies the entql time.Time predicate on the updated_at field.
+func (f *RelayKeyFilter) WhereUpdatedAt(p entql.TimeP) {
+	f.Where(p.Field(relaykey.FieldUpdatedAt))
+}
+
+// WhereDeletedAt applies the entql int predicate on the deleted_at field.
+func (f *RelayKeyFilter) WhereDeletedAt(p entql.IntP) {
+	f.Where(p.Field(relaykey.FieldDeletedAt))
+}
+
+// WhereAPIKeyID applies the entql int predicate on the api_key_id field.
+func (f *RelayKeyFilter) WhereAPIKeyID(p entql.IntP) {
+	f.Where(p.Field(relaykey.FieldAPIKeyID))
+}
+
+// WhereProjectID applies the entql int predicate on the project_id field.
+func (f *RelayKeyFilter) WhereProjectID(p entql.IntP) {
+	f.Where(p.Field(relaykey.FieldProjectID))
+}
+
+// WhereProductID applies the entql int predicate on the product_id field.
+func (f *RelayKeyFilter) WhereProductID(p entql.IntP) {
+	f.Where(p.Field(relaykey.FieldProductID))
+}
+
+// WhereOwnerUserID applies the entql int predicate on the owner_user_id field.
+func (f *RelayKeyFilter) WhereOwnerUserID(p entql.IntP) {
+	f.Where(p.Field(relaykey.FieldOwnerUserID))
+}
+
+// WhereDisplayName applies the entql string predicate on the display_name field.
+func (f *RelayKeyFilter) WhereDisplayName(p entql.StringP) {
+	f.Where(p.Field(relaykey.FieldDisplayName))
+}
+
+// WhereStatus applies the entql string predicate on the status field.
+func (f *RelayKeyFilter) WhereStatus(p entql.StringP) {
+	f.Where(p.Field(relaykey.FieldStatus))
+}
+
+// WhereBalanceMode applies the entql string predicate on the balance_mode field.
+func (f *RelayKeyFilter) WhereBalanceMode(p entql.StringP) {
+	f.Where(p.Field(relaykey.FieldBalanceMode))
+}
+
+// WhereDailyRequestLimit applies the entql int64 predicate on the daily_request_limit field.
+func (f *RelayKeyFilter) WhereDailyRequestLimit(p entql.Int64P) {
+	f.Where(p.Field(relaykey.FieldDailyRequestLimit))
+}
+
+// WhereDailyTokenLimit applies the entql int64 predicate on the daily_token_limit field.
+func (f *RelayKeyFilter) WhereDailyTokenLimit(p entql.Int64P) {
+	f.Where(p.Field(relaykey.FieldDailyTokenLimit))
+}
+
+// WhereMonthlyCostLimit applies the entql string predicate on the monthly_cost_limit field.
+func (f *RelayKeyFilter) WhereMonthlyCostLimit(p entql.StringP) {
+	f.Where(p.Field(relaykey.FieldMonthlyCostLimit))
+}
+
+// WhereConcurrencyLimit applies the entql int64 predicate on the concurrency_limit field.
+func (f *RelayKeyFilter) WhereConcurrencyLimit(p entql.Int64P) {
+	f.Where(p.Field(relaykey.FieldConcurrencyLimit))
+}
+
+// WhereExpiresAt applies the entql time.Time predicate on the expires_at field.
+func (f *RelayKeyFilter) WhereExpiresAt(p entql.TimeP) {
+	f.Where(p.Field(relaykey.FieldExpiresAt))
+}
+
+// WhereLastUsedAt applies the entql time.Time predicate on the last_used_at field.
+func (f *RelayKeyFilter) WhereLastUsedAt(p entql.TimeP) {
+	f.Where(p.Field(relaykey.FieldLastUsedAt))
+}
+
+// WhereHasAPIKey applies a predicate to check if query has an edge api_key.
+func (f *RelayKeyFilter) WhereHasAPIKey() {
+	f.Where(entql.HasEdge("api_key"))
+}
+
+// WhereHasAPIKeyWith applies a predicate to check if query has an edge api_key with a given conditions (other predicates).
+func (f *RelayKeyFilter) WhereHasAPIKeyWith(preds ...predicate.APIKey) {
+	f.Where(entql.HasEdgeWith("api_key", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasProject applies a predicate to check if query has an edge project.
+func (f *RelayKeyFilter) WhereHasProject() {
+	f.Where(entql.HasEdge("project"))
+}
+
+// WhereHasProjectWith applies a predicate to check if query has an edge project with a given conditions (other predicates).
+func (f *RelayKeyFilter) WhereHasProjectWith(preds ...predicate.Project) {
+	f.Where(entql.HasEdgeWith("project", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasProduct applies a predicate to check if query has an edge product.
+func (f *RelayKeyFilter) WhereHasProduct() {
+	f.Where(entql.HasEdge("product"))
+}
+
+// WhereHasProductWith applies a predicate to check if query has an edge product with a given conditions (other predicates).
+func (f *RelayKeyFilter) WhereHasProductWith(preds ...predicate.RelayProduct) {
+	f.Where(entql.HasEdgeWith("product", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasOwnerUser applies a predicate to check if query has an edge owner_user.
+func (f *RelayKeyFilter) WhereHasOwnerUser() {
+	f.Where(entql.HasEdge("owner_user"))
+}
+
+// WhereHasOwnerUserWith applies a predicate to check if query has an edge owner_user with a given conditions (other predicates).
+func (f *RelayKeyFilter) WhereHasOwnerUserWith(preds ...predicate.User) {
+	f.Where(entql.HasEdgeWith("owner_user", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasWallet applies a predicate to check if query has an edge wallet.
+func (f *RelayKeyFilter) WhereHasWallet() {
+	f.Where(entql.HasEdge("wallet"))
+}
+
+// WhereHasWalletWith applies a predicate to check if query has an edge wallet with a given conditions (other predicates).
+func (f *RelayKeyFilter) WhereHasWalletWith(preds ...predicate.RelayWallet) {
+	f.Where(entql.HasEdgeWith("wallet", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasLedgerEntries applies a predicate to check if query has an edge ledger_entries.
+func (f *RelayKeyFilter) WhereHasLedgerEntries() {
+	f.Where(entql.HasEdge("ledger_entries"))
+}
+
+// WhereHasLedgerEntriesWith applies a predicate to check if query has an edge ledger_entries with a given conditions (other predicates).
+func (f *RelayKeyFilter) WhereHasLedgerEntriesWith(preds ...predicate.RelayWalletLedgerEntry) {
+	f.Where(entql.HasEdgeWith("ledger_entries", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasDailyUsageSummaries applies a predicate to check if query has an edge daily_usage_summaries.
+func (f *RelayKeyFilter) WhereHasDailyUsageSummaries() {
+	f.Where(entql.HasEdge("daily_usage_summaries"))
+}
+
+// WhereHasDailyUsageSummariesWith applies a predicate to check if query has an edge daily_usage_summaries with a given conditions (other predicates).
+func (f *RelayKeyFilter) WhereHasDailyUsageSummariesWith(preds ...predicate.RelayDailyUsageSummary) {
+	f.Where(entql.HasEdgeWith("daily_usage_summaries", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// addPredicate implements the predicateAdder interface.
+func (_q *RelayProductQuery) addPredicate(pred func(s *sql.Selector)) {
+	_q.predicates = append(_q.predicates, pred)
+}
+
+// Filter returns a Filter implementation to apply filters on the RelayProductQuery builder.
+func (_q *RelayProductQuery) Filter() *RelayProductFilter {
+	return &RelayProductFilter{config: _q.config, predicateAdder: _q}
+}
+
+// addPredicate implements the predicateAdder interface.
+func (m *RelayProductMutation) addPredicate(pred func(s *sql.Selector)) {
+	m.predicates = append(m.predicates, pred)
+}
+
+// Filter returns an entql.Where implementation to apply filters on the RelayProductMutation builder.
+func (m *RelayProductMutation) Filter() *RelayProductFilter {
+	return &RelayProductFilter{config: m.config, predicateAdder: m}
+}
+
+// RelayProductFilter provides a generic filtering capability at runtime for RelayProductQuery.
+type RelayProductFilter struct {
+	predicateAdder
+	config
+}
+
+// Where applies the entql predicate on the query filter.
+func (f *RelayProductFilter) Where(p entql.P) {
+	f.addPredicate(func(s *sql.Selector) {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[14].Type, p, s); err != nil {
+			s.AddError(err)
+		}
+	})
+}
+
+// WhereID applies the entql int predicate on the id field.
+func (f *RelayProductFilter) WhereID(p entql.IntP) {
+	f.Where(p.Field(relayproduct.FieldID))
+}
+
+// WhereCreatedAt applies the entql time.Time predicate on the created_at field.
+func (f *RelayProductFilter) WhereCreatedAt(p entql.TimeP) {
+	f.Where(p.Field(relayproduct.FieldCreatedAt))
+}
+
+// WhereUpdatedAt applies the entql time.Time predicate on the updated_at field.
+func (f *RelayProductFilter) WhereUpdatedAt(p entql.TimeP) {
+	f.Where(p.Field(relayproduct.FieldUpdatedAt))
+}
+
+// WhereDeletedAt applies the entql int predicate on the deleted_at field.
+func (f *RelayProductFilter) WhereDeletedAt(p entql.IntP) {
+	f.Where(p.Field(relayproduct.FieldDeletedAt))
+}
+
+// WhereCode applies the entql string predicate on the code field.
+func (f *RelayProductFilter) WhereCode(p entql.StringP) {
+	f.Where(p.Field(relayproduct.FieldCode))
+}
+
+// WhereName applies the entql string predicate on the name field.
+func (f *RelayProductFilter) WhereName(p entql.StringP) {
+	f.Where(p.Field(relayproduct.FieldName))
+}
+
+// WhereProviderType applies the entql string predicate on the provider_type field.
+func (f *RelayProductFilter) WhereProviderType(p entql.StringP) {
+	f.Where(p.Field(relayproduct.FieldProviderType))
+}
+
+// WhereAccessMode applies the entql string predicate on the access_mode field.
+func (f *RelayProductFilter) WhereAccessMode(p entql.StringP) {
+	f.Where(p.Field(relayproduct.FieldAccessMode))
+}
+
+// WhereBillingMode applies the entql string predicate on the billing_mode field.
+func (f *RelayProductFilter) WhereBillingMode(p entql.StringP) {
+	f.Where(p.Field(relayproduct.FieldBillingMode))
+}
+
+// WhereStatus applies the entql string predicate on the status field.
+func (f *RelayProductFilter) WhereStatus(p entql.StringP) {
+	f.Where(p.Field(relayproduct.FieldStatus))
+}
+
+// WhereCurrency applies the entql string predicate on the currency field.
+func (f *RelayProductFilter) WhereCurrency(p entql.StringP) {
+	f.Where(p.Field(relayproduct.FieldCurrency))
+}
+
+// WhereListPriceConfig applies the entql json.RawMessage predicate on the list_price_config field.
+func (f *RelayProductFilter) WhereListPriceConfig(p entql.BytesP) {
+	f.Where(p.Field(relayproduct.FieldListPriceConfig))
+}
+
+// WhereAllowedModels applies the entql json.RawMessage predicate on the allowed_models field.
+func (f *RelayProductFilter) WhereAllowedModels(p entql.BytesP) {
+	f.Where(p.Field(relayproduct.FieldAllowedModels))
+}
+
+// WhereRequestTimeoutSeconds applies the entql int predicate on the request_timeout_seconds field.
+func (f *RelayProductFilter) WhereRequestTimeoutSeconds(p entql.IntP) {
+	f.Where(p.Field(relayproduct.FieldRequestTimeoutSeconds))
+}
+
+// WhereHasChannelBindings applies a predicate to check if query has an edge channel_bindings.
+func (f *RelayProductFilter) WhereHasChannelBindings() {
+	f.Where(entql.HasEdge("channel_bindings"))
+}
+
+// WhereHasChannelBindingsWith applies a predicate to check if query has an edge channel_bindings with a given conditions (other predicates).
+func (f *RelayProductFilter) WhereHasChannelBindingsWith(preds ...predicate.RelayProductChannel) {
+	f.Where(entql.HasEdgeWith("channel_bindings", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasRelayKeys applies a predicate to check if query has an edge relay_keys.
+func (f *RelayProductFilter) WhereHasRelayKeys() {
+	f.Where(entql.HasEdge("relay_keys"))
+}
+
+// WhereHasRelayKeysWith applies a predicate to check if query has an edge relay_keys with a given conditions (other predicates).
+func (f *RelayProductFilter) WhereHasRelayKeysWith(preds ...predicate.RelayKey) {
+	f.Where(entql.HasEdgeWith("relay_keys", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// addPredicate implements the predicateAdder interface.
+func (_q *RelayProductChannelQuery) addPredicate(pred func(s *sql.Selector)) {
+	_q.predicates = append(_q.predicates, pred)
+}
+
+// Filter returns a Filter implementation to apply filters on the RelayProductChannelQuery builder.
+func (_q *RelayProductChannelQuery) Filter() *RelayProductChannelFilter {
+	return &RelayProductChannelFilter{config: _q.config, predicateAdder: _q}
+}
+
+// addPredicate implements the predicateAdder interface.
+func (m *RelayProductChannelMutation) addPredicate(pred func(s *sql.Selector)) {
+	m.predicates = append(m.predicates, pred)
+}
+
+// Filter returns an entql.Where implementation to apply filters on the RelayProductChannelMutation builder.
+func (m *RelayProductChannelMutation) Filter() *RelayProductChannelFilter {
+	return &RelayProductChannelFilter{config: m.config, predicateAdder: m}
+}
+
+// RelayProductChannelFilter provides a generic filtering capability at runtime for RelayProductChannelQuery.
+type RelayProductChannelFilter struct {
+	predicateAdder
+	config
+}
+
+// Where applies the entql predicate on the query filter.
+func (f *RelayProductChannelFilter) Where(p entql.P) {
+	f.addPredicate(func(s *sql.Selector) {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[15].Type, p, s); err != nil {
+			s.AddError(err)
+		}
+	})
+}
+
+// WhereID applies the entql int predicate on the id field.
+func (f *RelayProductChannelFilter) WhereID(p entql.IntP) {
+	f.Where(p.Field(relayproductchannel.FieldID))
+}
+
+// WhereCreatedAt applies the entql time.Time predicate on the created_at field.
+func (f *RelayProductChannelFilter) WhereCreatedAt(p entql.TimeP) {
+	f.Where(p.Field(relayproductchannel.FieldCreatedAt))
+}
+
+// WhereUpdatedAt applies the entql time.Time predicate on the updated_at field.
+func (f *RelayProductChannelFilter) WhereUpdatedAt(p entql.TimeP) {
+	f.Where(p.Field(relayproductchannel.FieldUpdatedAt))
+}
+
+// WhereProductID applies the entql int predicate on the product_id field.
+func (f *RelayProductChannelFilter) WhereProductID(p entql.IntP) {
+	f.Where(p.Field(relayproductchannel.FieldProductID))
+}
+
+// WhereChannelID applies the entql int predicate on the channel_id field.
+func (f *RelayProductChannelFilter) WhereChannelID(p entql.IntP) {
+	f.Where(p.Field(relayproductchannel.FieldChannelID))
+}
+
+// WherePriority applies the entql int predicate on the priority field.
+func (f *RelayProductChannelFilter) WherePriority(p entql.IntP) {
+	f.Where(p.Field(relayproductchannel.FieldPriority))
+}
+
+// WhereWeight applies the entql int predicate on the weight field.
+func (f *RelayProductChannelFilter) WhereWeight(p entql.IntP) {
+	f.Where(p.Field(relayproductchannel.FieldWeight))
+}
+
+// WhereStatus applies the entql string predicate on the status field.
+func (f *RelayProductChannelFilter) WhereStatus(p entql.StringP) {
+	f.Where(p.Field(relayproductchannel.FieldStatus))
+}
+
+// WhereAllowFallback applies the entql bool predicate on the allow_fallback field.
+func (f *RelayProductChannelFilter) WhereAllowFallback(p entql.BoolP) {
+	f.Where(p.Field(relayproductchannel.FieldAllowFallback))
+}
+
+// WhereModelFilter applies the entql json.RawMessage predicate on the model_filter field.
+func (f *RelayProductChannelFilter) WhereModelFilter(p entql.BytesP) {
+	f.Where(p.Field(relayproductchannel.FieldModelFilter))
+}
+
+// WhereMaxInflight applies the entql int predicate on the max_inflight field.
+func (f *RelayProductChannelFilter) WhereMaxInflight(p entql.IntP) {
+	f.Where(p.Field(relayproductchannel.FieldMaxInflight))
+}
+
+// WhereHasProduct applies a predicate to check if query has an edge product.
+func (f *RelayProductChannelFilter) WhereHasProduct() {
+	f.Where(entql.HasEdge("product"))
+}
+
+// WhereHasProductWith applies a predicate to check if query has an edge product with a given conditions (other predicates).
+func (f *RelayProductChannelFilter) WhereHasProductWith(preds ...predicate.RelayProduct) {
+	f.Where(entql.HasEdgeWith("product", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasChannel applies a predicate to check if query has an edge channel.
+func (f *RelayProductChannelFilter) WhereHasChannel() {
+	f.Where(entql.HasEdge("channel"))
+}
+
+// WhereHasChannelWith applies a predicate to check if query has an edge channel with a given conditions (other predicates).
+func (f *RelayProductChannelFilter) WhereHasChannelWith(preds ...predicate.Channel) {
+	f.Where(entql.HasEdgeWith("channel", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// addPredicate implements the predicateAdder interface.
+func (_q *RelayWalletQuery) addPredicate(pred func(s *sql.Selector)) {
+	_q.predicates = append(_q.predicates, pred)
+}
+
+// Filter returns a Filter implementation to apply filters on the RelayWalletQuery builder.
+func (_q *RelayWalletQuery) Filter() *RelayWalletFilter {
+	return &RelayWalletFilter{config: _q.config, predicateAdder: _q}
+}
+
+// addPredicate implements the predicateAdder interface.
+func (m *RelayWalletMutation) addPredicate(pred func(s *sql.Selector)) {
+	m.predicates = append(m.predicates, pred)
+}
+
+// Filter returns an entql.Where implementation to apply filters on the RelayWalletMutation builder.
+func (m *RelayWalletMutation) Filter() *RelayWalletFilter {
+	return &RelayWalletFilter{config: m.config, predicateAdder: m}
+}
+
+// RelayWalletFilter provides a generic filtering capability at runtime for RelayWalletQuery.
+type RelayWalletFilter struct {
+	predicateAdder
+	config
+}
+
+// Where applies the entql predicate on the query filter.
+func (f *RelayWalletFilter) Where(p entql.P) {
+	f.addPredicate(func(s *sql.Selector) {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[16].Type, p, s); err != nil {
+			s.AddError(err)
+		}
+	})
+}
+
+// WhereID applies the entql int predicate on the id field.
+func (f *RelayWalletFilter) WhereID(p entql.IntP) {
+	f.Where(p.Field(relaywallet.FieldID))
+}
+
+// WhereCreatedAt applies the entql time.Time predicate on the created_at field.
+func (f *RelayWalletFilter) WhereCreatedAt(p entql.TimeP) {
+	f.Where(p.Field(relaywallet.FieldCreatedAt))
+}
+
+// WhereUpdatedAt applies the entql time.Time predicate on the updated_at field.
+func (f *RelayWalletFilter) WhereUpdatedAt(p entql.TimeP) {
+	f.Where(p.Field(relaywallet.FieldUpdatedAt))
+}
+
+// WhereRelayKeyID applies the entql int predicate on the relay_key_id field.
+func (f *RelayWalletFilter) WhereRelayKeyID(p entql.IntP) {
+	f.Where(p.Field(relaywallet.FieldRelayKeyID))
+}
+
+// WhereProjectID applies the entql int predicate on the project_id field.
+func (f *RelayWalletFilter) WhereProjectID(p entql.IntP) {
+	f.Where(p.Field(relaywallet.FieldProjectID))
+}
+
+// WhereCurrency applies the entql string predicate on the currency field.
+func (f *RelayWalletFilter) WhereCurrency(p entql.StringP) {
+	f.Where(p.Field(relaywallet.FieldCurrency))
+}
+
+// WhereAvailableAmount applies the entql string predicate on the available_amount field.
+func (f *RelayWalletFilter) WhereAvailableAmount(p entql.StringP) {
+	f.Where(p.Field(relaywallet.FieldAvailableAmount))
+}
+
+// WhereFrozenAmount applies the entql string predicate on the frozen_amount field.
+func (f *RelayWalletFilter) WhereFrozenAmount(p entql.StringP) {
+	f.Where(p.Field(relaywallet.FieldFrozenAmount))
+}
+
+// WhereOverdraftLimit applies the entql string predicate on the overdraft_limit field.
+func (f *RelayWalletFilter) WhereOverdraftLimit(p entql.StringP) {
+	f.Where(p.Field(relaywallet.FieldOverdraftLimit))
+}
+
+// WhereVersion applies the entql int64 predicate on the version field.
+func (f *RelayWalletFilter) WhereVersion(p entql.Int64P) {
+	f.Where(p.Field(relaywallet.FieldVersion))
+}
+
+// WhereHasRelayKey applies a predicate to check if query has an edge relay_key.
+func (f *RelayWalletFilter) WhereHasRelayKey() {
+	f.Where(entql.HasEdge("relay_key"))
+}
+
+// WhereHasRelayKeyWith applies a predicate to check if query has an edge relay_key with a given conditions (other predicates).
+func (f *RelayWalletFilter) WhereHasRelayKeyWith(preds ...predicate.RelayKey) {
+	f.Where(entql.HasEdgeWith("relay_key", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// addPredicate implements the predicateAdder interface.
+func (_q *RelayWalletLedgerEntryQuery) addPredicate(pred func(s *sql.Selector)) {
+	_q.predicates = append(_q.predicates, pred)
+}
+
+// Filter returns a Filter implementation to apply filters on the RelayWalletLedgerEntryQuery builder.
+func (_q *RelayWalletLedgerEntryQuery) Filter() *RelayWalletLedgerEntryFilter {
+	return &RelayWalletLedgerEntryFilter{config: _q.config, predicateAdder: _q}
+}
+
+// addPredicate implements the predicateAdder interface.
+func (m *RelayWalletLedgerEntryMutation) addPredicate(pred func(s *sql.Selector)) {
+	m.predicates = append(m.predicates, pred)
+}
+
+// Filter returns an entql.Where implementation to apply filters on the RelayWalletLedgerEntryMutation builder.
+func (m *RelayWalletLedgerEntryMutation) Filter() *RelayWalletLedgerEntryFilter {
+	return &RelayWalletLedgerEntryFilter{config: m.config, predicateAdder: m}
+}
+
+// RelayWalletLedgerEntryFilter provides a generic filtering capability at runtime for RelayWalletLedgerEntryQuery.
+type RelayWalletLedgerEntryFilter struct {
+	predicateAdder
+	config
+}
+
+// Where applies the entql predicate on the query filter.
+func (f *RelayWalletLedgerEntryFilter) Where(p entql.P) {
+	f.addPredicate(func(s *sql.Selector) {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[17].Type, p, s); err != nil {
+			s.AddError(err)
+		}
+	})
+}
+
+// WhereID applies the entql int predicate on the id field.
+func (f *RelayWalletLedgerEntryFilter) WhereID(p entql.IntP) {
+	f.Where(p.Field(relaywalletledgerentry.FieldID))
+}
+
+// WhereCreatedAt applies the entql time.Time predicate on the created_at field.
+func (f *RelayWalletLedgerEntryFilter) WhereCreatedAt(p entql.TimeP) {
+	f.Where(p.Field(relaywalletledgerentry.FieldCreatedAt))
+}
+
+// WhereUpdatedAt applies the entql time.Time predicate on the updated_at field.
+func (f *RelayWalletLedgerEntryFilter) WhereUpdatedAt(p entql.TimeP) {
+	f.Where(p.Field(relaywalletledgerentry.FieldUpdatedAt))
+}
+
+// WhereRelayKeyID applies the entql int predicate on the relay_key_id field.
+func (f *RelayWalletLedgerEntryFilter) WhereRelayKeyID(p entql.IntP) {
+	f.Where(p.Field(relaywalletledgerentry.FieldRelayKeyID))
+}
+
+// WhereProjectID applies the entql int predicate on the project_id field.
+func (f *RelayWalletLedgerEntryFilter) WhereProjectID(p entql.IntP) {
+	f.Where(p.Field(relaywalletledgerentry.FieldProjectID))
+}
+
+// WhereRequestID applies the entql int predicate on the request_id field.
+func (f *RelayWalletLedgerEntryFilter) WhereRequestID(p entql.IntP) {
+	f.Where(p.Field(relaywalletledgerentry.FieldRequestID))
+}
+
+// WhereUsageLogID applies the entql int predicate on the usage_log_id field.
+func (f *RelayWalletLedgerEntryFilter) WhereUsageLogID(p entql.IntP) {
+	f.Where(p.Field(relaywalletledgerentry.FieldUsageLogID))
+}
+
+// WhereDirection applies the entql string predicate on the direction field.
+func (f *RelayWalletLedgerEntryFilter) WhereDirection(p entql.StringP) {
+	f.Where(p.Field(relaywalletledgerentry.FieldDirection))
+}
+
+// WhereScene applies the entql string predicate on the scene field.
+func (f *RelayWalletLedgerEntryFilter) WhereScene(p entql.StringP) {
+	f.Where(p.Field(relaywalletledgerentry.FieldScene))
+}
+
+// WhereAmount applies the entql string predicate on the amount field.
+func (f *RelayWalletLedgerEntryFilter) WhereAmount(p entql.StringP) {
+	f.Where(p.Field(relaywalletledgerentry.FieldAmount))
+}
+
+// WhereBalanceBefore applies the entql string predicate on the balance_before field.
+func (f *RelayWalletLedgerEntryFilter) WhereBalanceBefore(p entql.StringP) {
+	f.Where(p.Field(relaywalletledgerentry.FieldBalanceBefore))
+}
+
+// WhereBalanceAfter applies the entql string predicate on the balance_after field.
+func (f *RelayWalletLedgerEntryFilter) WhereBalanceAfter(p entql.StringP) {
+	f.Where(p.Field(relaywalletledgerentry.FieldBalanceAfter))
+}
+
+// WhereUpstreamCost applies the entql string predicate on the upstream_cost field.
+func (f *RelayWalletLedgerEntryFilter) WhereUpstreamCost(p entql.StringP) {
+	f.Where(p.Field(relaywalletledgerentry.FieldUpstreamCost))
+}
+
+// WherePriceSnapshot applies the entql json.RawMessage predicate on the price_snapshot field.
+func (f *RelayWalletLedgerEntryFilter) WherePriceSnapshot(p entql.BytesP) {
+	f.Where(p.Field(relaywalletledgerentry.FieldPriceSnapshot))
+}
+
+// WhereIdempotencyKey applies the entql string predicate on the idempotency_key field.
+func (f *RelayWalletLedgerEntryFilter) WhereIdempotencyKey(p entql.StringP) {
+	f.Where(p.Field(relaywalletledgerentry.FieldIdempotencyKey))
+}
+
+// WhereOperatorUserID applies the entql int predicate on the operator_user_id field.
+func (f *RelayWalletLedgerEntryFilter) WhereOperatorUserID(p entql.IntP) {
+	f.Where(p.Field(relaywalletledgerentry.FieldOperatorUserID))
+}
+
+// WhereRemark applies the entql string predicate on the remark field.
+func (f *RelayWalletLedgerEntryFilter) WhereRemark(p entql.StringP) {
+	f.Where(p.Field(relaywalletledgerentry.FieldRemark))
+}
+
+// WhereHasRelayKey applies a predicate to check if query has an edge relay_key.
+func (f *RelayWalletLedgerEntryFilter) WhereHasRelayKey() {
+	f.Where(entql.HasEdge("relay_key"))
+}
+
+// WhereHasRelayKeyWith applies a predicate to check if query has an edge relay_key with a given conditions (other predicates).
+func (f *RelayWalletLedgerEntryFilter) WhereHasRelayKeyWith(preds ...predicate.RelayKey) {
+	f.Where(entql.HasEdgeWith("relay_key", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// addPredicate implements the predicateAdder interface.
 func (_q *RequestQuery) addPredicate(pred func(s *sql.Selector)) {
 	_q.predicates = append(_q.predicates, pred)
 }
@@ -2758,7 +3980,7 @@ type RequestFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *RequestFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[12].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[18].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})
@@ -3021,7 +4243,7 @@ type RequestExecutionFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *RequestExecutionFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[13].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[19].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})
@@ -3203,7 +4425,7 @@ type RoleFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *RoleFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[14].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[20].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})
@@ -3320,7 +4542,7 @@ type SystemFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *SystemFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[15].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[21].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})
@@ -3385,7 +4607,7 @@ type ThreadFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *ThreadFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[16].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[22].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})
@@ -3473,7 +4695,7 @@ type TraceFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *TraceFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[17].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[23].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})
@@ -3580,7 +4802,7 @@ type UsageLogFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *UsageLogFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[18].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[24].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})
@@ -3782,7 +5004,7 @@ type UserFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *UserFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[19].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[25].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})
@@ -3881,6 +5103,20 @@ func (f *UserFilter) WhereHasAPIKeysWith(preds ...predicate.APIKey) {
 	})))
 }
 
+// WhereHasRelayKeys applies a predicate to check if query has an edge relay_keys.
+func (f *UserFilter) WhereHasRelayKeys() {
+	f.Where(entql.HasEdge("relay_keys"))
+}
+
+// WhereHasRelayKeysWith applies a predicate to check if query has an edge relay_keys with a given conditions (other predicates).
+func (f *UserFilter) WhereHasRelayKeysWith(preds ...predicate.RelayKey) {
+	f.Where(entql.HasEdgeWith("relay_keys", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
 // WhereHasRoles applies a predicate to check if query has an edge roles.
 func (f *UserFilter) WhereHasRoles() {
 	f.Where(entql.HasEdge("roles"))
@@ -3966,7 +5202,7 @@ type UserProjectFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *UserProjectFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[20].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[26].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})
@@ -4064,7 +5300,7 @@ type UserRoleFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *UserRoleFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[21].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[27].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})

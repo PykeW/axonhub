@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/looplj/axonhub/internal/ent/apikey"
 	"github.com/looplj/axonhub/internal/ent/project"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
 	"github.com/looplj/axonhub/internal/ent/user"
 	"github.com/looplj/axonhub/internal/objects"
 )
@@ -57,11 +58,13 @@ type APIKeyEdges struct {
 	Project *Project `json:"project,omitempty"`
 	// Requests holds the value of the requests edge.
 	Requests []*Request `json:"requests,omitempty"`
+	// RelayKey holds the value of the relay_key edge.
+	RelayKey *RelayKey `json:"relay_key,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 	// totalCount holds the count of the edges above.
-	totalCount [3]map[string]int
+	totalCount [4]map[string]int
 
 	namedRequests map[string][]*Request
 }
@@ -95,6 +98,17 @@ func (e APIKeyEdges) RequestsOrErr() ([]*Request, error) {
 		return e.Requests, nil
 	}
 	return nil, &NotLoadedError{edge: "requests"}
+}
+
+// RelayKeyOrErr returns the RelayKey value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e APIKeyEdges) RelayKeyOrErr() (*RelayKey, error) {
+	if e.RelayKey != nil {
+		return e.RelayKey, nil
+	} else if e.loadedTypes[3] {
+		return nil, &NotFoundError{label: relaykey.Label}
+	}
+	return nil, &NotLoadedError{edge: "relay_key"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -227,6 +241,11 @@ func (_m *APIKey) QueryProject() *ProjectQuery {
 // QueryRequests queries the "requests" edge of the APIKey entity.
 func (_m *APIKey) QueryRequests() *RequestQuery {
 	return NewAPIKeyClient(_m.config).QueryRequests(_m)
+}
+
+// QueryRelayKey queries the "relay_key" edge of the APIKey entity.
+func (_m *APIKey) QueryRelayKey() *RelayKeyQuery {
+	return NewAPIKeyClient(_m.config).QueryRelayKey(_m)
 }
 
 // Update returns a builder for updating this APIKey.

@@ -22,6 +22,12 @@ import (
 	"github.com/looplj/axonhub/internal/ent/prompt"
 	"github.com/looplj/axonhub/internal/ent/promptprotectionrule"
 	"github.com/looplj/axonhub/internal/ent/providerquotastatus"
+	"github.com/looplj/axonhub/internal/ent/relaydailyusagesummary"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
+	"github.com/looplj/axonhub/internal/ent/relayproduct"
+	"github.com/looplj/axonhub/internal/ent/relayproductchannel"
+	"github.com/looplj/axonhub/internal/ent/relaywallet"
+	"github.com/looplj/axonhub/internal/ent/relaywalletledgerentry"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/ent/requestexecution"
 	"github.com/looplj/axonhub/internal/ent/role"
@@ -174,6 +180,17 @@ func (_q *APIKeyQuery) collectField(ctx context.Context, oneNode bool, opCtx *gr
 			_q.WithNamedRequests(alias, func(wq *RequestQuery) {
 				*wq = *query
 			})
+
+		case "relayKey":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelayKeyClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, relaykeyImplementors)...); err != nil {
+				return err
+			}
+			_q.withRelayKey = query
 		case "createdAt":
 			if _, ok := fieldSeen[apikey.FieldCreatedAt]; !ok {
 				selectedFields = append(selectedFields, apikey.FieldCreatedAt)
@@ -599,6 +616,95 @@ func (_q *ChannelQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 				return err
 			}
 			_q.WithNamedChannelModelPrices(alias, func(wq *ChannelModelPriceQuery) {
+				*wq = *query
+			})
+
+		case "relayProductBindings":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelayProductChannelClient{config: _q.config}).Query()
+			)
+			args := newRelayProductChannelPaginateArgs(fieldArgs(ctx, new(RelayProductChannelWhereInput), path...))
+			if err := validateFirstLast(args.first, args.last); err != nil {
+				return fmt.Errorf("validate first and last in path %q: %w", path, err)
+			}
+			pager, err := newRelayProductChannelPager(args.opts, args.last != nil)
+			if err != nil {
+				return fmt.Errorf("create new pager in path %q: %w", path, err)
+			}
+			if query, err = pager.applyFilter(query); err != nil {
+				return err
+			}
+			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
+			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
+				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
+				if hasPagination || ignoredEdges {
+					query := query.Clone()
+					_q.loadTotal = append(_q.loadTotal, func(ctx context.Context, nodes []*Channel) error {
+						ids := make([]driver.Value, len(nodes))
+						for i := range nodes {
+							ids[i] = nodes[i].ID
+						}
+						var v []struct {
+							NodeID int `sql:"channel_id"`
+							Count  int `sql:"count"`
+						}
+						query.Where(func(s *sql.Selector) {
+							s.Where(sql.InValues(s.C(channel.RelayProductBindingsColumn), ids...))
+						})
+						if err := query.GroupBy(channel.RelayProductBindingsColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+							return err
+						}
+						m := make(map[int]int, len(v))
+						for i := range v {
+							m[v[i].NodeID] = v[i].Count
+						}
+						for i := range nodes {
+							n := m[nodes[i].ID]
+							if nodes[i].Edges.totalCount[5] == nil {
+								nodes[i].Edges.totalCount[5] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[5][alias] = n
+						}
+						return nil
+					})
+				} else {
+					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Channel) error {
+						for i := range nodes {
+							n := len(nodes[i].Edges.RelayProductBindings)
+							if nodes[i].Edges.totalCount[5] == nil {
+								nodes[i].Edges.totalCount[5] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[5][alias] = n
+						}
+						return nil
+					})
+				}
+			}
+			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
+				continue
+			}
+			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
+				return err
+			}
+			path = append(path, edgesField, nodeField)
+			if field := collectedField(ctx, path...); field != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, relayproductchannelImplementors)...); err != nil {
+					return err
+				}
+			}
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				if oneNode {
+					pager.applyOrder(query.Limit(limit))
+				} else {
+					modify := entgql.LimitPerRow(channel.RelayProductBindingsColumn, limit, pager.orderExpr(query))
+					query.modifiers = append(query.modifiers, modify)
+				}
+			} else {
+				query = pager.applyOrder(query)
+			}
+			_q.WithNamedRelayProductBindings(alias, func(wq *RelayProductChannelQuery) {
 				*wq = *query
 			})
 
@@ -2041,6 +2147,95 @@ func (_q *ProjectQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 				*wq = *query
 			})
 
+		case "relayKeys":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelayKeyClient{config: _q.config}).Query()
+			)
+			args := newRelayKeyPaginateArgs(fieldArgs(ctx, new(RelayKeyWhereInput), path...))
+			if err := validateFirstLast(args.first, args.last); err != nil {
+				return fmt.Errorf("validate first and last in path %q: %w", path, err)
+			}
+			pager, err := newRelayKeyPager(args.opts, args.last != nil)
+			if err != nil {
+				return fmt.Errorf("create new pager in path %q: %w", path, err)
+			}
+			if query, err = pager.applyFilter(query); err != nil {
+				return err
+			}
+			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
+			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
+				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
+				if hasPagination || ignoredEdges {
+					query := query.Clone()
+					_q.loadTotal = append(_q.loadTotal, func(ctx context.Context, nodes []*Project) error {
+						ids := make([]driver.Value, len(nodes))
+						for i := range nodes {
+							ids[i] = nodes[i].ID
+						}
+						var v []struct {
+							NodeID int `sql:"project_id"`
+							Count  int `sql:"count"`
+						}
+						query.Where(func(s *sql.Selector) {
+							s.Where(sql.InValues(s.C(project.RelayKeysColumn), ids...))
+						})
+						if err := query.GroupBy(project.RelayKeysColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+							return err
+						}
+						m := make(map[int]int, len(v))
+						for i := range v {
+							m[v[i].NodeID] = v[i].Count
+						}
+						for i := range nodes {
+							n := m[nodes[i].ID]
+							if nodes[i].Edges.totalCount[3] == nil {
+								nodes[i].Edges.totalCount[3] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[3][alias] = n
+						}
+						return nil
+					})
+				} else {
+					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Project) error {
+						for i := range nodes {
+							n := len(nodes[i].Edges.RelayKeys)
+							if nodes[i].Edges.totalCount[3] == nil {
+								nodes[i].Edges.totalCount[3] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[3][alias] = n
+						}
+						return nil
+					})
+				}
+			}
+			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
+				continue
+			}
+			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
+				return err
+			}
+			path = append(path, edgesField, nodeField)
+			if field := collectedField(ctx, path...); field != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, relaykeyImplementors)...); err != nil {
+					return err
+				}
+			}
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				if oneNode {
+					pager.applyOrder(query.Limit(limit))
+				} else {
+					modify := entgql.LimitPerRow(project.RelayKeysColumn, limit, pager.orderExpr(query))
+					query.modifiers = append(query.modifiers, modify)
+				}
+			} else {
+				query = pager.applyOrder(query)
+			}
+			_q.WithNamedRelayKeys(alias, func(wq *RelayKeyQuery) {
+				*wq = *query
+			})
+
 		case "requests":
 			var (
 				alias = field.Alias
@@ -2084,10 +2279,10 @@ func (_q *ProjectQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 						}
 						for i := range nodes {
 							n := m[nodes[i].ID]
-							if nodes[i].Edges.totalCount[3] == nil {
-								nodes[i].Edges.totalCount[3] = make(map[string]int)
+							if nodes[i].Edges.totalCount[4] == nil {
+								nodes[i].Edges.totalCount[4] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[3][alias] = n
+							nodes[i].Edges.totalCount[4][alias] = n
 						}
 						return nil
 					})
@@ -2095,10 +2290,10 @@ func (_q *ProjectQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Project) error {
 						for i := range nodes {
 							n := len(nodes[i].Edges.Requests)
-							if nodes[i].Edges.totalCount[3] == nil {
-								nodes[i].Edges.totalCount[3] = make(map[string]int)
+							if nodes[i].Edges.totalCount[4] == nil {
+								nodes[i].Edges.totalCount[4] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[3][alias] = n
+							nodes[i].Edges.totalCount[4][alias] = n
 						}
 						return nil
 					})
@@ -2173,10 +2368,10 @@ func (_q *ProjectQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 						}
 						for i := range nodes {
 							n := m[nodes[i].ID]
-							if nodes[i].Edges.totalCount[4] == nil {
-								nodes[i].Edges.totalCount[4] = make(map[string]int)
+							if nodes[i].Edges.totalCount[5] == nil {
+								nodes[i].Edges.totalCount[5] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[4][alias] = n
+							nodes[i].Edges.totalCount[5][alias] = n
 						}
 						return nil
 					})
@@ -2184,10 +2379,10 @@ func (_q *ProjectQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Project) error {
 						for i := range nodes {
 							n := len(nodes[i].Edges.UsageLogs)
-							if nodes[i].Edges.totalCount[4] == nil {
-								nodes[i].Edges.totalCount[4] = make(map[string]int)
+							if nodes[i].Edges.totalCount[5] == nil {
+								nodes[i].Edges.totalCount[5] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[4][alias] = n
+							nodes[i].Edges.totalCount[5][alias] = n
 						}
 						return nil
 					})
@@ -2262,10 +2457,10 @@ func (_q *ProjectQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 						}
 						for i := range nodes {
 							n := m[nodes[i].ID]
-							if nodes[i].Edges.totalCount[5] == nil {
-								nodes[i].Edges.totalCount[5] = make(map[string]int)
+							if nodes[i].Edges.totalCount[6] == nil {
+								nodes[i].Edges.totalCount[6] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[5][alias] = n
+							nodes[i].Edges.totalCount[6][alias] = n
 						}
 						return nil
 					})
@@ -2273,10 +2468,10 @@ func (_q *ProjectQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Project) error {
 						for i := range nodes {
 							n := len(nodes[i].Edges.Threads)
-							if nodes[i].Edges.totalCount[5] == nil {
-								nodes[i].Edges.totalCount[5] = make(map[string]int)
+							if nodes[i].Edges.totalCount[6] == nil {
+								nodes[i].Edges.totalCount[6] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[5][alias] = n
+							nodes[i].Edges.totalCount[6][alias] = n
 						}
 						return nil
 					})
@@ -2351,10 +2546,10 @@ func (_q *ProjectQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 						}
 						for i := range nodes {
 							n := m[nodes[i].ID]
-							if nodes[i].Edges.totalCount[6] == nil {
-								nodes[i].Edges.totalCount[6] = make(map[string]int)
+							if nodes[i].Edges.totalCount[7] == nil {
+								nodes[i].Edges.totalCount[7] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[6][alias] = n
+							nodes[i].Edges.totalCount[7][alias] = n
 						}
 						return nil
 					})
@@ -2362,10 +2557,10 @@ func (_q *ProjectQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Project) error {
 						for i := range nodes {
 							n := len(nodes[i].Edges.Traces)
-							if nodes[i].Edges.totalCount[6] == nil {
-								nodes[i].Edges.totalCount[6] = make(map[string]int)
+							if nodes[i].Edges.totalCount[7] == nil {
+								nodes[i].Edges.totalCount[7] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[6][alias] = n
+							nodes[i].Edges.totalCount[7][alias] = n
 						}
 						return nil
 					})
@@ -2444,10 +2639,10 @@ func (_q *ProjectQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 						}
 						for i := range nodes {
 							n := m[nodes[i].ID]
-							if nodes[i].Edges.totalCount[7] == nil {
-								nodes[i].Edges.totalCount[7] = make(map[string]int)
+							if nodes[i].Edges.totalCount[8] == nil {
+								nodes[i].Edges.totalCount[8] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[7][alias] = n
+							nodes[i].Edges.totalCount[8][alias] = n
 						}
 						return nil
 					})
@@ -2455,10 +2650,10 @@ func (_q *ProjectQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Project) error {
 						for i := range nodes {
 							n := len(nodes[i].Edges.Prompts)
-							if nodes[i].Edges.totalCount[7] == nil {
-								nodes[i].Edges.totalCount[7] = make(map[string]int)
+							if nodes[i].Edges.totalCount[8] == nil {
+								nodes[i].Edges.totalCount[8] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[7][alias] = n
+							nodes[i].Edges.totalCount[8][alias] = n
 						}
 						return nil
 					})
@@ -2533,10 +2728,10 @@ func (_q *ProjectQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 						}
 						for i := range nodes {
 							n := m[nodes[i].ID]
-							if nodes[i].Edges.totalCount[8] == nil {
-								nodes[i].Edges.totalCount[8] = make(map[string]int)
+							if nodes[i].Edges.totalCount[9] == nil {
+								nodes[i].Edges.totalCount[9] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[8][alias] = n
+							nodes[i].Edges.totalCount[9][alias] = n
 						}
 						return nil
 					})
@@ -2544,10 +2739,10 @@ func (_q *ProjectQuery) collectField(ctx context.Context, oneNode bool, opCtx *g
 					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*Project) error {
 						for i := range nodes {
 							n := len(nodes[i].Edges.ProjectUsers)
-							if nodes[i].Edges.totalCount[8] == nil {
-								nodes[i].Edges.totalCount[8] = make(map[string]int)
+							if nodes[i].Edges.totalCount[9] == nil {
+								nodes[i].Edges.totalCount[9] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[8][alias] = n
+							nodes[i].Edges.totalCount[9][alias] = n
 						}
 						return nil
 					})
@@ -3157,6 +3352,1372 @@ func newProviderQuotaStatusPaginateArgs(rv map[string]any) *providerquotastatusP
 	}
 	if v, ok := rv[whereField].(*ProviderQuotaStatusWhereInput); ok {
 		args.opts = append(args.opts, WithProviderQuotaStatusFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *RelayDailyUsageSummaryQuery) CollectFields(ctx context.Context, satisfies ...string) (*RelayDailyUsageSummaryQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *RelayDailyUsageSummaryQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(relaydailyusagesummary.Columns))
+		selectedFields = []string{relaydailyusagesummary.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "relayKey":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelayKeyClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, relaykeyImplementors)...); err != nil {
+				return err
+			}
+			_q.withRelayKey = query
+			if _, ok := fieldSeen[relaydailyusagesummary.FieldRelayKeyID]; !ok {
+				selectedFields = append(selectedFields, relaydailyusagesummary.FieldRelayKeyID)
+				fieldSeen[relaydailyusagesummary.FieldRelayKeyID] = struct{}{}
+			}
+		case "createdAt":
+			if _, ok := fieldSeen[relaydailyusagesummary.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, relaydailyusagesummary.FieldCreatedAt)
+				fieldSeen[relaydailyusagesummary.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[relaydailyusagesummary.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, relaydailyusagesummary.FieldUpdatedAt)
+				fieldSeen[relaydailyusagesummary.FieldUpdatedAt] = struct{}{}
+			}
+		case "relayKeyID":
+			if _, ok := fieldSeen[relaydailyusagesummary.FieldRelayKeyID]; !ok {
+				selectedFields = append(selectedFields, relaydailyusagesummary.FieldRelayKeyID)
+				fieldSeen[relaydailyusagesummary.FieldRelayKeyID] = struct{}{}
+			}
+		case "projectID":
+			if _, ok := fieldSeen[relaydailyusagesummary.FieldProjectID]; !ok {
+				selectedFields = append(selectedFields, relaydailyusagesummary.FieldProjectID)
+				fieldSeen[relaydailyusagesummary.FieldProjectID] = struct{}{}
+			}
+		case "statDate":
+			if _, ok := fieldSeen[relaydailyusagesummary.FieldStatDate]; !ok {
+				selectedFields = append(selectedFields, relaydailyusagesummary.FieldStatDate)
+				fieldSeen[relaydailyusagesummary.FieldStatDate] = struct{}{}
+			}
+		case "requestCount":
+			if _, ok := fieldSeen[relaydailyusagesummary.FieldRequestCount]; !ok {
+				selectedFields = append(selectedFields, relaydailyusagesummary.FieldRequestCount)
+				fieldSeen[relaydailyusagesummary.FieldRequestCount] = struct{}{}
+			}
+		case "totalTokens":
+			if _, ok := fieldSeen[relaydailyusagesummary.FieldTotalTokens]; !ok {
+				selectedFields = append(selectedFields, relaydailyusagesummary.FieldTotalTokens)
+				fieldSeen[relaydailyusagesummary.FieldTotalTokens] = struct{}{}
+			}
+		case "totalCharge":
+			if _, ok := fieldSeen[relaydailyusagesummary.FieldTotalCharge]; !ok {
+				selectedFields = append(selectedFields, relaydailyusagesummary.FieldTotalCharge)
+				fieldSeen[relaydailyusagesummary.FieldTotalCharge] = struct{}{}
+			}
+		case "totalUpstreamCost":
+			if _, ok := fieldSeen[relaydailyusagesummary.FieldTotalUpstreamCost]; !ok {
+				selectedFields = append(selectedFields, relaydailyusagesummary.FieldTotalUpstreamCost)
+				fieldSeen[relaydailyusagesummary.FieldTotalUpstreamCost] = struct{}{}
+			}
+		case "lastRequestID":
+			if _, ok := fieldSeen[relaydailyusagesummary.FieldLastRequestID]; !ok {
+				selectedFields = append(selectedFields, relaydailyusagesummary.FieldLastRequestID)
+				fieldSeen[relaydailyusagesummary.FieldLastRequestID] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type relaydailyusagesummaryPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []RelayDailyUsageSummaryPaginateOption
+}
+
+func newRelayDailyUsageSummaryPaginateArgs(rv map[string]any) *relaydailyusagesummaryPaginateArgs {
+	args := &relaydailyusagesummaryPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &RelayDailyUsageSummaryOrder{Field: &RelayDailyUsageSummaryOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithRelayDailyUsageSummaryOrder(order))
+			}
+		case *RelayDailyUsageSummaryOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithRelayDailyUsageSummaryOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*RelayDailyUsageSummaryWhereInput); ok {
+		args.opts = append(args.opts, WithRelayDailyUsageSummaryFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *RelayKeyQuery) CollectFields(ctx context.Context, satisfies ...string) (*RelayKeyQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *RelayKeyQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(relaykey.Columns))
+		selectedFields = []string{relaykey.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "apiKey":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&APIKeyClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, apikeyImplementors)...); err != nil {
+				return err
+			}
+			_q.withAPIKey = query
+			if _, ok := fieldSeen[relaykey.FieldAPIKeyID]; !ok {
+				selectedFields = append(selectedFields, relaykey.FieldAPIKeyID)
+				fieldSeen[relaykey.FieldAPIKeyID] = struct{}{}
+			}
+
+		case "project":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ProjectClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, projectImplementors)...); err != nil {
+				return err
+			}
+			_q.withProject = query
+			if _, ok := fieldSeen[relaykey.FieldProjectID]; !ok {
+				selectedFields = append(selectedFields, relaykey.FieldProjectID)
+				fieldSeen[relaykey.FieldProjectID] = struct{}{}
+			}
+
+		case "product":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelayProductClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, relayproductImplementors)...); err != nil {
+				return err
+			}
+			_q.withProduct = query
+			if _, ok := fieldSeen[relaykey.FieldProductID]; !ok {
+				selectedFields = append(selectedFields, relaykey.FieldProductID)
+				fieldSeen[relaykey.FieldProductID] = struct{}{}
+			}
+
+		case "ownerUser":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withOwnerUser = query
+			if _, ok := fieldSeen[relaykey.FieldOwnerUserID]; !ok {
+				selectedFields = append(selectedFields, relaykey.FieldOwnerUserID)
+				fieldSeen[relaykey.FieldOwnerUserID] = struct{}{}
+			}
+
+		case "wallet":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelayWalletClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, relaywalletImplementors)...); err != nil {
+				return err
+			}
+			_q.withWallet = query
+
+		case "ledgerEntries":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelayWalletLedgerEntryClient{config: _q.config}).Query()
+			)
+			args := newRelayWalletLedgerEntryPaginateArgs(fieldArgs(ctx, new(RelayWalletLedgerEntryWhereInput), path...))
+			if err := validateFirstLast(args.first, args.last); err != nil {
+				return fmt.Errorf("validate first and last in path %q: %w", path, err)
+			}
+			pager, err := newRelayWalletLedgerEntryPager(args.opts, args.last != nil)
+			if err != nil {
+				return fmt.Errorf("create new pager in path %q: %w", path, err)
+			}
+			if query, err = pager.applyFilter(query); err != nil {
+				return err
+			}
+			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
+			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
+				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
+				if hasPagination || ignoredEdges {
+					query := query.Clone()
+					_q.loadTotal = append(_q.loadTotal, func(ctx context.Context, nodes []*RelayKey) error {
+						ids := make([]driver.Value, len(nodes))
+						for i := range nodes {
+							ids[i] = nodes[i].ID
+						}
+						var v []struct {
+							NodeID int `sql:"relay_key_id"`
+							Count  int `sql:"count"`
+						}
+						query.Where(func(s *sql.Selector) {
+							s.Where(sql.InValues(s.C(relaykey.LedgerEntriesColumn), ids...))
+						})
+						if err := query.GroupBy(relaykey.LedgerEntriesColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+							return err
+						}
+						m := make(map[int]int, len(v))
+						for i := range v {
+							m[v[i].NodeID] = v[i].Count
+						}
+						for i := range nodes {
+							n := m[nodes[i].ID]
+							if nodes[i].Edges.totalCount[5] == nil {
+								nodes[i].Edges.totalCount[5] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[5][alias] = n
+						}
+						return nil
+					})
+				} else {
+					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*RelayKey) error {
+						for i := range nodes {
+							n := len(nodes[i].Edges.LedgerEntries)
+							if nodes[i].Edges.totalCount[5] == nil {
+								nodes[i].Edges.totalCount[5] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[5][alias] = n
+						}
+						return nil
+					})
+				}
+			}
+			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
+				continue
+			}
+			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
+				return err
+			}
+			path = append(path, edgesField, nodeField)
+			if field := collectedField(ctx, path...); field != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, relaywalletledgerentryImplementors)...); err != nil {
+					return err
+				}
+			}
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				if oneNode {
+					pager.applyOrder(query.Limit(limit))
+				} else {
+					modify := entgql.LimitPerRow(relaykey.LedgerEntriesColumn, limit, pager.orderExpr(query))
+					query.modifiers = append(query.modifiers, modify)
+				}
+			} else {
+				query = pager.applyOrder(query)
+			}
+			_q.WithNamedLedgerEntries(alias, func(wq *RelayWalletLedgerEntryQuery) {
+				*wq = *query
+			})
+
+		case "dailyUsageSummaries":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelayDailyUsageSummaryClient{config: _q.config}).Query()
+			)
+			args := newRelayDailyUsageSummaryPaginateArgs(fieldArgs(ctx, new(RelayDailyUsageSummaryWhereInput), path...))
+			if err := validateFirstLast(args.first, args.last); err != nil {
+				return fmt.Errorf("validate first and last in path %q: %w", path, err)
+			}
+			pager, err := newRelayDailyUsageSummaryPager(args.opts, args.last != nil)
+			if err != nil {
+				return fmt.Errorf("create new pager in path %q: %w", path, err)
+			}
+			if query, err = pager.applyFilter(query); err != nil {
+				return err
+			}
+			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
+			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
+				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
+				if hasPagination || ignoredEdges {
+					query := query.Clone()
+					_q.loadTotal = append(_q.loadTotal, func(ctx context.Context, nodes []*RelayKey) error {
+						ids := make([]driver.Value, len(nodes))
+						for i := range nodes {
+							ids[i] = nodes[i].ID
+						}
+						var v []struct {
+							NodeID int `sql:"relay_key_id"`
+							Count  int `sql:"count"`
+						}
+						query.Where(func(s *sql.Selector) {
+							s.Where(sql.InValues(s.C(relaykey.DailyUsageSummariesColumn), ids...))
+						})
+						if err := query.GroupBy(relaykey.DailyUsageSummariesColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+							return err
+						}
+						m := make(map[int]int, len(v))
+						for i := range v {
+							m[v[i].NodeID] = v[i].Count
+						}
+						for i := range nodes {
+							n := m[nodes[i].ID]
+							if nodes[i].Edges.totalCount[6] == nil {
+								nodes[i].Edges.totalCount[6] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[6][alias] = n
+						}
+						return nil
+					})
+				} else {
+					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*RelayKey) error {
+						for i := range nodes {
+							n := len(nodes[i].Edges.DailyUsageSummaries)
+							if nodes[i].Edges.totalCount[6] == nil {
+								nodes[i].Edges.totalCount[6] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[6][alias] = n
+						}
+						return nil
+					})
+				}
+			}
+			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
+				continue
+			}
+			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
+				return err
+			}
+			path = append(path, edgesField, nodeField)
+			if field := collectedField(ctx, path...); field != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, relaydailyusagesummaryImplementors)...); err != nil {
+					return err
+				}
+			}
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				if oneNode {
+					pager.applyOrder(query.Limit(limit))
+				} else {
+					modify := entgql.LimitPerRow(relaykey.DailyUsageSummariesColumn, limit, pager.orderExpr(query))
+					query.modifiers = append(query.modifiers, modify)
+				}
+			} else {
+				query = pager.applyOrder(query)
+			}
+			_q.WithNamedDailyUsageSummaries(alias, func(wq *RelayDailyUsageSummaryQuery) {
+				*wq = *query
+			})
+		case "createdAt":
+			if _, ok := fieldSeen[relaykey.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, relaykey.FieldCreatedAt)
+				fieldSeen[relaykey.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[relaykey.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, relaykey.FieldUpdatedAt)
+				fieldSeen[relaykey.FieldUpdatedAt] = struct{}{}
+			}
+		case "apiKeyID":
+			if _, ok := fieldSeen[relaykey.FieldAPIKeyID]; !ok {
+				selectedFields = append(selectedFields, relaykey.FieldAPIKeyID)
+				fieldSeen[relaykey.FieldAPIKeyID] = struct{}{}
+			}
+		case "projectID":
+			if _, ok := fieldSeen[relaykey.FieldProjectID]; !ok {
+				selectedFields = append(selectedFields, relaykey.FieldProjectID)
+				fieldSeen[relaykey.FieldProjectID] = struct{}{}
+			}
+		case "productID":
+			if _, ok := fieldSeen[relaykey.FieldProductID]; !ok {
+				selectedFields = append(selectedFields, relaykey.FieldProductID)
+				fieldSeen[relaykey.FieldProductID] = struct{}{}
+			}
+		case "ownerUserID":
+			if _, ok := fieldSeen[relaykey.FieldOwnerUserID]; !ok {
+				selectedFields = append(selectedFields, relaykey.FieldOwnerUserID)
+				fieldSeen[relaykey.FieldOwnerUserID] = struct{}{}
+			}
+		case "displayName":
+			if _, ok := fieldSeen[relaykey.FieldDisplayName]; !ok {
+				selectedFields = append(selectedFields, relaykey.FieldDisplayName)
+				fieldSeen[relaykey.FieldDisplayName] = struct{}{}
+			}
+		case "status":
+			if _, ok := fieldSeen[relaykey.FieldStatus]; !ok {
+				selectedFields = append(selectedFields, relaykey.FieldStatus)
+				fieldSeen[relaykey.FieldStatus] = struct{}{}
+			}
+		case "balanceMode":
+			if _, ok := fieldSeen[relaykey.FieldBalanceMode]; !ok {
+				selectedFields = append(selectedFields, relaykey.FieldBalanceMode)
+				fieldSeen[relaykey.FieldBalanceMode] = struct{}{}
+			}
+		case "dailyRequestLimit":
+			if _, ok := fieldSeen[relaykey.FieldDailyRequestLimit]; !ok {
+				selectedFields = append(selectedFields, relaykey.FieldDailyRequestLimit)
+				fieldSeen[relaykey.FieldDailyRequestLimit] = struct{}{}
+			}
+		case "dailyTokenLimit":
+			if _, ok := fieldSeen[relaykey.FieldDailyTokenLimit]; !ok {
+				selectedFields = append(selectedFields, relaykey.FieldDailyTokenLimit)
+				fieldSeen[relaykey.FieldDailyTokenLimit] = struct{}{}
+			}
+		case "monthlyCostLimit":
+			if _, ok := fieldSeen[relaykey.FieldMonthlyCostLimit]; !ok {
+				selectedFields = append(selectedFields, relaykey.FieldMonthlyCostLimit)
+				fieldSeen[relaykey.FieldMonthlyCostLimit] = struct{}{}
+			}
+		case "concurrencyLimit":
+			if _, ok := fieldSeen[relaykey.FieldConcurrencyLimit]; !ok {
+				selectedFields = append(selectedFields, relaykey.FieldConcurrencyLimit)
+				fieldSeen[relaykey.FieldConcurrencyLimit] = struct{}{}
+			}
+		case "expiresAt":
+			if _, ok := fieldSeen[relaykey.FieldExpiresAt]; !ok {
+				selectedFields = append(selectedFields, relaykey.FieldExpiresAt)
+				fieldSeen[relaykey.FieldExpiresAt] = struct{}{}
+			}
+		case "lastUsedAt":
+			if _, ok := fieldSeen[relaykey.FieldLastUsedAt]; !ok {
+				selectedFields = append(selectedFields, relaykey.FieldLastUsedAt)
+				fieldSeen[relaykey.FieldLastUsedAt] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type relaykeyPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []RelayKeyPaginateOption
+}
+
+func newRelayKeyPaginateArgs(rv map[string]any) *relaykeyPaginateArgs {
+	args := &relaykeyPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &RelayKeyOrder{Field: &RelayKeyOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithRelayKeyOrder(order))
+			}
+		case *RelayKeyOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithRelayKeyOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*RelayKeyWhereInput); ok {
+		args.opts = append(args.opts, WithRelayKeyFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *RelayProductQuery) CollectFields(ctx context.Context, satisfies ...string) (*RelayProductQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *RelayProductQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(relayproduct.Columns))
+		selectedFields = []string{relayproduct.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "channelBindings":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelayProductChannelClient{config: _q.config}).Query()
+			)
+			args := newRelayProductChannelPaginateArgs(fieldArgs(ctx, new(RelayProductChannelWhereInput), path...))
+			if err := validateFirstLast(args.first, args.last); err != nil {
+				return fmt.Errorf("validate first and last in path %q: %w", path, err)
+			}
+			pager, err := newRelayProductChannelPager(args.opts, args.last != nil)
+			if err != nil {
+				return fmt.Errorf("create new pager in path %q: %w", path, err)
+			}
+			if query, err = pager.applyFilter(query); err != nil {
+				return err
+			}
+			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
+			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
+				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
+				if hasPagination || ignoredEdges {
+					query := query.Clone()
+					_q.loadTotal = append(_q.loadTotal, func(ctx context.Context, nodes []*RelayProduct) error {
+						ids := make([]driver.Value, len(nodes))
+						for i := range nodes {
+							ids[i] = nodes[i].ID
+						}
+						var v []struct {
+							NodeID int `sql:"product_id"`
+							Count  int `sql:"count"`
+						}
+						query.Where(func(s *sql.Selector) {
+							s.Where(sql.InValues(s.C(relayproduct.ChannelBindingsColumn), ids...))
+						})
+						if err := query.GroupBy(relayproduct.ChannelBindingsColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+							return err
+						}
+						m := make(map[int]int, len(v))
+						for i := range v {
+							m[v[i].NodeID] = v[i].Count
+						}
+						for i := range nodes {
+							n := m[nodes[i].ID]
+							if nodes[i].Edges.totalCount[0] == nil {
+								nodes[i].Edges.totalCount[0] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[0][alias] = n
+						}
+						return nil
+					})
+				} else {
+					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*RelayProduct) error {
+						for i := range nodes {
+							n := len(nodes[i].Edges.ChannelBindings)
+							if nodes[i].Edges.totalCount[0] == nil {
+								nodes[i].Edges.totalCount[0] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[0][alias] = n
+						}
+						return nil
+					})
+				}
+			}
+			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
+				continue
+			}
+			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
+				return err
+			}
+			path = append(path, edgesField, nodeField)
+			if field := collectedField(ctx, path...); field != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, relayproductchannelImplementors)...); err != nil {
+					return err
+				}
+			}
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				if oneNode {
+					pager.applyOrder(query.Limit(limit))
+				} else {
+					modify := entgql.LimitPerRow(relayproduct.ChannelBindingsColumn, limit, pager.orderExpr(query))
+					query.modifiers = append(query.modifiers, modify)
+				}
+			} else {
+				query = pager.applyOrder(query)
+			}
+			_q.WithNamedChannelBindings(alias, func(wq *RelayProductChannelQuery) {
+				*wq = *query
+			})
+
+		case "relayKeys":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelayKeyClient{config: _q.config}).Query()
+			)
+			args := newRelayKeyPaginateArgs(fieldArgs(ctx, new(RelayKeyWhereInput), path...))
+			if err := validateFirstLast(args.first, args.last); err != nil {
+				return fmt.Errorf("validate first and last in path %q: %w", path, err)
+			}
+			pager, err := newRelayKeyPager(args.opts, args.last != nil)
+			if err != nil {
+				return fmt.Errorf("create new pager in path %q: %w", path, err)
+			}
+			if query, err = pager.applyFilter(query); err != nil {
+				return err
+			}
+			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
+			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
+				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
+				if hasPagination || ignoredEdges {
+					query := query.Clone()
+					_q.loadTotal = append(_q.loadTotal, func(ctx context.Context, nodes []*RelayProduct) error {
+						ids := make([]driver.Value, len(nodes))
+						for i := range nodes {
+							ids[i] = nodes[i].ID
+						}
+						var v []struct {
+							NodeID int `sql:"product_id"`
+							Count  int `sql:"count"`
+						}
+						query.Where(func(s *sql.Selector) {
+							s.Where(sql.InValues(s.C(relayproduct.RelayKeysColumn), ids...))
+						})
+						if err := query.GroupBy(relayproduct.RelayKeysColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+							return err
+						}
+						m := make(map[int]int, len(v))
+						for i := range v {
+							m[v[i].NodeID] = v[i].Count
+						}
+						for i := range nodes {
+							n := m[nodes[i].ID]
+							if nodes[i].Edges.totalCount[1] == nil {
+								nodes[i].Edges.totalCount[1] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[1][alias] = n
+						}
+						return nil
+					})
+				} else {
+					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*RelayProduct) error {
+						for i := range nodes {
+							n := len(nodes[i].Edges.RelayKeys)
+							if nodes[i].Edges.totalCount[1] == nil {
+								nodes[i].Edges.totalCount[1] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[1][alias] = n
+						}
+						return nil
+					})
+				}
+			}
+			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
+				continue
+			}
+			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
+				return err
+			}
+			path = append(path, edgesField, nodeField)
+			if field := collectedField(ctx, path...); field != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, relaykeyImplementors)...); err != nil {
+					return err
+				}
+			}
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				if oneNode {
+					pager.applyOrder(query.Limit(limit))
+				} else {
+					modify := entgql.LimitPerRow(relayproduct.RelayKeysColumn, limit, pager.orderExpr(query))
+					query.modifiers = append(query.modifiers, modify)
+				}
+			} else {
+				query = pager.applyOrder(query)
+			}
+			_q.WithNamedRelayKeys(alias, func(wq *RelayKeyQuery) {
+				*wq = *query
+			})
+		case "createdAt":
+			if _, ok := fieldSeen[relayproduct.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, relayproduct.FieldCreatedAt)
+				fieldSeen[relayproduct.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[relayproduct.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, relayproduct.FieldUpdatedAt)
+				fieldSeen[relayproduct.FieldUpdatedAt] = struct{}{}
+			}
+		case "code":
+			if _, ok := fieldSeen[relayproduct.FieldCode]; !ok {
+				selectedFields = append(selectedFields, relayproduct.FieldCode)
+				fieldSeen[relayproduct.FieldCode] = struct{}{}
+			}
+		case "name":
+			if _, ok := fieldSeen[relayproduct.FieldName]; !ok {
+				selectedFields = append(selectedFields, relayproduct.FieldName)
+				fieldSeen[relayproduct.FieldName] = struct{}{}
+			}
+		case "providerType":
+			if _, ok := fieldSeen[relayproduct.FieldProviderType]; !ok {
+				selectedFields = append(selectedFields, relayproduct.FieldProviderType)
+				fieldSeen[relayproduct.FieldProviderType] = struct{}{}
+			}
+		case "accessMode":
+			if _, ok := fieldSeen[relayproduct.FieldAccessMode]; !ok {
+				selectedFields = append(selectedFields, relayproduct.FieldAccessMode)
+				fieldSeen[relayproduct.FieldAccessMode] = struct{}{}
+			}
+		case "billingMode":
+			if _, ok := fieldSeen[relayproduct.FieldBillingMode]; !ok {
+				selectedFields = append(selectedFields, relayproduct.FieldBillingMode)
+				fieldSeen[relayproduct.FieldBillingMode] = struct{}{}
+			}
+		case "status":
+			if _, ok := fieldSeen[relayproduct.FieldStatus]; !ok {
+				selectedFields = append(selectedFields, relayproduct.FieldStatus)
+				fieldSeen[relayproduct.FieldStatus] = struct{}{}
+			}
+		case "currency":
+			if _, ok := fieldSeen[relayproduct.FieldCurrency]; !ok {
+				selectedFields = append(selectedFields, relayproduct.FieldCurrency)
+				fieldSeen[relayproduct.FieldCurrency] = struct{}{}
+			}
+		case "listPriceConfig":
+			if _, ok := fieldSeen[relayproduct.FieldListPriceConfig]; !ok {
+				selectedFields = append(selectedFields, relayproduct.FieldListPriceConfig)
+				fieldSeen[relayproduct.FieldListPriceConfig] = struct{}{}
+			}
+		case "allowedModels":
+			if _, ok := fieldSeen[relayproduct.FieldAllowedModels]; !ok {
+				selectedFields = append(selectedFields, relayproduct.FieldAllowedModels)
+				fieldSeen[relayproduct.FieldAllowedModels] = struct{}{}
+			}
+		case "requestTimeoutSeconds":
+			if _, ok := fieldSeen[relayproduct.FieldRequestTimeoutSeconds]; !ok {
+				selectedFields = append(selectedFields, relayproduct.FieldRequestTimeoutSeconds)
+				fieldSeen[relayproduct.FieldRequestTimeoutSeconds] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type relayproductPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []RelayProductPaginateOption
+}
+
+func newRelayProductPaginateArgs(rv map[string]any) *relayproductPaginateArgs {
+	args := &relayproductPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &RelayProductOrder{Field: &RelayProductOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithRelayProductOrder(order))
+			}
+		case *RelayProductOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithRelayProductOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*RelayProductWhereInput); ok {
+		args.opts = append(args.opts, WithRelayProductFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *RelayProductChannelQuery) CollectFields(ctx context.Context, satisfies ...string) (*RelayProductChannelQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *RelayProductChannelQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(relayproductchannel.Columns))
+		selectedFields = []string{relayproductchannel.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "product":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelayProductClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, relayproductImplementors)...); err != nil {
+				return err
+			}
+			_q.withProduct = query
+			if _, ok := fieldSeen[relayproductchannel.FieldProductID]; !ok {
+				selectedFields = append(selectedFields, relayproductchannel.FieldProductID)
+				fieldSeen[relayproductchannel.FieldProductID] = struct{}{}
+			}
+
+		case "channel":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ChannelClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, channelImplementors)...); err != nil {
+				return err
+			}
+			_q.withChannel = query
+			if _, ok := fieldSeen[relayproductchannel.FieldChannelID]; !ok {
+				selectedFields = append(selectedFields, relayproductchannel.FieldChannelID)
+				fieldSeen[relayproductchannel.FieldChannelID] = struct{}{}
+			}
+		case "createdAt":
+			if _, ok := fieldSeen[relayproductchannel.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, relayproductchannel.FieldCreatedAt)
+				fieldSeen[relayproductchannel.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[relayproductchannel.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, relayproductchannel.FieldUpdatedAt)
+				fieldSeen[relayproductchannel.FieldUpdatedAt] = struct{}{}
+			}
+		case "productID":
+			if _, ok := fieldSeen[relayproductchannel.FieldProductID]; !ok {
+				selectedFields = append(selectedFields, relayproductchannel.FieldProductID)
+				fieldSeen[relayproductchannel.FieldProductID] = struct{}{}
+			}
+		case "channelID":
+			if _, ok := fieldSeen[relayproductchannel.FieldChannelID]; !ok {
+				selectedFields = append(selectedFields, relayproductchannel.FieldChannelID)
+				fieldSeen[relayproductchannel.FieldChannelID] = struct{}{}
+			}
+		case "priority":
+			if _, ok := fieldSeen[relayproductchannel.FieldPriority]; !ok {
+				selectedFields = append(selectedFields, relayproductchannel.FieldPriority)
+				fieldSeen[relayproductchannel.FieldPriority] = struct{}{}
+			}
+		case "weight":
+			if _, ok := fieldSeen[relayproductchannel.FieldWeight]; !ok {
+				selectedFields = append(selectedFields, relayproductchannel.FieldWeight)
+				fieldSeen[relayproductchannel.FieldWeight] = struct{}{}
+			}
+		case "status":
+			if _, ok := fieldSeen[relayproductchannel.FieldStatus]; !ok {
+				selectedFields = append(selectedFields, relayproductchannel.FieldStatus)
+				fieldSeen[relayproductchannel.FieldStatus] = struct{}{}
+			}
+		case "allowFallback":
+			if _, ok := fieldSeen[relayproductchannel.FieldAllowFallback]; !ok {
+				selectedFields = append(selectedFields, relayproductchannel.FieldAllowFallback)
+				fieldSeen[relayproductchannel.FieldAllowFallback] = struct{}{}
+			}
+		case "modelFilter":
+			if _, ok := fieldSeen[relayproductchannel.FieldModelFilter]; !ok {
+				selectedFields = append(selectedFields, relayproductchannel.FieldModelFilter)
+				fieldSeen[relayproductchannel.FieldModelFilter] = struct{}{}
+			}
+		case "maxInflight":
+			if _, ok := fieldSeen[relayproductchannel.FieldMaxInflight]; !ok {
+				selectedFields = append(selectedFields, relayproductchannel.FieldMaxInflight)
+				fieldSeen[relayproductchannel.FieldMaxInflight] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type relayproductchannelPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []RelayProductChannelPaginateOption
+}
+
+func newRelayProductChannelPaginateArgs(rv map[string]any) *relayproductchannelPaginateArgs {
+	args := &relayproductchannelPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &RelayProductChannelOrder{Field: &RelayProductChannelOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithRelayProductChannelOrder(order))
+			}
+		case *RelayProductChannelOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithRelayProductChannelOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*RelayProductChannelWhereInput); ok {
+		args.opts = append(args.opts, WithRelayProductChannelFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *RelayWalletQuery) CollectFields(ctx context.Context, satisfies ...string) (*RelayWalletQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *RelayWalletQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(relaywallet.Columns))
+		selectedFields = []string{relaywallet.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "relayKey":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelayKeyClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, relaykeyImplementors)...); err != nil {
+				return err
+			}
+			_q.withRelayKey = query
+			if _, ok := fieldSeen[relaywallet.FieldRelayKeyID]; !ok {
+				selectedFields = append(selectedFields, relaywallet.FieldRelayKeyID)
+				fieldSeen[relaywallet.FieldRelayKeyID] = struct{}{}
+			}
+		case "createdAt":
+			if _, ok := fieldSeen[relaywallet.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, relaywallet.FieldCreatedAt)
+				fieldSeen[relaywallet.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[relaywallet.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, relaywallet.FieldUpdatedAt)
+				fieldSeen[relaywallet.FieldUpdatedAt] = struct{}{}
+			}
+		case "relayKeyID":
+			if _, ok := fieldSeen[relaywallet.FieldRelayKeyID]; !ok {
+				selectedFields = append(selectedFields, relaywallet.FieldRelayKeyID)
+				fieldSeen[relaywallet.FieldRelayKeyID] = struct{}{}
+			}
+		case "projectID":
+			if _, ok := fieldSeen[relaywallet.FieldProjectID]; !ok {
+				selectedFields = append(selectedFields, relaywallet.FieldProjectID)
+				fieldSeen[relaywallet.FieldProjectID] = struct{}{}
+			}
+		case "currency":
+			if _, ok := fieldSeen[relaywallet.FieldCurrency]; !ok {
+				selectedFields = append(selectedFields, relaywallet.FieldCurrency)
+				fieldSeen[relaywallet.FieldCurrency] = struct{}{}
+			}
+		case "availableAmount":
+			if _, ok := fieldSeen[relaywallet.FieldAvailableAmount]; !ok {
+				selectedFields = append(selectedFields, relaywallet.FieldAvailableAmount)
+				fieldSeen[relaywallet.FieldAvailableAmount] = struct{}{}
+			}
+		case "frozenAmount":
+			if _, ok := fieldSeen[relaywallet.FieldFrozenAmount]; !ok {
+				selectedFields = append(selectedFields, relaywallet.FieldFrozenAmount)
+				fieldSeen[relaywallet.FieldFrozenAmount] = struct{}{}
+			}
+		case "overdraftLimit":
+			if _, ok := fieldSeen[relaywallet.FieldOverdraftLimit]; !ok {
+				selectedFields = append(selectedFields, relaywallet.FieldOverdraftLimit)
+				fieldSeen[relaywallet.FieldOverdraftLimit] = struct{}{}
+			}
+		case "version":
+			if _, ok := fieldSeen[relaywallet.FieldVersion]; !ok {
+				selectedFields = append(selectedFields, relaywallet.FieldVersion)
+				fieldSeen[relaywallet.FieldVersion] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type relaywalletPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []RelayWalletPaginateOption
+}
+
+func newRelayWalletPaginateArgs(rv map[string]any) *relaywalletPaginateArgs {
+	args := &relaywalletPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &RelayWalletOrder{Field: &RelayWalletOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithRelayWalletOrder(order))
+			}
+		case *RelayWalletOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithRelayWalletOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*RelayWalletWhereInput); ok {
+		args.opts = append(args.opts, WithRelayWalletFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *RelayWalletLedgerEntryQuery) CollectFields(ctx context.Context, satisfies ...string) (*RelayWalletLedgerEntryQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *RelayWalletLedgerEntryQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(relaywalletledgerentry.Columns))
+		selectedFields = []string{relaywalletledgerentry.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "relayKey":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelayKeyClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, relaykeyImplementors)...); err != nil {
+				return err
+			}
+			_q.withRelayKey = query
+			if _, ok := fieldSeen[relaywalletledgerentry.FieldRelayKeyID]; !ok {
+				selectedFields = append(selectedFields, relaywalletledgerentry.FieldRelayKeyID)
+				fieldSeen[relaywalletledgerentry.FieldRelayKeyID] = struct{}{}
+			}
+		case "createdAt":
+			if _, ok := fieldSeen[relaywalletledgerentry.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, relaywalletledgerentry.FieldCreatedAt)
+				fieldSeen[relaywalletledgerentry.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[relaywalletledgerentry.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, relaywalletledgerentry.FieldUpdatedAt)
+				fieldSeen[relaywalletledgerentry.FieldUpdatedAt] = struct{}{}
+			}
+		case "relayKeyID":
+			if _, ok := fieldSeen[relaywalletledgerentry.FieldRelayKeyID]; !ok {
+				selectedFields = append(selectedFields, relaywalletledgerentry.FieldRelayKeyID)
+				fieldSeen[relaywalletledgerentry.FieldRelayKeyID] = struct{}{}
+			}
+		case "projectID":
+			if _, ok := fieldSeen[relaywalletledgerentry.FieldProjectID]; !ok {
+				selectedFields = append(selectedFields, relaywalletledgerentry.FieldProjectID)
+				fieldSeen[relaywalletledgerentry.FieldProjectID] = struct{}{}
+			}
+		case "requestID":
+			if _, ok := fieldSeen[relaywalletledgerentry.FieldRequestID]; !ok {
+				selectedFields = append(selectedFields, relaywalletledgerentry.FieldRequestID)
+				fieldSeen[relaywalletledgerentry.FieldRequestID] = struct{}{}
+			}
+		case "usageLogID":
+			if _, ok := fieldSeen[relaywalletledgerentry.FieldUsageLogID]; !ok {
+				selectedFields = append(selectedFields, relaywalletledgerentry.FieldUsageLogID)
+				fieldSeen[relaywalletledgerentry.FieldUsageLogID] = struct{}{}
+			}
+		case "direction":
+			if _, ok := fieldSeen[relaywalletledgerentry.FieldDirection]; !ok {
+				selectedFields = append(selectedFields, relaywalletledgerentry.FieldDirection)
+				fieldSeen[relaywalletledgerentry.FieldDirection] = struct{}{}
+			}
+		case "scene":
+			if _, ok := fieldSeen[relaywalletledgerentry.FieldScene]; !ok {
+				selectedFields = append(selectedFields, relaywalletledgerentry.FieldScene)
+				fieldSeen[relaywalletledgerentry.FieldScene] = struct{}{}
+			}
+		case "amount":
+			if _, ok := fieldSeen[relaywalletledgerentry.FieldAmount]; !ok {
+				selectedFields = append(selectedFields, relaywalletledgerentry.FieldAmount)
+				fieldSeen[relaywalletledgerentry.FieldAmount] = struct{}{}
+			}
+		case "balanceBefore":
+			if _, ok := fieldSeen[relaywalletledgerentry.FieldBalanceBefore]; !ok {
+				selectedFields = append(selectedFields, relaywalletledgerentry.FieldBalanceBefore)
+				fieldSeen[relaywalletledgerentry.FieldBalanceBefore] = struct{}{}
+			}
+		case "balanceAfter":
+			if _, ok := fieldSeen[relaywalletledgerentry.FieldBalanceAfter]; !ok {
+				selectedFields = append(selectedFields, relaywalletledgerentry.FieldBalanceAfter)
+				fieldSeen[relaywalletledgerentry.FieldBalanceAfter] = struct{}{}
+			}
+		case "upstreamCost":
+			if _, ok := fieldSeen[relaywalletledgerentry.FieldUpstreamCost]; !ok {
+				selectedFields = append(selectedFields, relaywalletledgerentry.FieldUpstreamCost)
+				fieldSeen[relaywalletledgerentry.FieldUpstreamCost] = struct{}{}
+			}
+		case "priceSnapshot":
+			if _, ok := fieldSeen[relaywalletledgerentry.FieldPriceSnapshot]; !ok {
+				selectedFields = append(selectedFields, relaywalletledgerentry.FieldPriceSnapshot)
+				fieldSeen[relaywalletledgerentry.FieldPriceSnapshot] = struct{}{}
+			}
+		case "idempotencyKey":
+			if _, ok := fieldSeen[relaywalletledgerentry.FieldIdempotencyKey]; !ok {
+				selectedFields = append(selectedFields, relaywalletledgerentry.FieldIdempotencyKey)
+				fieldSeen[relaywalletledgerentry.FieldIdempotencyKey] = struct{}{}
+			}
+		case "operatorUserID":
+			if _, ok := fieldSeen[relaywalletledgerentry.FieldOperatorUserID]; !ok {
+				selectedFields = append(selectedFields, relaywalletledgerentry.FieldOperatorUserID)
+				fieldSeen[relaywalletledgerentry.FieldOperatorUserID] = struct{}{}
+			}
+		case "remark":
+			if _, ok := fieldSeen[relaywalletledgerentry.FieldRemark]; !ok {
+				selectedFields = append(selectedFields, relaywalletledgerentry.FieldRemark)
+				fieldSeen[relaywalletledgerentry.FieldRemark] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type relaywalletledgerentryPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []RelayWalletLedgerEntryPaginateOption
+}
+
+func newRelayWalletLedgerEntryPaginateArgs(rv map[string]any) *relaywalletledgerentryPaginateArgs {
+	args := &relaywalletledgerentryPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[orderByField]; ok {
+		switch v := v.(type) {
+		case map[string]any:
+			var (
+				err1, err2 error
+				order      = &RelayWalletLedgerEntryOrder{Field: &RelayWalletLedgerEntryOrderField{}, Direction: entgql.OrderDirectionAsc}
+			)
+			if d, ok := v[directionField]; ok {
+				err1 = order.Direction.UnmarshalGQL(d)
+			}
+			if f, ok := v[fieldField]; ok {
+				err2 = order.Field.UnmarshalGQL(f)
+			}
+			if err1 == nil && err2 == nil {
+				args.opts = append(args.opts, WithRelayWalletLedgerEntryOrder(order))
+			}
+		case *RelayWalletLedgerEntryOrder:
+			if v != nil {
+				args.opts = append(args.opts, WithRelayWalletLedgerEntryOrder(v))
+			}
+		}
+	}
+	if v, ok := rv[whereField].(*RelayWalletLedgerEntryWhereInput); ok {
+		args.opts = append(args.opts, WithRelayWalletLedgerEntryFilter(v.Filter))
 	}
 	return args
 }
@@ -5156,6 +6717,95 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				*wq = *query
 			})
 
+		case "relayKeys":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelayKeyClient{config: _q.config}).Query()
+			)
+			args := newRelayKeyPaginateArgs(fieldArgs(ctx, new(RelayKeyWhereInput), path...))
+			if err := validateFirstLast(args.first, args.last); err != nil {
+				return fmt.Errorf("validate first and last in path %q: %w", path, err)
+			}
+			pager, err := newRelayKeyPager(args.opts, args.last != nil)
+			if err != nil {
+				return fmt.Errorf("create new pager in path %q: %w", path, err)
+			}
+			if query, err = pager.applyFilter(query); err != nil {
+				return err
+			}
+			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
+			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
+				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
+				if hasPagination || ignoredEdges {
+					query := query.Clone()
+					_q.loadTotal = append(_q.loadTotal, func(ctx context.Context, nodes []*User) error {
+						ids := make([]driver.Value, len(nodes))
+						for i := range nodes {
+							ids[i] = nodes[i].ID
+						}
+						var v []struct {
+							NodeID int `sql:"owner_user_id"`
+							Count  int `sql:"count"`
+						}
+						query.Where(func(s *sql.Selector) {
+							s.Where(sql.InValues(s.C(user.RelayKeysColumn), ids...))
+						})
+						if err := query.GroupBy(user.RelayKeysColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+							return err
+						}
+						m := make(map[int]int, len(v))
+						for i := range v {
+							m[v[i].NodeID] = v[i].Count
+						}
+						for i := range nodes {
+							n := m[nodes[i].ID]
+							if nodes[i].Edges.totalCount[2] == nil {
+								nodes[i].Edges.totalCount[2] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[2][alias] = n
+						}
+						return nil
+					})
+				} else {
+					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*User) error {
+						for i := range nodes {
+							n := len(nodes[i].Edges.RelayKeys)
+							if nodes[i].Edges.totalCount[2] == nil {
+								nodes[i].Edges.totalCount[2] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[2][alias] = n
+						}
+						return nil
+					})
+				}
+			}
+			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
+				continue
+			}
+			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
+				return err
+			}
+			path = append(path, edgesField, nodeField)
+			if field := collectedField(ctx, path...); field != nil {
+				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, relaykeyImplementors)...); err != nil {
+					return err
+				}
+			}
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				if oneNode {
+					pager.applyOrder(query.Limit(limit))
+				} else {
+					modify := entgql.LimitPerRow(user.RelayKeysColumn, limit, pager.orderExpr(query))
+					query.modifiers = append(query.modifiers, modify)
+				}
+			} else {
+				query = pager.applyOrder(query)
+			}
+			_q.WithNamedRelayKeys(alias, func(wq *RelayKeyQuery) {
+				*wq = *query
+			})
+
 		case "roles":
 			var (
 				alias = field.Alias
@@ -5203,10 +6853,10 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 						}
 						for i := range nodes {
 							n := m[nodes[i].ID]
-							if nodes[i].Edges.totalCount[2] == nil {
-								nodes[i].Edges.totalCount[2] = make(map[string]int)
+							if nodes[i].Edges.totalCount[3] == nil {
+								nodes[i].Edges.totalCount[3] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[2][alias] = n
+							nodes[i].Edges.totalCount[3][alias] = n
 						}
 						return nil
 					})
@@ -5214,10 +6864,10 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*User) error {
 						for i := range nodes {
 							n := len(nodes[i].Edges.Roles)
-							if nodes[i].Edges.totalCount[2] == nil {
-								nodes[i].Edges.totalCount[2] = make(map[string]int)
+							if nodes[i].Edges.totalCount[3] == nil {
+								nodes[i].Edges.totalCount[3] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[2][alias] = n
+							nodes[i].Edges.totalCount[3][alias] = n
 						}
 						return nil
 					})
@@ -5292,10 +6942,10 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 						}
 						for i := range nodes {
 							n := m[nodes[i].ID]
-							if nodes[i].Edges.totalCount[3] == nil {
-								nodes[i].Edges.totalCount[3] = make(map[string]int)
+							if nodes[i].Edges.totalCount[4] == nil {
+								nodes[i].Edges.totalCount[4] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[3][alias] = n
+							nodes[i].Edges.totalCount[4][alias] = n
 						}
 						return nil
 					})
@@ -5303,10 +6953,10 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*User) error {
 						for i := range nodes {
 							n := len(nodes[i].Edges.ChannelOverrideTemplates)
-							if nodes[i].Edges.totalCount[3] == nil {
-								nodes[i].Edges.totalCount[3] = make(map[string]int)
+							if nodes[i].Edges.totalCount[4] == nil {
+								nodes[i].Edges.totalCount[4] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[3][alias] = n
+							nodes[i].Edges.totalCount[4][alias] = n
 						}
 						return nil
 					})
@@ -5381,10 +7031,10 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 						}
 						for i := range nodes {
 							n := m[nodes[i].ID]
-							if nodes[i].Edges.totalCount[4] == nil {
-								nodes[i].Edges.totalCount[4] = make(map[string]int)
+							if nodes[i].Edges.totalCount[5] == nil {
+								nodes[i].Edges.totalCount[5] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[4][alias] = n
+							nodes[i].Edges.totalCount[5][alias] = n
 						}
 						return nil
 					})
@@ -5392,10 +7042,10 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*User) error {
 						for i := range nodes {
 							n := len(nodes[i].Edges.ProjectUsers)
-							if nodes[i].Edges.totalCount[4] == nil {
-								nodes[i].Edges.totalCount[4] = make(map[string]int)
+							if nodes[i].Edges.totalCount[5] == nil {
+								nodes[i].Edges.totalCount[5] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[4][alias] = n
+							nodes[i].Edges.totalCount[5][alias] = n
 						}
 						return nil
 					})
@@ -5470,10 +7120,10 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 						}
 						for i := range nodes {
 							n := m[nodes[i].ID]
-							if nodes[i].Edges.totalCount[5] == nil {
-								nodes[i].Edges.totalCount[5] = make(map[string]int)
+							if nodes[i].Edges.totalCount[6] == nil {
+								nodes[i].Edges.totalCount[6] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[5][alias] = n
+							nodes[i].Edges.totalCount[6][alias] = n
 						}
 						return nil
 					})
@@ -5481,10 +7131,10 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*User) error {
 						for i := range nodes {
 							n := len(nodes[i].Edges.UserRoles)
-							if nodes[i].Edges.totalCount[5] == nil {
-								nodes[i].Edges.totalCount[5] = make(map[string]int)
+							if nodes[i].Edges.totalCount[6] == nil {
+								nodes[i].Edges.totalCount[6] = make(map[string]int)
 							}
-							nodes[i].Edges.totalCount[5][alias] = n
+							nodes[i].Edges.totalCount[6][alias] = n
 						}
 						return nil
 					})

@@ -20,6 +20,12 @@ import (
 	"github.com/looplj/axonhub/internal/ent/prompt"
 	"github.com/looplj/axonhub/internal/ent/promptprotectionrule"
 	"github.com/looplj/axonhub/internal/ent/providerquotastatus"
+	"github.com/looplj/axonhub/internal/ent/relaydailyusagesummary"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
+	"github.com/looplj/axonhub/internal/ent/relayproduct"
+	"github.com/looplj/axonhub/internal/ent/relayproductchannel"
+	"github.com/looplj/axonhub/internal/ent/relaywallet"
+	"github.com/looplj/axonhub/internal/ent/relaywalletledgerentry"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/ent/requestexecution"
 	"github.com/looplj/axonhub/internal/ent/role"
@@ -136,6 +142,10 @@ type APIKeyWhereInput struct {
 	// "requests" edge predicates.
 	HasRequests     *bool                `json:"hasRequests,omitempty"`
 	HasRequestsWith []*RequestWhereInput `json:"hasRequestsWith,omitempty"`
+
+	// "relay_key" edge predicates.
+	HasRelayKey     *bool                 `json:"hasRelayKey,omitempty"`
+	HasRelayKeyWith []*RelayKeyWhereInput `json:"hasRelayKeyWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -468,6 +478,24 @@ func (i *APIKeyWhereInput) P() (predicate.APIKey, error) {
 		}
 		predicates = append(predicates, apikey.HasRequestsWith(with...))
 	}
+	if i.HasRelayKey != nil {
+		p := apikey.HasRelayKey()
+		if !*i.HasRelayKey {
+			p = apikey.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasRelayKeyWith) > 0 {
+		with := make([]predicate.RelayKey, 0, len(i.HasRelayKeyWith))
+		for _, w := range i.HasRelayKeyWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasRelayKeyWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, apikey.HasRelayKeyWith(with...))
+	}
 	switch len(predicates) {
 	case 0:
 		return nil, ErrEmptyAPIKeyWhereInput
@@ -658,6 +686,10 @@ type ChannelWhereInput struct {
 	// "channel_model_prices" edge predicates.
 	HasChannelModelPrices     *bool                          `json:"hasChannelModelPrices,omitempty"`
 	HasChannelModelPricesWith []*ChannelModelPriceWhereInput `json:"hasChannelModelPricesWith,omitempty"`
+
+	// "relay_product_bindings" edge predicates.
+	HasRelayProductBindings     *bool                            `json:"hasRelayProductBindings,omitempty"`
+	HasRelayProductBindingsWith []*RelayProductChannelWhereInput `json:"hasRelayProductBindingsWith,omitempty"`
 
 	// "provider_quota_status" edge predicates.
 	HasProviderQuotaStatus     *bool                            `json:"hasProviderQuotaStatus,omitempty"`
@@ -1209,6 +1241,24 @@ func (i *ChannelWhereInput) P() (predicate.Channel, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, channel.HasChannelModelPricesWith(with...))
+	}
+	if i.HasRelayProductBindings != nil {
+		p := channel.HasRelayProductBindings()
+		if !*i.HasRelayProductBindings {
+			p = channel.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasRelayProductBindingsWith) > 0 {
+		with := make([]predicate.RelayProductChannel, 0, len(i.HasRelayProductBindingsWith))
+		for _, w := range i.HasRelayProductBindingsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasRelayProductBindingsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, channel.HasRelayProductBindingsWith(with...))
 	}
 	if i.HasProviderQuotaStatus != nil {
 		p := channel.HasProviderQuotaStatus()
@@ -3863,6 +3913,10 @@ type ProjectWhereInput struct {
 	HasAPIKeys     *bool               `json:"hasAPIKeys,omitempty"`
 	HasAPIKeysWith []*APIKeyWhereInput `json:"hasAPIKeysWith,omitempty"`
 
+	// "relay_keys" edge predicates.
+	HasRelayKeys     *bool                 `json:"hasRelayKeys,omitempty"`
+	HasRelayKeysWith []*RelayKeyWhereInput `json:"hasRelayKeysWith,omitempty"`
+
 	// "requests" edge predicates.
 	HasRequests     *bool                `json:"hasRequests,omitempty"`
 	HasRequestsWith []*RequestWhereInput `json:"hasRequestsWith,omitempty"`
@@ -4175,6 +4229,24 @@ func (i *ProjectWhereInput) P() (predicate.Project, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, project.HasAPIKeysWith(with...))
+	}
+	if i.HasRelayKeys != nil {
+		p := project.HasRelayKeys()
+		if !*i.HasRelayKeys {
+			p = project.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasRelayKeysWith) > 0 {
+		with := make([]predicate.RelayKey, 0, len(i.HasRelayKeysWith))
+		for _, w := range i.HasRelayKeysWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasRelayKeysWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, project.HasRelayKeysWith(with...))
 	}
 	if i.HasRequests != nil {
 		p := project.HasRequests()
@@ -5533,6 +5605,3510 @@ func (i *ProviderQuotaStatusWhereInput) P() (predicate.ProviderQuotaStatus, erro
 		return predicates[0], nil
 	default:
 		return providerquotastatus.And(predicates...), nil
+	}
+}
+
+// RelayDailyUsageSummaryWhereInput represents a where input for filtering RelayDailyUsageSummary queries.
+type RelayDailyUsageSummaryWhereInput struct {
+	Predicates []predicate.RelayDailyUsageSummary  `json:"-"`
+	Not        *RelayDailyUsageSummaryWhereInput   `json:"not,omitempty"`
+	Or         []*RelayDailyUsageSummaryWhereInput `json:"or,omitempty"`
+	And        []*RelayDailyUsageSummaryWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "relay_key_id" field predicates.
+	RelayKeyID      *int  `json:"relayKeyID,omitempty"`
+	RelayKeyIDNEQ   *int  `json:"relayKeyIDNEQ,omitempty"`
+	RelayKeyIDIn    []int `json:"relayKeyIDIn,omitempty"`
+	RelayKeyIDNotIn []int `json:"relayKeyIDNotIn,omitempty"`
+
+	// "project_id" field predicates.
+	ProjectID      *int  `json:"projectID,omitempty"`
+	ProjectIDNEQ   *int  `json:"projectIDNEQ,omitempty"`
+	ProjectIDIn    []int `json:"projectIDIn,omitempty"`
+	ProjectIDNotIn []int `json:"projectIDNotIn,omitempty"`
+	ProjectIDGT    *int  `json:"projectIDGT,omitempty"`
+	ProjectIDGTE   *int  `json:"projectIDGTE,omitempty"`
+	ProjectIDLT    *int  `json:"projectIDLT,omitempty"`
+	ProjectIDLTE   *int  `json:"projectIDLTE,omitempty"`
+
+	// "stat_date" field predicates.
+	StatDate      *time.Time  `json:"statDate,omitempty"`
+	StatDateNEQ   *time.Time  `json:"statDateNEQ,omitempty"`
+	StatDateIn    []time.Time `json:"statDateIn,omitempty"`
+	StatDateNotIn []time.Time `json:"statDateNotIn,omitempty"`
+	StatDateGT    *time.Time  `json:"statDateGT,omitempty"`
+	StatDateGTE   *time.Time  `json:"statDateGTE,omitempty"`
+	StatDateLT    *time.Time  `json:"statDateLT,omitempty"`
+	StatDateLTE   *time.Time  `json:"statDateLTE,omitempty"`
+
+	// "request_count" field predicates.
+	RequestCount      *int64  `json:"requestCount,omitempty"`
+	RequestCountNEQ   *int64  `json:"requestCountNEQ,omitempty"`
+	RequestCountIn    []int64 `json:"requestCountIn,omitempty"`
+	RequestCountNotIn []int64 `json:"requestCountNotIn,omitempty"`
+	RequestCountGT    *int64  `json:"requestCountGT,omitempty"`
+	RequestCountGTE   *int64  `json:"requestCountGTE,omitempty"`
+	RequestCountLT    *int64  `json:"requestCountLT,omitempty"`
+	RequestCountLTE   *int64  `json:"requestCountLTE,omitempty"`
+
+	// "total_tokens" field predicates.
+	TotalTokens      *int64  `json:"totalTokens,omitempty"`
+	TotalTokensNEQ   *int64  `json:"totalTokensNEQ,omitempty"`
+	TotalTokensIn    []int64 `json:"totalTokensIn,omitempty"`
+	TotalTokensNotIn []int64 `json:"totalTokensNotIn,omitempty"`
+	TotalTokensGT    *int64  `json:"totalTokensGT,omitempty"`
+	TotalTokensGTE   *int64  `json:"totalTokensGTE,omitempty"`
+	TotalTokensLT    *int64  `json:"totalTokensLT,omitempty"`
+	TotalTokensLTE   *int64  `json:"totalTokensLTE,omitempty"`
+
+	// "total_charge" field predicates.
+	TotalCharge             *string  `json:"totalCharge,omitempty"`
+	TotalChargeNEQ          *string  `json:"totalChargeNEQ,omitempty"`
+	TotalChargeIn           []string `json:"totalChargeIn,omitempty"`
+	TotalChargeNotIn        []string `json:"totalChargeNotIn,omitempty"`
+	TotalChargeGT           *string  `json:"totalChargeGT,omitempty"`
+	TotalChargeGTE          *string  `json:"totalChargeGTE,omitempty"`
+	TotalChargeLT           *string  `json:"totalChargeLT,omitempty"`
+	TotalChargeLTE          *string  `json:"totalChargeLTE,omitempty"`
+	TotalChargeContains     *string  `json:"totalChargeContains,omitempty"`
+	TotalChargeHasPrefix    *string  `json:"totalChargeHasPrefix,omitempty"`
+	TotalChargeHasSuffix    *string  `json:"totalChargeHasSuffix,omitempty"`
+	TotalChargeEqualFold    *string  `json:"totalChargeEqualFold,omitempty"`
+	TotalChargeContainsFold *string  `json:"totalChargeContainsFold,omitempty"`
+
+	// "total_upstream_cost" field predicates.
+	TotalUpstreamCost             *string  `json:"totalUpstreamCost,omitempty"`
+	TotalUpstreamCostNEQ          *string  `json:"totalUpstreamCostNEQ,omitempty"`
+	TotalUpstreamCostIn           []string `json:"totalUpstreamCostIn,omitempty"`
+	TotalUpstreamCostNotIn        []string `json:"totalUpstreamCostNotIn,omitempty"`
+	TotalUpstreamCostGT           *string  `json:"totalUpstreamCostGT,omitempty"`
+	TotalUpstreamCostGTE          *string  `json:"totalUpstreamCostGTE,omitempty"`
+	TotalUpstreamCostLT           *string  `json:"totalUpstreamCostLT,omitempty"`
+	TotalUpstreamCostLTE          *string  `json:"totalUpstreamCostLTE,omitempty"`
+	TotalUpstreamCostContains     *string  `json:"totalUpstreamCostContains,omitempty"`
+	TotalUpstreamCostHasPrefix    *string  `json:"totalUpstreamCostHasPrefix,omitempty"`
+	TotalUpstreamCostHasSuffix    *string  `json:"totalUpstreamCostHasSuffix,omitempty"`
+	TotalUpstreamCostEqualFold    *string  `json:"totalUpstreamCostEqualFold,omitempty"`
+	TotalUpstreamCostContainsFold *string  `json:"totalUpstreamCostContainsFold,omitempty"`
+
+	// "last_request_id" field predicates.
+	LastRequestID       *int  `json:"lastRequestID,omitempty"`
+	LastRequestIDNEQ    *int  `json:"lastRequestIDNEQ,omitempty"`
+	LastRequestIDIn     []int `json:"lastRequestIDIn,omitempty"`
+	LastRequestIDNotIn  []int `json:"lastRequestIDNotIn,omitempty"`
+	LastRequestIDGT     *int  `json:"lastRequestIDGT,omitempty"`
+	LastRequestIDGTE    *int  `json:"lastRequestIDGTE,omitempty"`
+	LastRequestIDLT     *int  `json:"lastRequestIDLT,omitempty"`
+	LastRequestIDLTE    *int  `json:"lastRequestIDLTE,omitempty"`
+	LastRequestIDIsNil  bool  `json:"lastRequestIDIsNil,omitempty"`
+	LastRequestIDNotNil bool  `json:"lastRequestIDNotNil,omitempty"`
+
+	// "relay_key" edge predicates.
+	HasRelayKey     *bool                 `json:"hasRelayKey,omitempty"`
+	HasRelayKeyWith []*RelayKeyWhereInput `json:"hasRelayKeyWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *RelayDailyUsageSummaryWhereInput) AddPredicates(predicates ...predicate.RelayDailyUsageSummary) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the RelayDailyUsageSummaryWhereInput filter on the RelayDailyUsageSummaryQuery builder.
+func (i *RelayDailyUsageSummaryWhereInput) Filter(q *RelayDailyUsageSummaryQuery) (*RelayDailyUsageSummaryQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyRelayDailyUsageSummaryWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyRelayDailyUsageSummaryWhereInput is returned in case the RelayDailyUsageSummaryWhereInput is empty.
+var ErrEmptyRelayDailyUsageSummaryWhereInput = errors.New("ent: empty predicate RelayDailyUsageSummaryWhereInput")
+
+// P returns a predicate for filtering relaydailyusagesummaries.
+// An error is returned if the input is empty or invalid.
+func (i *RelayDailyUsageSummaryWhereInput) P() (predicate.RelayDailyUsageSummary, error) {
+	var predicates []predicate.RelayDailyUsageSummary
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, relaydailyusagesummary.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.RelayDailyUsageSummary, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, relaydailyusagesummary.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.RelayDailyUsageSummary, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, relaydailyusagesummary.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, relaydailyusagesummary.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, relaydailyusagesummary.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, relaydailyusagesummary.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, relaydailyusagesummary.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, relaydailyusagesummary.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, relaydailyusagesummary.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, relaydailyusagesummary.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, relaydailyusagesummary.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, relaydailyusagesummary.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, relaydailyusagesummary.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, relaydailyusagesummary.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, relaydailyusagesummary.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.RelayKeyID != nil {
+		predicates = append(predicates, relaydailyusagesummary.RelayKeyIDEQ(*i.RelayKeyID))
+	}
+	if i.RelayKeyIDNEQ != nil {
+		predicates = append(predicates, relaydailyusagesummary.RelayKeyIDNEQ(*i.RelayKeyIDNEQ))
+	}
+	if len(i.RelayKeyIDIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.RelayKeyIDIn(i.RelayKeyIDIn...))
+	}
+	if len(i.RelayKeyIDNotIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.RelayKeyIDNotIn(i.RelayKeyIDNotIn...))
+	}
+	if i.ProjectID != nil {
+		predicates = append(predicates, relaydailyusagesummary.ProjectIDEQ(*i.ProjectID))
+	}
+	if i.ProjectIDNEQ != nil {
+		predicates = append(predicates, relaydailyusagesummary.ProjectIDNEQ(*i.ProjectIDNEQ))
+	}
+	if len(i.ProjectIDIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.ProjectIDIn(i.ProjectIDIn...))
+	}
+	if len(i.ProjectIDNotIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.ProjectIDNotIn(i.ProjectIDNotIn...))
+	}
+	if i.ProjectIDGT != nil {
+		predicates = append(predicates, relaydailyusagesummary.ProjectIDGT(*i.ProjectIDGT))
+	}
+	if i.ProjectIDGTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.ProjectIDGTE(*i.ProjectIDGTE))
+	}
+	if i.ProjectIDLT != nil {
+		predicates = append(predicates, relaydailyusagesummary.ProjectIDLT(*i.ProjectIDLT))
+	}
+	if i.ProjectIDLTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.ProjectIDLTE(*i.ProjectIDLTE))
+	}
+	if i.StatDate != nil {
+		predicates = append(predicates, relaydailyusagesummary.StatDateEQ(*i.StatDate))
+	}
+	if i.StatDateNEQ != nil {
+		predicates = append(predicates, relaydailyusagesummary.StatDateNEQ(*i.StatDateNEQ))
+	}
+	if len(i.StatDateIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.StatDateIn(i.StatDateIn...))
+	}
+	if len(i.StatDateNotIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.StatDateNotIn(i.StatDateNotIn...))
+	}
+	if i.StatDateGT != nil {
+		predicates = append(predicates, relaydailyusagesummary.StatDateGT(*i.StatDateGT))
+	}
+	if i.StatDateGTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.StatDateGTE(*i.StatDateGTE))
+	}
+	if i.StatDateLT != nil {
+		predicates = append(predicates, relaydailyusagesummary.StatDateLT(*i.StatDateLT))
+	}
+	if i.StatDateLTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.StatDateLTE(*i.StatDateLTE))
+	}
+	if i.RequestCount != nil {
+		predicates = append(predicates, relaydailyusagesummary.RequestCountEQ(*i.RequestCount))
+	}
+	if i.RequestCountNEQ != nil {
+		predicates = append(predicates, relaydailyusagesummary.RequestCountNEQ(*i.RequestCountNEQ))
+	}
+	if len(i.RequestCountIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.RequestCountIn(i.RequestCountIn...))
+	}
+	if len(i.RequestCountNotIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.RequestCountNotIn(i.RequestCountNotIn...))
+	}
+	if i.RequestCountGT != nil {
+		predicates = append(predicates, relaydailyusagesummary.RequestCountGT(*i.RequestCountGT))
+	}
+	if i.RequestCountGTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.RequestCountGTE(*i.RequestCountGTE))
+	}
+	if i.RequestCountLT != nil {
+		predicates = append(predicates, relaydailyusagesummary.RequestCountLT(*i.RequestCountLT))
+	}
+	if i.RequestCountLTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.RequestCountLTE(*i.RequestCountLTE))
+	}
+	if i.TotalTokens != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalTokensEQ(*i.TotalTokens))
+	}
+	if i.TotalTokensNEQ != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalTokensNEQ(*i.TotalTokensNEQ))
+	}
+	if len(i.TotalTokensIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.TotalTokensIn(i.TotalTokensIn...))
+	}
+	if len(i.TotalTokensNotIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.TotalTokensNotIn(i.TotalTokensNotIn...))
+	}
+	if i.TotalTokensGT != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalTokensGT(*i.TotalTokensGT))
+	}
+	if i.TotalTokensGTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalTokensGTE(*i.TotalTokensGTE))
+	}
+	if i.TotalTokensLT != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalTokensLT(*i.TotalTokensLT))
+	}
+	if i.TotalTokensLTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalTokensLTE(*i.TotalTokensLTE))
+	}
+	if i.TotalCharge != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalChargeEQ(*i.TotalCharge))
+	}
+	if i.TotalChargeNEQ != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalChargeNEQ(*i.TotalChargeNEQ))
+	}
+	if len(i.TotalChargeIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.TotalChargeIn(i.TotalChargeIn...))
+	}
+	if len(i.TotalChargeNotIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.TotalChargeNotIn(i.TotalChargeNotIn...))
+	}
+	if i.TotalChargeGT != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalChargeGT(*i.TotalChargeGT))
+	}
+	if i.TotalChargeGTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalChargeGTE(*i.TotalChargeGTE))
+	}
+	if i.TotalChargeLT != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalChargeLT(*i.TotalChargeLT))
+	}
+	if i.TotalChargeLTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalChargeLTE(*i.TotalChargeLTE))
+	}
+	if i.TotalChargeContains != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalChargeContains(*i.TotalChargeContains))
+	}
+	if i.TotalChargeHasPrefix != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalChargeHasPrefix(*i.TotalChargeHasPrefix))
+	}
+	if i.TotalChargeHasSuffix != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalChargeHasSuffix(*i.TotalChargeHasSuffix))
+	}
+	if i.TotalChargeEqualFold != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalChargeEqualFold(*i.TotalChargeEqualFold))
+	}
+	if i.TotalChargeContainsFold != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalChargeContainsFold(*i.TotalChargeContainsFold))
+	}
+	if i.TotalUpstreamCost != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalUpstreamCostEQ(*i.TotalUpstreamCost))
+	}
+	if i.TotalUpstreamCostNEQ != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalUpstreamCostNEQ(*i.TotalUpstreamCostNEQ))
+	}
+	if len(i.TotalUpstreamCostIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.TotalUpstreamCostIn(i.TotalUpstreamCostIn...))
+	}
+	if len(i.TotalUpstreamCostNotIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.TotalUpstreamCostNotIn(i.TotalUpstreamCostNotIn...))
+	}
+	if i.TotalUpstreamCostGT != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalUpstreamCostGT(*i.TotalUpstreamCostGT))
+	}
+	if i.TotalUpstreamCostGTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalUpstreamCostGTE(*i.TotalUpstreamCostGTE))
+	}
+	if i.TotalUpstreamCostLT != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalUpstreamCostLT(*i.TotalUpstreamCostLT))
+	}
+	if i.TotalUpstreamCostLTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalUpstreamCostLTE(*i.TotalUpstreamCostLTE))
+	}
+	if i.TotalUpstreamCostContains != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalUpstreamCostContains(*i.TotalUpstreamCostContains))
+	}
+	if i.TotalUpstreamCostHasPrefix != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalUpstreamCostHasPrefix(*i.TotalUpstreamCostHasPrefix))
+	}
+	if i.TotalUpstreamCostHasSuffix != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalUpstreamCostHasSuffix(*i.TotalUpstreamCostHasSuffix))
+	}
+	if i.TotalUpstreamCostEqualFold != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalUpstreamCostEqualFold(*i.TotalUpstreamCostEqualFold))
+	}
+	if i.TotalUpstreamCostContainsFold != nil {
+		predicates = append(predicates, relaydailyusagesummary.TotalUpstreamCostContainsFold(*i.TotalUpstreamCostContainsFold))
+	}
+	if i.LastRequestID != nil {
+		predicates = append(predicates, relaydailyusagesummary.LastRequestIDEQ(*i.LastRequestID))
+	}
+	if i.LastRequestIDNEQ != nil {
+		predicates = append(predicates, relaydailyusagesummary.LastRequestIDNEQ(*i.LastRequestIDNEQ))
+	}
+	if len(i.LastRequestIDIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.LastRequestIDIn(i.LastRequestIDIn...))
+	}
+	if len(i.LastRequestIDNotIn) > 0 {
+		predicates = append(predicates, relaydailyusagesummary.LastRequestIDNotIn(i.LastRequestIDNotIn...))
+	}
+	if i.LastRequestIDGT != nil {
+		predicates = append(predicates, relaydailyusagesummary.LastRequestIDGT(*i.LastRequestIDGT))
+	}
+	if i.LastRequestIDGTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.LastRequestIDGTE(*i.LastRequestIDGTE))
+	}
+	if i.LastRequestIDLT != nil {
+		predicates = append(predicates, relaydailyusagesummary.LastRequestIDLT(*i.LastRequestIDLT))
+	}
+	if i.LastRequestIDLTE != nil {
+		predicates = append(predicates, relaydailyusagesummary.LastRequestIDLTE(*i.LastRequestIDLTE))
+	}
+	if i.LastRequestIDIsNil {
+		predicates = append(predicates, relaydailyusagesummary.LastRequestIDIsNil())
+	}
+	if i.LastRequestIDNotNil {
+		predicates = append(predicates, relaydailyusagesummary.LastRequestIDNotNil())
+	}
+
+	if i.HasRelayKey != nil {
+		p := relaydailyusagesummary.HasRelayKey()
+		if !*i.HasRelayKey {
+			p = relaydailyusagesummary.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasRelayKeyWith) > 0 {
+		with := make([]predicate.RelayKey, 0, len(i.HasRelayKeyWith))
+		for _, w := range i.HasRelayKeyWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasRelayKeyWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, relaydailyusagesummary.HasRelayKeyWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyRelayDailyUsageSummaryWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return relaydailyusagesummary.And(predicates...), nil
+	}
+}
+
+// RelayKeyWhereInput represents a where input for filtering RelayKey queries.
+type RelayKeyWhereInput struct {
+	Predicates []predicate.RelayKey  `json:"-"`
+	Not        *RelayKeyWhereInput   `json:"not,omitempty"`
+	Or         []*RelayKeyWhereInput `json:"or,omitempty"`
+	And        []*RelayKeyWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "api_key_id" field predicates.
+	APIKeyID      *int  `json:"apiKeyID,omitempty"`
+	APIKeyIDNEQ   *int  `json:"apiKeyIDNEQ,omitempty"`
+	APIKeyIDIn    []int `json:"apiKeyIDIn,omitempty"`
+	APIKeyIDNotIn []int `json:"apiKeyIDNotIn,omitempty"`
+
+	// "project_id" field predicates.
+	ProjectID      *int  `json:"projectID,omitempty"`
+	ProjectIDNEQ   *int  `json:"projectIDNEQ,omitempty"`
+	ProjectIDIn    []int `json:"projectIDIn,omitempty"`
+	ProjectIDNotIn []int `json:"projectIDNotIn,omitempty"`
+
+	// "product_id" field predicates.
+	ProductID      *int  `json:"productID,omitempty"`
+	ProductIDNEQ   *int  `json:"productIDNEQ,omitempty"`
+	ProductIDIn    []int `json:"productIDIn,omitempty"`
+	ProductIDNotIn []int `json:"productIDNotIn,omitempty"`
+
+	// "owner_user_id" field predicates.
+	OwnerUserID       *int  `json:"ownerUserID,omitempty"`
+	OwnerUserIDNEQ    *int  `json:"ownerUserIDNEQ,omitempty"`
+	OwnerUserIDIn     []int `json:"ownerUserIDIn,omitempty"`
+	OwnerUserIDNotIn  []int `json:"ownerUserIDNotIn,omitempty"`
+	OwnerUserIDIsNil  bool  `json:"ownerUserIDIsNil,omitempty"`
+	OwnerUserIDNotNil bool  `json:"ownerUserIDNotNil,omitempty"`
+
+	// "display_name" field predicates.
+	DisplayName             *string  `json:"displayName,omitempty"`
+	DisplayNameNEQ          *string  `json:"displayNameNEQ,omitempty"`
+	DisplayNameIn           []string `json:"displayNameIn,omitempty"`
+	DisplayNameNotIn        []string `json:"displayNameNotIn,omitempty"`
+	DisplayNameGT           *string  `json:"displayNameGT,omitempty"`
+	DisplayNameGTE          *string  `json:"displayNameGTE,omitempty"`
+	DisplayNameLT           *string  `json:"displayNameLT,omitempty"`
+	DisplayNameLTE          *string  `json:"displayNameLTE,omitempty"`
+	DisplayNameContains     *string  `json:"displayNameContains,omitempty"`
+	DisplayNameHasPrefix    *string  `json:"displayNameHasPrefix,omitempty"`
+	DisplayNameHasSuffix    *string  `json:"displayNameHasSuffix,omitempty"`
+	DisplayNameEqualFold    *string  `json:"displayNameEqualFold,omitempty"`
+	DisplayNameContainsFold *string  `json:"displayNameContainsFold,omitempty"`
+
+	// "status" field predicates.
+	Status      *relaykey.Status  `json:"status,omitempty"`
+	StatusNEQ   *relaykey.Status  `json:"statusNEQ,omitempty"`
+	StatusIn    []relaykey.Status `json:"statusIn,omitempty"`
+	StatusNotIn []relaykey.Status `json:"statusNotIn,omitempty"`
+
+	// "balance_mode" field predicates.
+	BalanceMode      *relaykey.BalanceMode  `json:"balanceMode,omitempty"`
+	BalanceModeNEQ   *relaykey.BalanceMode  `json:"balanceModeNEQ,omitempty"`
+	BalanceModeIn    []relaykey.BalanceMode `json:"balanceModeIn,omitempty"`
+	BalanceModeNotIn []relaykey.BalanceMode `json:"balanceModeNotIn,omitempty"`
+
+	// "daily_request_limit" field predicates.
+	DailyRequestLimit       *int64  `json:"dailyRequestLimit,omitempty"`
+	DailyRequestLimitNEQ    *int64  `json:"dailyRequestLimitNEQ,omitempty"`
+	DailyRequestLimitIn     []int64 `json:"dailyRequestLimitIn,omitempty"`
+	DailyRequestLimitNotIn  []int64 `json:"dailyRequestLimitNotIn,omitempty"`
+	DailyRequestLimitGT     *int64  `json:"dailyRequestLimitGT,omitempty"`
+	DailyRequestLimitGTE    *int64  `json:"dailyRequestLimitGTE,omitempty"`
+	DailyRequestLimitLT     *int64  `json:"dailyRequestLimitLT,omitempty"`
+	DailyRequestLimitLTE    *int64  `json:"dailyRequestLimitLTE,omitempty"`
+	DailyRequestLimitIsNil  bool    `json:"dailyRequestLimitIsNil,omitempty"`
+	DailyRequestLimitNotNil bool    `json:"dailyRequestLimitNotNil,omitempty"`
+
+	// "daily_token_limit" field predicates.
+	DailyTokenLimit       *int64  `json:"dailyTokenLimit,omitempty"`
+	DailyTokenLimitNEQ    *int64  `json:"dailyTokenLimitNEQ,omitempty"`
+	DailyTokenLimitIn     []int64 `json:"dailyTokenLimitIn,omitempty"`
+	DailyTokenLimitNotIn  []int64 `json:"dailyTokenLimitNotIn,omitempty"`
+	DailyTokenLimitGT     *int64  `json:"dailyTokenLimitGT,omitempty"`
+	DailyTokenLimitGTE    *int64  `json:"dailyTokenLimitGTE,omitempty"`
+	DailyTokenLimitLT     *int64  `json:"dailyTokenLimitLT,omitempty"`
+	DailyTokenLimitLTE    *int64  `json:"dailyTokenLimitLTE,omitempty"`
+	DailyTokenLimitIsNil  bool    `json:"dailyTokenLimitIsNil,omitempty"`
+	DailyTokenLimitNotNil bool    `json:"dailyTokenLimitNotNil,omitempty"`
+
+	// "monthly_cost_limit" field predicates.
+	MonthlyCostLimit             *string  `json:"monthlyCostLimit,omitempty"`
+	MonthlyCostLimitNEQ          *string  `json:"monthlyCostLimitNEQ,omitempty"`
+	MonthlyCostLimitIn           []string `json:"monthlyCostLimitIn,omitempty"`
+	MonthlyCostLimitNotIn        []string `json:"monthlyCostLimitNotIn,omitempty"`
+	MonthlyCostLimitGT           *string  `json:"monthlyCostLimitGT,omitempty"`
+	MonthlyCostLimitGTE          *string  `json:"monthlyCostLimitGTE,omitempty"`
+	MonthlyCostLimitLT           *string  `json:"monthlyCostLimitLT,omitempty"`
+	MonthlyCostLimitLTE          *string  `json:"monthlyCostLimitLTE,omitempty"`
+	MonthlyCostLimitContains     *string  `json:"monthlyCostLimitContains,omitempty"`
+	MonthlyCostLimitHasPrefix    *string  `json:"monthlyCostLimitHasPrefix,omitempty"`
+	MonthlyCostLimitHasSuffix    *string  `json:"monthlyCostLimitHasSuffix,omitempty"`
+	MonthlyCostLimitIsNil        bool     `json:"monthlyCostLimitIsNil,omitempty"`
+	MonthlyCostLimitNotNil       bool     `json:"monthlyCostLimitNotNil,omitempty"`
+	MonthlyCostLimitEqualFold    *string  `json:"monthlyCostLimitEqualFold,omitempty"`
+	MonthlyCostLimitContainsFold *string  `json:"monthlyCostLimitContainsFold,omitempty"`
+
+	// "concurrency_limit" field predicates.
+	ConcurrencyLimit       *int64  `json:"concurrencyLimit,omitempty"`
+	ConcurrencyLimitNEQ    *int64  `json:"concurrencyLimitNEQ,omitempty"`
+	ConcurrencyLimitIn     []int64 `json:"concurrencyLimitIn,omitempty"`
+	ConcurrencyLimitNotIn  []int64 `json:"concurrencyLimitNotIn,omitempty"`
+	ConcurrencyLimitGT     *int64  `json:"concurrencyLimitGT,omitempty"`
+	ConcurrencyLimitGTE    *int64  `json:"concurrencyLimitGTE,omitempty"`
+	ConcurrencyLimitLT     *int64  `json:"concurrencyLimitLT,omitempty"`
+	ConcurrencyLimitLTE    *int64  `json:"concurrencyLimitLTE,omitempty"`
+	ConcurrencyLimitIsNil  bool    `json:"concurrencyLimitIsNil,omitempty"`
+	ConcurrencyLimitNotNil bool    `json:"concurrencyLimitNotNil,omitempty"`
+
+	// "expires_at" field predicates.
+	ExpiresAt       *time.Time  `json:"expiresAt,omitempty"`
+	ExpiresAtNEQ    *time.Time  `json:"expiresAtNEQ,omitempty"`
+	ExpiresAtIn     []time.Time `json:"expiresAtIn,omitempty"`
+	ExpiresAtNotIn  []time.Time `json:"expiresAtNotIn,omitempty"`
+	ExpiresAtGT     *time.Time  `json:"expiresAtGT,omitempty"`
+	ExpiresAtGTE    *time.Time  `json:"expiresAtGTE,omitempty"`
+	ExpiresAtLT     *time.Time  `json:"expiresAtLT,omitempty"`
+	ExpiresAtLTE    *time.Time  `json:"expiresAtLTE,omitempty"`
+	ExpiresAtIsNil  bool        `json:"expiresAtIsNil,omitempty"`
+	ExpiresAtNotNil bool        `json:"expiresAtNotNil,omitempty"`
+
+	// "last_used_at" field predicates.
+	LastUsedAt       *time.Time  `json:"lastUsedAt,omitempty"`
+	LastUsedAtNEQ    *time.Time  `json:"lastUsedAtNEQ,omitempty"`
+	LastUsedAtIn     []time.Time `json:"lastUsedAtIn,omitempty"`
+	LastUsedAtNotIn  []time.Time `json:"lastUsedAtNotIn,omitempty"`
+	LastUsedAtGT     *time.Time  `json:"lastUsedAtGT,omitempty"`
+	LastUsedAtGTE    *time.Time  `json:"lastUsedAtGTE,omitempty"`
+	LastUsedAtLT     *time.Time  `json:"lastUsedAtLT,omitempty"`
+	LastUsedAtLTE    *time.Time  `json:"lastUsedAtLTE,omitempty"`
+	LastUsedAtIsNil  bool        `json:"lastUsedAtIsNil,omitempty"`
+	LastUsedAtNotNil bool        `json:"lastUsedAtNotNil,omitempty"`
+
+	// "api_key" edge predicates.
+	HasAPIKey     *bool               `json:"hasAPIKey,omitempty"`
+	HasAPIKeyWith []*APIKeyWhereInput `json:"hasAPIKeyWith,omitempty"`
+
+	// "project" edge predicates.
+	HasProject     *bool                `json:"hasProject,omitempty"`
+	HasProjectWith []*ProjectWhereInput `json:"hasProjectWith,omitempty"`
+
+	// "product" edge predicates.
+	HasProduct     *bool                     `json:"hasProduct,omitempty"`
+	HasProductWith []*RelayProductWhereInput `json:"hasProductWith,omitempty"`
+
+	// "owner_user" edge predicates.
+	HasOwnerUser     *bool             `json:"hasOwnerUser,omitempty"`
+	HasOwnerUserWith []*UserWhereInput `json:"hasOwnerUserWith,omitempty"`
+
+	// "wallet" edge predicates.
+	HasWallet     *bool                    `json:"hasWallet,omitempty"`
+	HasWalletWith []*RelayWalletWhereInput `json:"hasWalletWith,omitempty"`
+
+	// "ledger_entries" edge predicates.
+	HasLedgerEntries     *bool                               `json:"hasLedgerEntries,omitempty"`
+	HasLedgerEntriesWith []*RelayWalletLedgerEntryWhereInput `json:"hasLedgerEntriesWith,omitempty"`
+
+	// "daily_usage_summaries" edge predicates.
+	HasDailyUsageSummaries     *bool                               `json:"hasDailyUsageSummaries,omitempty"`
+	HasDailyUsageSummariesWith []*RelayDailyUsageSummaryWhereInput `json:"hasDailyUsageSummariesWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *RelayKeyWhereInput) AddPredicates(predicates ...predicate.RelayKey) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the RelayKeyWhereInput filter on the RelayKeyQuery builder.
+func (i *RelayKeyWhereInput) Filter(q *RelayKeyQuery) (*RelayKeyQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyRelayKeyWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyRelayKeyWhereInput is returned in case the RelayKeyWhereInput is empty.
+var ErrEmptyRelayKeyWhereInput = errors.New("ent: empty predicate RelayKeyWhereInput")
+
+// P returns a predicate for filtering relaykeys.
+// An error is returned if the input is empty or invalid.
+func (i *RelayKeyWhereInput) P() (predicate.RelayKey, error) {
+	var predicates []predicate.RelayKey
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, relaykey.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.RelayKey, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, relaykey.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.RelayKey, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, relaykey.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, relaykey.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, relaykey.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, relaykey.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, relaykey.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, relaykey.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, relaykey.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, relaykey.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, relaykey.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, relaykey.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, relaykey.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, relaykey.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, relaykey.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, relaykey.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, relaykey.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, relaykey.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, relaykey.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, relaykey.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, relaykey.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, relaykey.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, relaykey.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, relaykey.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, relaykey.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, relaykey.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, relaykey.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.APIKeyID != nil {
+		predicates = append(predicates, relaykey.APIKeyIDEQ(*i.APIKeyID))
+	}
+	if i.APIKeyIDNEQ != nil {
+		predicates = append(predicates, relaykey.APIKeyIDNEQ(*i.APIKeyIDNEQ))
+	}
+	if len(i.APIKeyIDIn) > 0 {
+		predicates = append(predicates, relaykey.APIKeyIDIn(i.APIKeyIDIn...))
+	}
+	if len(i.APIKeyIDNotIn) > 0 {
+		predicates = append(predicates, relaykey.APIKeyIDNotIn(i.APIKeyIDNotIn...))
+	}
+	if i.ProjectID != nil {
+		predicates = append(predicates, relaykey.ProjectIDEQ(*i.ProjectID))
+	}
+	if i.ProjectIDNEQ != nil {
+		predicates = append(predicates, relaykey.ProjectIDNEQ(*i.ProjectIDNEQ))
+	}
+	if len(i.ProjectIDIn) > 0 {
+		predicates = append(predicates, relaykey.ProjectIDIn(i.ProjectIDIn...))
+	}
+	if len(i.ProjectIDNotIn) > 0 {
+		predicates = append(predicates, relaykey.ProjectIDNotIn(i.ProjectIDNotIn...))
+	}
+	if i.ProductID != nil {
+		predicates = append(predicates, relaykey.ProductIDEQ(*i.ProductID))
+	}
+	if i.ProductIDNEQ != nil {
+		predicates = append(predicates, relaykey.ProductIDNEQ(*i.ProductIDNEQ))
+	}
+	if len(i.ProductIDIn) > 0 {
+		predicates = append(predicates, relaykey.ProductIDIn(i.ProductIDIn...))
+	}
+	if len(i.ProductIDNotIn) > 0 {
+		predicates = append(predicates, relaykey.ProductIDNotIn(i.ProductIDNotIn...))
+	}
+	if i.OwnerUserID != nil {
+		predicates = append(predicates, relaykey.OwnerUserIDEQ(*i.OwnerUserID))
+	}
+	if i.OwnerUserIDNEQ != nil {
+		predicates = append(predicates, relaykey.OwnerUserIDNEQ(*i.OwnerUserIDNEQ))
+	}
+	if len(i.OwnerUserIDIn) > 0 {
+		predicates = append(predicates, relaykey.OwnerUserIDIn(i.OwnerUserIDIn...))
+	}
+	if len(i.OwnerUserIDNotIn) > 0 {
+		predicates = append(predicates, relaykey.OwnerUserIDNotIn(i.OwnerUserIDNotIn...))
+	}
+	if i.OwnerUserIDIsNil {
+		predicates = append(predicates, relaykey.OwnerUserIDIsNil())
+	}
+	if i.OwnerUserIDNotNil {
+		predicates = append(predicates, relaykey.OwnerUserIDNotNil())
+	}
+	if i.DisplayName != nil {
+		predicates = append(predicates, relaykey.DisplayNameEQ(*i.DisplayName))
+	}
+	if i.DisplayNameNEQ != nil {
+		predicates = append(predicates, relaykey.DisplayNameNEQ(*i.DisplayNameNEQ))
+	}
+	if len(i.DisplayNameIn) > 0 {
+		predicates = append(predicates, relaykey.DisplayNameIn(i.DisplayNameIn...))
+	}
+	if len(i.DisplayNameNotIn) > 0 {
+		predicates = append(predicates, relaykey.DisplayNameNotIn(i.DisplayNameNotIn...))
+	}
+	if i.DisplayNameGT != nil {
+		predicates = append(predicates, relaykey.DisplayNameGT(*i.DisplayNameGT))
+	}
+	if i.DisplayNameGTE != nil {
+		predicates = append(predicates, relaykey.DisplayNameGTE(*i.DisplayNameGTE))
+	}
+	if i.DisplayNameLT != nil {
+		predicates = append(predicates, relaykey.DisplayNameLT(*i.DisplayNameLT))
+	}
+	if i.DisplayNameLTE != nil {
+		predicates = append(predicates, relaykey.DisplayNameLTE(*i.DisplayNameLTE))
+	}
+	if i.DisplayNameContains != nil {
+		predicates = append(predicates, relaykey.DisplayNameContains(*i.DisplayNameContains))
+	}
+	if i.DisplayNameHasPrefix != nil {
+		predicates = append(predicates, relaykey.DisplayNameHasPrefix(*i.DisplayNameHasPrefix))
+	}
+	if i.DisplayNameHasSuffix != nil {
+		predicates = append(predicates, relaykey.DisplayNameHasSuffix(*i.DisplayNameHasSuffix))
+	}
+	if i.DisplayNameEqualFold != nil {
+		predicates = append(predicates, relaykey.DisplayNameEqualFold(*i.DisplayNameEqualFold))
+	}
+	if i.DisplayNameContainsFold != nil {
+		predicates = append(predicates, relaykey.DisplayNameContainsFold(*i.DisplayNameContainsFold))
+	}
+	if i.Status != nil {
+		predicates = append(predicates, relaykey.StatusEQ(*i.Status))
+	}
+	if i.StatusNEQ != nil {
+		predicates = append(predicates, relaykey.StatusNEQ(*i.StatusNEQ))
+	}
+	if len(i.StatusIn) > 0 {
+		predicates = append(predicates, relaykey.StatusIn(i.StatusIn...))
+	}
+	if len(i.StatusNotIn) > 0 {
+		predicates = append(predicates, relaykey.StatusNotIn(i.StatusNotIn...))
+	}
+	if i.BalanceMode != nil {
+		predicates = append(predicates, relaykey.BalanceModeEQ(*i.BalanceMode))
+	}
+	if i.BalanceModeNEQ != nil {
+		predicates = append(predicates, relaykey.BalanceModeNEQ(*i.BalanceModeNEQ))
+	}
+	if len(i.BalanceModeIn) > 0 {
+		predicates = append(predicates, relaykey.BalanceModeIn(i.BalanceModeIn...))
+	}
+	if len(i.BalanceModeNotIn) > 0 {
+		predicates = append(predicates, relaykey.BalanceModeNotIn(i.BalanceModeNotIn...))
+	}
+	if i.DailyRequestLimit != nil {
+		predicates = append(predicates, relaykey.DailyRequestLimitEQ(*i.DailyRequestLimit))
+	}
+	if i.DailyRequestLimitNEQ != nil {
+		predicates = append(predicates, relaykey.DailyRequestLimitNEQ(*i.DailyRequestLimitNEQ))
+	}
+	if len(i.DailyRequestLimitIn) > 0 {
+		predicates = append(predicates, relaykey.DailyRequestLimitIn(i.DailyRequestLimitIn...))
+	}
+	if len(i.DailyRequestLimitNotIn) > 0 {
+		predicates = append(predicates, relaykey.DailyRequestLimitNotIn(i.DailyRequestLimitNotIn...))
+	}
+	if i.DailyRequestLimitGT != nil {
+		predicates = append(predicates, relaykey.DailyRequestLimitGT(*i.DailyRequestLimitGT))
+	}
+	if i.DailyRequestLimitGTE != nil {
+		predicates = append(predicates, relaykey.DailyRequestLimitGTE(*i.DailyRequestLimitGTE))
+	}
+	if i.DailyRequestLimitLT != nil {
+		predicates = append(predicates, relaykey.DailyRequestLimitLT(*i.DailyRequestLimitLT))
+	}
+	if i.DailyRequestLimitLTE != nil {
+		predicates = append(predicates, relaykey.DailyRequestLimitLTE(*i.DailyRequestLimitLTE))
+	}
+	if i.DailyRequestLimitIsNil {
+		predicates = append(predicates, relaykey.DailyRequestLimitIsNil())
+	}
+	if i.DailyRequestLimitNotNil {
+		predicates = append(predicates, relaykey.DailyRequestLimitNotNil())
+	}
+	if i.DailyTokenLimit != nil {
+		predicates = append(predicates, relaykey.DailyTokenLimitEQ(*i.DailyTokenLimit))
+	}
+	if i.DailyTokenLimitNEQ != nil {
+		predicates = append(predicates, relaykey.DailyTokenLimitNEQ(*i.DailyTokenLimitNEQ))
+	}
+	if len(i.DailyTokenLimitIn) > 0 {
+		predicates = append(predicates, relaykey.DailyTokenLimitIn(i.DailyTokenLimitIn...))
+	}
+	if len(i.DailyTokenLimitNotIn) > 0 {
+		predicates = append(predicates, relaykey.DailyTokenLimitNotIn(i.DailyTokenLimitNotIn...))
+	}
+	if i.DailyTokenLimitGT != nil {
+		predicates = append(predicates, relaykey.DailyTokenLimitGT(*i.DailyTokenLimitGT))
+	}
+	if i.DailyTokenLimitGTE != nil {
+		predicates = append(predicates, relaykey.DailyTokenLimitGTE(*i.DailyTokenLimitGTE))
+	}
+	if i.DailyTokenLimitLT != nil {
+		predicates = append(predicates, relaykey.DailyTokenLimitLT(*i.DailyTokenLimitLT))
+	}
+	if i.DailyTokenLimitLTE != nil {
+		predicates = append(predicates, relaykey.DailyTokenLimitLTE(*i.DailyTokenLimitLTE))
+	}
+	if i.DailyTokenLimitIsNil {
+		predicates = append(predicates, relaykey.DailyTokenLimitIsNil())
+	}
+	if i.DailyTokenLimitNotNil {
+		predicates = append(predicates, relaykey.DailyTokenLimitNotNil())
+	}
+	if i.MonthlyCostLimit != nil {
+		predicates = append(predicates, relaykey.MonthlyCostLimitEQ(*i.MonthlyCostLimit))
+	}
+	if i.MonthlyCostLimitNEQ != nil {
+		predicates = append(predicates, relaykey.MonthlyCostLimitNEQ(*i.MonthlyCostLimitNEQ))
+	}
+	if len(i.MonthlyCostLimitIn) > 0 {
+		predicates = append(predicates, relaykey.MonthlyCostLimitIn(i.MonthlyCostLimitIn...))
+	}
+	if len(i.MonthlyCostLimitNotIn) > 0 {
+		predicates = append(predicates, relaykey.MonthlyCostLimitNotIn(i.MonthlyCostLimitNotIn...))
+	}
+	if i.MonthlyCostLimitGT != nil {
+		predicates = append(predicates, relaykey.MonthlyCostLimitGT(*i.MonthlyCostLimitGT))
+	}
+	if i.MonthlyCostLimitGTE != nil {
+		predicates = append(predicates, relaykey.MonthlyCostLimitGTE(*i.MonthlyCostLimitGTE))
+	}
+	if i.MonthlyCostLimitLT != nil {
+		predicates = append(predicates, relaykey.MonthlyCostLimitLT(*i.MonthlyCostLimitLT))
+	}
+	if i.MonthlyCostLimitLTE != nil {
+		predicates = append(predicates, relaykey.MonthlyCostLimitLTE(*i.MonthlyCostLimitLTE))
+	}
+	if i.MonthlyCostLimitContains != nil {
+		predicates = append(predicates, relaykey.MonthlyCostLimitContains(*i.MonthlyCostLimitContains))
+	}
+	if i.MonthlyCostLimitHasPrefix != nil {
+		predicates = append(predicates, relaykey.MonthlyCostLimitHasPrefix(*i.MonthlyCostLimitHasPrefix))
+	}
+	if i.MonthlyCostLimitHasSuffix != nil {
+		predicates = append(predicates, relaykey.MonthlyCostLimitHasSuffix(*i.MonthlyCostLimitHasSuffix))
+	}
+	if i.MonthlyCostLimitIsNil {
+		predicates = append(predicates, relaykey.MonthlyCostLimitIsNil())
+	}
+	if i.MonthlyCostLimitNotNil {
+		predicates = append(predicates, relaykey.MonthlyCostLimitNotNil())
+	}
+	if i.MonthlyCostLimitEqualFold != nil {
+		predicates = append(predicates, relaykey.MonthlyCostLimitEqualFold(*i.MonthlyCostLimitEqualFold))
+	}
+	if i.MonthlyCostLimitContainsFold != nil {
+		predicates = append(predicates, relaykey.MonthlyCostLimitContainsFold(*i.MonthlyCostLimitContainsFold))
+	}
+	if i.ConcurrencyLimit != nil {
+		predicates = append(predicates, relaykey.ConcurrencyLimitEQ(*i.ConcurrencyLimit))
+	}
+	if i.ConcurrencyLimitNEQ != nil {
+		predicates = append(predicates, relaykey.ConcurrencyLimitNEQ(*i.ConcurrencyLimitNEQ))
+	}
+	if len(i.ConcurrencyLimitIn) > 0 {
+		predicates = append(predicates, relaykey.ConcurrencyLimitIn(i.ConcurrencyLimitIn...))
+	}
+	if len(i.ConcurrencyLimitNotIn) > 0 {
+		predicates = append(predicates, relaykey.ConcurrencyLimitNotIn(i.ConcurrencyLimitNotIn...))
+	}
+	if i.ConcurrencyLimitGT != nil {
+		predicates = append(predicates, relaykey.ConcurrencyLimitGT(*i.ConcurrencyLimitGT))
+	}
+	if i.ConcurrencyLimitGTE != nil {
+		predicates = append(predicates, relaykey.ConcurrencyLimitGTE(*i.ConcurrencyLimitGTE))
+	}
+	if i.ConcurrencyLimitLT != nil {
+		predicates = append(predicates, relaykey.ConcurrencyLimitLT(*i.ConcurrencyLimitLT))
+	}
+	if i.ConcurrencyLimitLTE != nil {
+		predicates = append(predicates, relaykey.ConcurrencyLimitLTE(*i.ConcurrencyLimitLTE))
+	}
+	if i.ConcurrencyLimitIsNil {
+		predicates = append(predicates, relaykey.ConcurrencyLimitIsNil())
+	}
+	if i.ConcurrencyLimitNotNil {
+		predicates = append(predicates, relaykey.ConcurrencyLimitNotNil())
+	}
+	if i.ExpiresAt != nil {
+		predicates = append(predicates, relaykey.ExpiresAtEQ(*i.ExpiresAt))
+	}
+	if i.ExpiresAtNEQ != nil {
+		predicates = append(predicates, relaykey.ExpiresAtNEQ(*i.ExpiresAtNEQ))
+	}
+	if len(i.ExpiresAtIn) > 0 {
+		predicates = append(predicates, relaykey.ExpiresAtIn(i.ExpiresAtIn...))
+	}
+	if len(i.ExpiresAtNotIn) > 0 {
+		predicates = append(predicates, relaykey.ExpiresAtNotIn(i.ExpiresAtNotIn...))
+	}
+	if i.ExpiresAtGT != nil {
+		predicates = append(predicates, relaykey.ExpiresAtGT(*i.ExpiresAtGT))
+	}
+	if i.ExpiresAtGTE != nil {
+		predicates = append(predicates, relaykey.ExpiresAtGTE(*i.ExpiresAtGTE))
+	}
+	if i.ExpiresAtLT != nil {
+		predicates = append(predicates, relaykey.ExpiresAtLT(*i.ExpiresAtLT))
+	}
+	if i.ExpiresAtLTE != nil {
+		predicates = append(predicates, relaykey.ExpiresAtLTE(*i.ExpiresAtLTE))
+	}
+	if i.ExpiresAtIsNil {
+		predicates = append(predicates, relaykey.ExpiresAtIsNil())
+	}
+	if i.ExpiresAtNotNil {
+		predicates = append(predicates, relaykey.ExpiresAtNotNil())
+	}
+	if i.LastUsedAt != nil {
+		predicates = append(predicates, relaykey.LastUsedAtEQ(*i.LastUsedAt))
+	}
+	if i.LastUsedAtNEQ != nil {
+		predicates = append(predicates, relaykey.LastUsedAtNEQ(*i.LastUsedAtNEQ))
+	}
+	if len(i.LastUsedAtIn) > 0 {
+		predicates = append(predicates, relaykey.LastUsedAtIn(i.LastUsedAtIn...))
+	}
+	if len(i.LastUsedAtNotIn) > 0 {
+		predicates = append(predicates, relaykey.LastUsedAtNotIn(i.LastUsedAtNotIn...))
+	}
+	if i.LastUsedAtGT != nil {
+		predicates = append(predicates, relaykey.LastUsedAtGT(*i.LastUsedAtGT))
+	}
+	if i.LastUsedAtGTE != nil {
+		predicates = append(predicates, relaykey.LastUsedAtGTE(*i.LastUsedAtGTE))
+	}
+	if i.LastUsedAtLT != nil {
+		predicates = append(predicates, relaykey.LastUsedAtLT(*i.LastUsedAtLT))
+	}
+	if i.LastUsedAtLTE != nil {
+		predicates = append(predicates, relaykey.LastUsedAtLTE(*i.LastUsedAtLTE))
+	}
+	if i.LastUsedAtIsNil {
+		predicates = append(predicates, relaykey.LastUsedAtIsNil())
+	}
+	if i.LastUsedAtNotNil {
+		predicates = append(predicates, relaykey.LastUsedAtNotNil())
+	}
+
+	if i.HasAPIKey != nil {
+		p := relaykey.HasAPIKey()
+		if !*i.HasAPIKey {
+			p = relaykey.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasAPIKeyWith) > 0 {
+		with := make([]predicate.APIKey, 0, len(i.HasAPIKeyWith))
+		for _, w := range i.HasAPIKeyWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasAPIKeyWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, relaykey.HasAPIKeyWith(with...))
+	}
+	if i.HasProject != nil {
+		p := relaykey.HasProject()
+		if !*i.HasProject {
+			p = relaykey.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasProjectWith) > 0 {
+		with := make([]predicate.Project, 0, len(i.HasProjectWith))
+		for _, w := range i.HasProjectWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasProjectWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, relaykey.HasProjectWith(with...))
+	}
+	if i.HasProduct != nil {
+		p := relaykey.HasProduct()
+		if !*i.HasProduct {
+			p = relaykey.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasProductWith) > 0 {
+		with := make([]predicate.RelayProduct, 0, len(i.HasProductWith))
+		for _, w := range i.HasProductWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasProductWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, relaykey.HasProductWith(with...))
+	}
+	if i.HasOwnerUser != nil {
+		p := relaykey.HasOwnerUser()
+		if !*i.HasOwnerUser {
+			p = relaykey.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasOwnerUserWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasOwnerUserWith))
+		for _, w := range i.HasOwnerUserWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasOwnerUserWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, relaykey.HasOwnerUserWith(with...))
+	}
+	if i.HasWallet != nil {
+		p := relaykey.HasWallet()
+		if !*i.HasWallet {
+			p = relaykey.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasWalletWith) > 0 {
+		with := make([]predicate.RelayWallet, 0, len(i.HasWalletWith))
+		for _, w := range i.HasWalletWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasWalletWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, relaykey.HasWalletWith(with...))
+	}
+	if i.HasLedgerEntries != nil {
+		p := relaykey.HasLedgerEntries()
+		if !*i.HasLedgerEntries {
+			p = relaykey.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasLedgerEntriesWith) > 0 {
+		with := make([]predicate.RelayWalletLedgerEntry, 0, len(i.HasLedgerEntriesWith))
+		for _, w := range i.HasLedgerEntriesWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasLedgerEntriesWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, relaykey.HasLedgerEntriesWith(with...))
+	}
+	if i.HasDailyUsageSummaries != nil {
+		p := relaykey.HasDailyUsageSummaries()
+		if !*i.HasDailyUsageSummaries {
+			p = relaykey.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasDailyUsageSummariesWith) > 0 {
+		with := make([]predicate.RelayDailyUsageSummary, 0, len(i.HasDailyUsageSummariesWith))
+		for _, w := range i.HasDailyUsageSummariesWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasDailyUsageSummariesWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, relaykey.HasDailyUsageSummariesWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyRelayKeyWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return relaykey.And(predicates...), nil
+	}
+}
+
+// RelayProductWhereInput represents a where input for filtering RelayProduct queries.
+type RelayProductWhereInput struct {
+	Predicates []predicate.RelayProduct  `json:"-"`
+	Not        *RelayProductWhereInput   `json:"not,omitempty"`
+	Or         []*RelayProductWhereInput `json:"or,omitempty"`
+	And        []*RelayProductWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "code" field predicates.
+	Code             *string  `json:"code,omitempty"`
+	CodeNEQ          *string  `json:"codeNEQ,omitempty"`
+	CodeIn           []string `json:"codeIn,omitempty"`
+	CodeNotIn        []string `json:"codeNotIn,omitempty"`
+	CodeGT           *string  `json:"codeGT,omitempty"`
+	CodeGTE          *string  `json:"codeGTE,omitempty"`
+	CodeLT           *string  `json:"codeLT,omitempty"`
+	CodeLTE          *string  `json:"codeLTE,omitempty"`
+	CodeContains     *string  `json:"codeContains,omitempty"`
+	CodeHasPrefix    *string  `json:"codeHasPrefix,omitempty"`
+	CodeHasSuffix    *string  `json:"codeHasSuffix,omitempty"`
+	CodeEqualFold    *string  `json:"codeEqualFold,omitempty"`
+	CodeContainsFold *string  `json:"codeContainsFold,omitempty"`
+
+	// "name" field predicates.
+	Name             *string  `json:"name,omitempty"`
+	NameNEQ          *string  `json:"nameNEQ,omitempty"`
+	NameIn           []string `json:"nameIn,omitempty"`
+	NameNotIn        []string `json:"nameNotIn,omitempty"`
+	NameGT           *string  `json:"nameGT,omitempty"`
+	NameGTE          *string  `json:"nameGTE,omitempty"`
+	NameLT           *string  `json:"nameLT,omitempty"`
+	NameLTE          *string  `json:"nameLTE,omitempty"`
+	NameContains     *string  `json:"nameContains,omitempty"`
+	NameHasPrefix    *string  `json:"nameHasPrefix,omitempty"`
+	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
+	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
+	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
+
+	// "provider_type" field predicates.
+	ProviderType      *relayproduct.ProviderType  `json:"providerType,omitempty"`
+	ProviderTypeNEQ   *relayproduct.ProviderType  `json:"providerTypeNEQ,omitempty"`
+	ProviderTypeIn    []relayproduct.ProviderType `json:"providerTypeIn,omitempty"`
+	ProviderTypeNotIn []relayproduct.ProviderType `json:"providerTypeNotIn,omitempty"`
+
+	// "access_mode" field predicates.
+	AccessMode      *relayproduct.AccessMode  `json:"accessMode,omitempty"`
+	AccessModeNEQ   *relayproduct.AccessMode  `json:"accessModeNEQ,omitempty"`
+	AccessModeIn    []relayproduct.AccessMode `json:"accessModeIn,omitempty"`
+	AccessModeNotIn []relayproduct.AccessMode `json:"accessModeNotIn,omitempty"`
+
+	// "billing_mode" field predicates.
+	BillingMode      *relayproduct.BillingMode  `json:"billingMode,omitempty"`
+	BillingModeNEQ   *relayproduct.BillingMode  `json:"billingModeNEQ,omitempty"`
+	BillingModeIn    []relayproduct.BillingMode `json:"billingModeIn,omitempty"`
+	BillingModeNotIn []relayproduct.BillingMode `json:"billingModeNotIn,omitempty"`
+
+	// "status" field predicates.
+	Status      *relayproduct.Status  `json:"status,omitempty"`
+	StatusNEQ   *relayproduct.Status  `json:"statusNEQ,omitempty"`
+	StatusIn    []relayproduct.Status `json:"statusIn,omitempty"`
+	StatusNotIn []relayproduct.Status `json:"statusNotIn,omitempty"`
+
+	// "currency" field predicates.
+	Currency             *string  `json:"currency,omitempty"`
+	CurrencyNEQ          *string  `json:"currencyNEQ,omitempty"`
+	CurrencyIn           []string `json:"currencyIn,omitempty"`
+	CurrencyNotIn        []string `json:"currencyNotIn,omitempty"`
+	CurrencyGT           *string  `json:"currencyGT,omitempty"`
+	CurrencyGTE          *string  `json:"currencyGTE,omitempty"`
+	CurrencyLT           *string  `json:"currencyLT,omitempty"`
+	CurrencyLTE          *string  `json:"currencyLTE,omitempty"`
+	CurrencyContains     *string  `json:"currencyContains,omitempty"`
+	CurrencyHasPrefix    *string  `json:"currencyHasPrefix,omitempty"`
+	CurrencyHasSuffix    *string  `json:"currencyHasSuffix,omitempty"`
+	CurrencyEqualFold    *string  `json:"currencyEqualFold,omitempty"`
+	CurrencyContainsFold *string  `json:"currencyContainsFold,omitempty"`
+
+	// "request_timeout_seconds" field predicates.
+	RequestTimeoutSeconds      *int  `json:"requestTimeoutSeconds,omitempty"`
+	RequestTimeoutSecondsNEQ   *int  `json:"requestTimeoutSecondsNEQ,omitempty"`
+	RequestTimeoutSecondsIn    []int `json:"requestTimeoutSecondsIn,omitempty"`
+	RequestTimeoutSecondsNotIn []int `json:"requestTimeoutSecondsNotIn,omitempty"`
+	RequestTimeoutSecondsGT    *int  `json:"requestTimeoutSecondsGT,omitempty"`
+	RequestTimeoutSecondsGTE   *int  `json:"requestTimeoutSecondsGTE,omitempty"`
+	RequestTimeoutSecondsLT    *int  `json:"requestTimeoutSecondsLT,omitempty"`
+	RequestTimeoutSecondsLTE   *int  `json:"requestTimeoutSecondsLTE,omitempty"`
+
+	// "channel_bindings" edge predicates.
+	HasChannelBindings     *bool                            `json:"hasChannelBindings,omitempty"`
+	HasChannelBindingsWith []*RelayProductChannelWhereInput `json:"hasChannelBindingsWith,omitempty"`
+
+	// "relay_keys" edge predicates.
+	HasRelayKeys     *bool                 `json:"hasRelayKeys,omitempty"`
+	HasRelayKeysWith []*RelayKeyWhereInput `json:"hasRelayKeysWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *RelayProductWhereInput) AddPredicates(predicates ...predicate.RelayProduct) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the RelayProductWhereInput filter on the RelayProductQuery builder.
+func (i *RelayProductWhereInput) Filter(q *RelayProductQuery) (*RelayProductQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyRelayProductWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyRelayProductWhereInput is returned in case the RelayProductWhereInput is empty.
+var ErrEmptyRelayProductWhereInput = errors.New("ent: empty predicate RelayProductWhereInput")
+
+// P returns a predicate for filtering relayproducts.
+// An error is returned if the input is empty or invalid.
+func (i *RelayProductWhereInput) P() (predicate.RelayProduct, error) {
+	var predicates []predicate.RelayProduct
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, relayproduct.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.RelayProduct, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, relayproduct.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.RelayProduct, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, relayproduct.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, relayproduct.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, relayproduct.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, relayproduct.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, relayproduct.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, relayproduct.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, relayproduct.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, relayproduct.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, relayproduct.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, relayproduct.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, relayproduct.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, relayproduct.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, relayproduct.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, relayproduct.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, relayproduct.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, relayproduct.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, relayproduct.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, relayproduct.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, relayproduct.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, relayproduct.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, relayproduct.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, relayproduct.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, relayproduct.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, relayproduct.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, relayproduct.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.Code != nil {
+		predicates = append(predicates, relayproduct.CodeEQ(*i.Code))
+	}
+	if i.CodeNEQ != nil {
+		predicates = append(predicates, relayproduct.CodeNEQ(*i.CodeNEQ))
+	}
+	if len(i.CodeIn) > 0 {
+		predicates = append(predicates, relayproduct.CodeIn(i.CodeIn...))
+	}
+	if len(i.CodeNotIn) > 0 {
+		predicates = append(predicates, relayproduct.CodeNotIn(i.CodeNotIn...))
+	}
+	if i.CodeGT != nil {
+		predicates = append(predicates, relayproduct.CodeGT(*i.CodeGT))
+	}
+	if i.CodeGTE != nil {
+		predicates = append(predicates, relayproduct.CodeGTE(*i.CodeGTE))
+	}
+	if i.CodeLT != nil {
+		predicates = append(predicates, relayproduct.CodeLT(*i.CodeLT))
+	}
+	if i.CodeLTE != nil {
+		predicates = append(predicates, relayproduct.CodeLTE(*i.CodeLTE))
+	}
+	if i.CodeContains != nil {
+		predicates = append(predicates, relayproduct.CodeContains(*i.CodeContains))
+	}
+	if i.CodeHasPrefix != nil {
+		predicates = append(predicates, relayproduct.CodeHasPrefix(*i.CodeHasPrefix))
+	}
+	if i.CodeHasSuffix != nil {
+		predicates = append(predicates, relayproduct.CodeHasSuffix(*i.CodeHasSuffix))
+	}
+	if i.CodeEqualFold != nil {
+		predicates = append(predicates, relayproduct.CodeEqualFold(*i.CodeEqualFold))
+	}
+	if i.CodeContainsFold != nil {
+		predicates = append(predicates, relayproduct.CodeContainsFold(*i.CodeContainsFold))
+	}
+	if i.Name != nil {
+		predicates = append(predicates, relayproduct.NameEQ(*i.Name))
+	}
+	if i.NameNEQ != nil {
+		predicates = append(predicates, relayproduct.NameNEQ(*i.NameNEQ))
+	}
+	if len(i.NameIn) > 0 {
+		predicates = append(predicates, relayproduct.NameIn(i.NameIn...))
+	}
+	if len(i.NameNotIn) > 0 {
+		predicates = append(predicates, relayproduct.NameNotIn(i.NameNotIn...))
+	}
+	if i.NameGT != nil {
+		predicates = append(predicates, relayproduct.NameGT(*i.NameGT))
+	}
+	if i.NameGTE != nil {
+		predicates = append(predicates, relayproduct.NameGTE(*i.NameGTE))
+	}
+	if i.NameLT != nil {
+		predicates = append(predicates, relayproduct.NameLT(*i.NameLT))
+	}
+	if i.NameLTE != nil {
+		predicates = append(predicates, relayproduct.NameLTE(*i.NameLTE))
+	}
+	if i.NameContains != nil {
+		predicates = append(predicates, relayproduct.NameContains(*i.NameContains))
+	}
+	if i.NameHasPrefix != nil {
+		predicates = append(predicates, relayproduct.NameHasPrefix(*i.NameHasPrefix))
+	}
+	if i.NameHasSuffix != nil {
+		predicates = append(predicates, relayproduct.NameHasSuffix(*i.NameHasSuffix))
+	}
+	if i.NameEqualFold != nil {
+		predicates = append(predicates, relayproduct.NameEqualFold(*i.NameEqualFold))
+	}
+	if i.NameContainsFold != nil {
+		predicates = append(predicates, relayproduct.NameContainsFold(*i.NameContainsFold))
+	}
+	if i.ProviderType != nil {
+		predicates = append(predicates, relayproduct.ProviderTypeEQ(*i.ProviderType))
+	}
+	if i.ProviderTypeNEQ != nil {
+		predicates = append(predicates, relayproduct.ProviderTypeNEQ(*i.ProviderTypeNEQ))
+	}
+	if len(i.ProviderTypeIn) > 0 {
+		predicates = append(predicates, relayproduct.ProviderTypeIn(i.ProviderTypeIn...))
+	}
+	if len(i.ProviderTypeNotIn) > 0 {
+		predicates = append(predicates, relayproduct.ProviderTypeNotIn(i.ProviderTypeNotIn...))
+	}
+	if i.AccessMode != nil {
+		predicates = append(predicates, relayproduct.AccessModeEQ(*i.AccessMode))
+	}
+	if i.AccessModeNEQ != nil {
+		predicates = append(predicates, relayproduct.AccessModeNEQ(*i.AccessModeNEQ))
+	}
+	if len(i.AccessModeIn) > 0 {
+		predicates = append(predicates, relayproduct.AccessModeIn(i.AccessModeIn...))
+	}
+	if len(i.AccessModeNotIn) > 0 {
+		predicates = append(predicates, relayproduct.AccessModeNotIn(i.AccessModeNotIn...))
+	}
+	if i.BillingMode != nil {
+		predicates = append(predicates, relayproduct.BillingModeEQ(*i.BillingMode))
+	}
+	if i.BillingModeNEQ != nil {
+		predicates = append(predicates, relayproduct.BillingModeNEQ(*i.BillingModeNEQ))
+	}
+	if len(i.BillingModeIn) > 0 {
+		predicates = append(predicates, relayproduct.BillingModeIn(i.BillingModeIn...))
+	}
+	if len(i.BillingModeNotIn) > 0 {
+		predicates = append(predicates, relayproduct.BillingModeNotIn(i.BillingModeNotIn...))
+	}
+	if i.Status != nil {
+		predicates = append(predicates, relayproduct.StatusEQ(*i.Status))
+	}
+	if i.StatusNEQ != nil {
+		predicates = append(predicates, relayproduct.StatusNEQ(*i.StatusNEQ))
+	}
+	if len(i.StatusIn) > 0 {
+		predicates = append(predicates, relayproduct.StatusIn(i.StatusIn...))
+	}
+	if len(i.StatusNotIn) > 0 {
+		predicates = append(predicates, relayproduct.StatusNotIn(i.StatusNotIn...))
+	}
+	if i.Currency != nil {
+		predicates = append(predicates, relayproduct.CurrencyEQ(*i.Currency))
+	}
+	if i.CurrencyNEQ != nil {
+		predicates = append(predicates, relayproduct.CurrencyNEQ(*i.CurrencyNEQ))
+	}
+	if len(i.CurrencyIn) > 0 {
+		predicates = append(predicates, relayproduct.CurrencyIn(i.CurrencyIn...))
+	}
+	if len(i.CurrencyNotIn) > 0 {
+		predicates = append(predicates, relayproduct.CurrencyNotIn(i.CurrencyNotIn...))
+	}
+	if i.CurrencyGT != nil {
+		predicates = append(predicates, relayproduct.CurrencyGT(*i.CurrencyGT))
+	}
+	if i.CurrencyGTE != nil {
+		predicates = append(predicates, relayproduct.CurrencyGTE(*i.CurrencyGTE))
+	}
+	if i.CurrencyLT != nil {
+		predicates = append(predicates, relayproduct.CurrencyLT(*i.CurrencyLT))
+	}
+	if i.CurrencyLTE != nil {
+		predicates = append(predicates, relayproduct.CurrencyLTE(*i.CurrencyLTE))
+	}
+	if i.CurrencyContains != nil {
+		predicates = append(predicates, relayproduct.CurrencyContains(*i.CurrencyContains))
+	}
+	if i.CurrencyHasPrefix != nil {
+		predicates = append(predicates, relayproduct.CurrencyHasPrefix(*i.CurrencyHasPrefix))
+	}
+	if i.CurrencyHasSuffix != nil {
+		predicates = append(predicates, relayproduct.CurrencyHasSuffix(*i.CurrencyHasSuffix))
+	}
+	if i.CurrencyEqualFold != nil {
+		predicates = append(predicates, relayproduct.CurrencyEqualFold(*i.CurrencyEqualFold))
+	}
+	if i.CurrencyContainsFold != nil {
+		predicates = append(predicates, relayproduct.CurrencyContainsFold(*i.CurrencyContainsFold))
+	}
+	if i.RequestTimeoutSeconds != nil {
+		predicates = append(predicates, relayproduct.RequestTimeoutSecondsEQ(*i.RequestTimeoutSeconds))
+	}
+	if i.RequestTimeoutSecondsNEQ != nil {
+		predicates = append(predicates, relayproduct.RequestTimeoutSecondsNEQ(*i.RequestTimeoutSecondsNEQ))
+	}
+	if len(i.RequestTimeoutSecondsIn) > 0 {
+		predicates = append(predicates, relayproduct.RequestTimeoutSecondsIn(i.RequestTimeoutSecondsIn...))
+	}
+	if len(i.RequestTimeoutSecondsNotIn) > 0 {
+		predicates = append(predicates, relayproduct.RequestTimeoutSecondsNotIn(i.RequestTimeoutSecondsNotIn...))
+	}
+	if i.RequestTimeoutSecondsGT != nil {
+		predicates = append(predicates, relayproduct.RequestTimeoutSecondsGT(*i.RequestTimeoutSecondsGT))
+	}
+	if i.RequestTimeoutSecondsGTE != nil {
+		predicates = append(predicates, relayproduct.RequestTimeoutSecondsGTE(*i.RequestTimeoutSecondsGTE))
+	}
+	if i.RequestTimeoutSecondsLT != nil {
+		predicates = append(predicates, relayproduct.RequestTimeoutSecondsLT(*i.RequestTimeoutSecondsLT))
+	}
+	if i.RequestTimeoutSecondsLTE != nil {
+		predicates = append(predicates, relayproduct.RequestTimeoutSecondsLTE(*i.RequestTimeoutSecondsLTE))
+	}
+
+	if i.HasChannelBindings != nil {
+		p := relayproduct.HasChannelBindings()
+		if !*i.HasChannelBindings {
+			p = relayproduct.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasChannelBindingsWith) > 0 {
+		with := make([]predicate.RelayProductChannel, 0, len(i.HasChannelBindingsWith))
+		for _, w := range i.HasChannelBindingsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasChannelBindingsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, relayproduct.HasChannelBindingsWith(with...))
+	}
+	if i.HasRelayKeys != nil {
+		p := relayproduct.HasRelayKeys()
+		if !*i.HasRelayKeys {
+			p = relayproduct.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasRelayKeysWith) > 0 {
+		with := make([]predicate.RelayKey, 0, len(i.HasRelayKeysWith))
+		for _, w := range i.HasRelayKeysWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasRelayKeysWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, relayproduct.HasRelayKeysWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyRelayProductWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return relayproduct.And(predicates...), nil
+	}
+}
+
+// RelayProductChannelWhereInput represents a where input for filtering RelayProductChannel queries.
+type RelayProductChannelWhereInput struct {
+	Predicates []predicate.RelayProductChannel  `json:"-"`
+	Not        *RelayProductChannelWhereInput   `json:"not,omitempty"`
+	Or         []*RelayProductChannelWhereInput `json:"or,omitempty"`
+	And        []*RelayProductChannelWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "product_id" field predicates.
+	ProductID      *int  `json:"productID,omitempty"`
+	ProductIDNEQ   *int  `json:"productIDNEQ,omitempty"`
+	ProductIDIn    []int `json:"productIDIn,omitempty"`
+	ProductIDNotIn []int `json:"productIDNotIn,omitempty"`
+
+	// "channel_id" field predicates.
+	ChannelID      *int  `json:"channelID,omitempty"`
+	ChannelIDNEQ   *int  `json:"channelIDNEQ,omitempty"`
+	ChannelIDIn    []int `json:"channelIDIn,omitempty"`
+	ChannelIDNotIn []int `json:"channelIDNotIn,omitempty"`
+
+	// "priority" field predicates.
+	Priority      *int  `json:"priority,omitempty"`
+	PriorityNEQ   *int  `json:"priorityNEQ,omitempty"`
+	PriorityIn    []int `json:"priorityIn,omitempty"`
+	PriorityNotIn []int `json:"priorityNotIn,omitempty"`
+	PriorityGT    *int  `json:"priorityGT,omitempty"`
+	PriorityGTE   *int  `json:"priorityGTE,omitempty"`
+	PriorityLT    *int  `json:"priorityLT,omitempty"`
+	PriorityLTE   *int  `json:"priorityLTE,omitempty"`
+
+	// "weight" field predicates.
+	Weight      *int  `json:"weight,omitempty"`
+	WeightNEQ   *int  `json:"weightNEQ,omitempty"`
+	WeightIn    []int `json:"weightIn,omitempty"`
+	WeightNotIn []int `json:"weightNotIn,omitempty"`
+	WeightGT    *int  `json:"weightGT,omitempty"`
+	WeightGTE   *int  `json:"weightGTE,omitempty"`
+	WeightLT    *int  `json:"weightLT,omitempty"`
+	WeightLTE   *int  `json:"weightLTE,omitempty"`
+
+	// "status" field predicates.
+	Status      *relayproductchannel.Status  `json:"status,omitempty"`
+	StatusNEQ   *relayproductchannel.Status  `json:"statusNEQ,omitempty"`
+	StatusIn    []relayproductchannel.Status `json:"statusIn,omitempty"`
+	StatusNotIn []relayproductchannel.Status `json:"statusNotIn,omitempty"`
+
+	// "allow_fallback" field predicates.
+	AllowFallback    *bool `json:"allowFallback,omitempty"`
+	AllowFallbackNEQ *bool `json:"allowFallbackNEQ,omitempty"`
+
+	// "max_inflight" field predicates.
+	MaxInflight       *int  `json:"maxInflight,omitempty"`
+	MaxInflightNEQ    *int  `json:"maxInflightNEQ,omitempty"`
+	MaxInflightIn     []int `json:"maxInflightIn,omitempty"`
+	MaxInflightNotIn  []int `json:"maxInflightNotIn,omitempty"`
+	MaxInflightGT     *int  `json:"maxInflightGT,omitempty"`
+	MaxInflightGTE    *int  `json:"maxInflightGTE,omitempty"`
+	MaxInflightLT     *int  `json:"maxInflightLT,omitempty"`
+	MaxInflightLTE    *int  `json:"maxInflightLTE,omitempty"`
+	MaxInflightIsNil  bool  `json:"maxInflightIsNil,omitempty"`
+	MaxInflightNotNil bool  `json:"maxInflightNotNil,omitempty"`
+
+	// "product" edge predicates.
+	HasProduct     *bool                     `json:"hasProduct,omitempty"`
+	HasProductWith []*RelayProductWhereInput `json:"hasProductWith,omitempty"`
+
+	// "channel" edge predicates.
+	HasChannel     *bool                `json:"hasChannel,omitempty"`
+	HasChannelWith []*ChannelWhereInput `json:"hasChannelWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *RelayProductChannelWhereInput) AddPredicates(predicates ...predicate.RelayProductChannel) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the RelayProductChannelWhereInput filter on the RelayProductChannelQuery builder.
+func (i *RelayProductChannelWhereInput) Filter(q *RelayProductChannelQuery) (*RelayProductChannelQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyRelayProductChannelWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyRelayProductChannelWhereInput is returned in case the RelayProductChannelWhereInput is empty.
+var ErrEmptyRelayProductChannelWhereInput = errors.New("ent: empty predicate RelayProductChannelWhereInput")
+
+// P returns a predicate for filtering relayproductchannels.
+// An error is returned if the input is empty or invalid.
+func (i *RelayProductChannelWhereInput) P() (predicate.RelayProductChannel, error) {
+	var predicates []predicate.RelayProductChannel
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, relayproductchannel.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.RelayProductChannel, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, relayproductchannel.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.RelayProductChannel, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, relayproductchannel.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, relayproductchannel.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, relayproductchannel.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, relayproductchannel.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, relayproductchannel.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, relayproductchannel.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, relayproductchannel.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, relayproductchannel.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, relayproductchannel.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, relayproductchannel.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, relayproductchannel.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, relayproductchannel.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, relayproductchannel.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, relayproductchannel.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, relayproductchannel.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, relayproductchannel.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, relayproductchannel.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, relayproductchannel.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, relayproductchannel.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, relayproductchannel.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, relayproductchannel.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, relayproductchannel.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, relayproductchannel.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, relayproductchannel.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, relayproductchannel.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.ProductID != nil {
+		predicates = append(predicates, relayproductchannel.ProductIDEQ(*i.ProductID))
+	}
+	if i.ProductIDNEQ != nil {
+		predicates = append(predicates, relayproductchannel.ProductIDNEQ(*i.ProductIDNEQ))
+	}
+	if len(i.ProductIDIn) > 0 {
+		predicates = append(predicates, relayproductchannel.ProductIDIn(i.ProductIDIn...))
+	}
+	if len(i.ProductIDNotIn) > 0 {
+		predicates = append(predicates, relayproductchannel.ProductIDNotIn(i.ProductIDNotIn...))
+	}
+	if i.ChannelID != nil {
+		predicates = append(predicates, relayproductchannel.ChannelIDEQ(*i.ChannelID))
+	}
+	if i.ChannelIDNEQ != nil {
+		predicates = append(predicates, relayproductchannel.ChannelIDNEQ(*i.ChannelIDNEQ))
+	}
+	if len(i.ChannelIDIn) > 0 {
+		predicates = append(predicates, relayproductchannel.ChannelIDIn(i.ChannelIDIn...))
+	}
+	if len(i.ChannelIDNotIn) > 0 {
+		predicates = append(predicates, relayproductchannel.ChannelIDNotIn(i.ChannelIDNotIn...))
+	}
+	if i.Priority != nil {
+		predicates = append(predicates, relayproductchannel.PriorityEQ(*i.Priority))
+	}
+	if i.PriorityNEQ != nil {
+		predicates = append(predicates, relayproductchannel.PriorityNEQ(*i.PriorityNEQ))
+	}
+	if len(i.PriorityIn) > 0 {
+		predicates = append(predicates, relayproductchannel.PriorityIn(i.PriorityIn...))
+	}
+	if len(i.PriorityNotIn) > 0 {
+		predicates = append(predicates, relayproductchannel.PriorityNotIn(i.PriorityNotIn...))
+	}
+	if i.PriorityGT != nil {
+		predicates = append(predicates, relayproductchannel.PriorityGT(*i.PriorityGT))
+	}
+	if i.PriorityGTE != nil {
+		predicates = append(predicates, relayproductchannel.PriorityGTE(*i.PriorityGTE))
+	}
+	if i.PriorityLT != nil {
+		predicates = append(predicates, relayproductchannel.PriorityLT(*i.PriorityLT))
+	}
+	if i.PriorityLTE != nil {
+		predicates = append(predicates, relayproductchannel.PriorityLTE(*i.PriorityLTE))
+	}
+	if i.Weight != nil {
+		predicates = append(predicates, relayproductchannel.WeightEQ(*i.Weight))
+	}
+	if i.WeightNEQ != nil {
+		predicates = append(predicates, relayproductchannel.WeightNEQ(*i.WeightNEQ))
+	}
+	if len(i.WeightIn) > 0 {
+		predicates = append(predicates, relayproductchannel.WeightIn(i.WeightIn...))
+	}
+	if len(i.WeightNotIn) > 0 {
+		predicates = append(predicates, relayproductchannel.WeightNotIn(i.WeightNotIn...))
+	}
+	if i.WeightGT != nil {
+		predicates = append(predicates, relayproductchannel.WeightGT(*i.WeightGT))
+	}
+	if i.WeightGTE != nil {
+		predicates = append(predicates, relayproductchannel.WeightGTE(*i.WeightGTE))
+	}
+	if i.WeightLT != nil {
+		predicates = append(predicates, relayproductchannel.WeightLT(*i.WeightLT))
+	}
+	if i.WeightLTE != nil {
+		predicates = append(predicates, relayproductchannel.WeightLTE(*i.WeightLTE))
+	}
+	if i.Status != nil {
+		predicates = append(predicates, relayproductchannel.StatusEQ(*i.Status))
+	}
+	if i.StatusNEQ != nil {
+		predicates = append(predicates, relayproductchannel.StatusNEQ(*i.StatusNEQ))
+	}
+	if len(i.StatusIn) > 0 {
+		predicates = append(predicates, relayproductchannel.StatusIn(i.StatusIn...))
+	}
+	if len(i.StatusNotIn) > 0 {
+		predicates = append(predicates, relayproductchannel.StatusNotIn(i.StatusNotIn...))
+	}
+	if i.AllowFallback != nil {
+		predicates = append(predicates, relayproductchannel.AllowFallbackEQ(*i.AllowFallback))
+	}
+	if i.AllowFallbackNEQ != nil {
+		predicates = append(predicates, relayproductchannel.AllowFallbackNEQ(*i.AllowFallbackNEQ))
+	}
+	if i.MaxInflight != nil {
+		predicates = append(predicates, relayproductchannel.MaxInflightEQ(*i.MaxInflight))
+	}
+	if i.MaxInflightNEQ != nil {
+		predicates = append(predicates, relayproductchannel.MaxInflightNEQ(*i.MaxInflightNEQ))
+	}
+	if len(i.MaxInflightIn) > 0 {
+		predicates = append(predicates, relayproductchannel.MaxInflightIn(i.MaxInflightIn...))
+	}
+	if len(i.MaxInflightNotIn) > 0 {
+		predicates = append(predicates, relayproductchannel.MaxInflightNotIn(i.MaxInflightNotIn...))
+	}
+	if i.MaxInflightGT != nil {
+		predicates = append(predicates, relayproductchannel.MaxInflightGT(*i.MaxInflightGT))
+	}
+	if i.MaxInflightGTE != nil {
+		predicates = append(predicates, relayproductchannel.MaxInflightGTE(*i.MaxInflightGTE))
+	}
+	if i.MaxInflightLT != nil {
+		predicates = append(predicates, relayproductchannel.MaxInflightLT(*i.MaxInflightLT))
+	}
+	if i.MaxInflightLTE != nil {
+		predicates = append(predicates, relayproductchannel.MaxInflightLTE(*i.MaxInflightLTE))
+	}
+	if i.MaxInflightIsNil {
+		predicates = append(predicates, relayproductchannel.MaxInflightIsNil())
+	}
+	if i.MaxInflightNotNil {
+		predicates = append(predicates, relayproductchannel.MaxInflightNotNil())
+	}
+
+	if i.HasProduct != nil {
+		p := relayproductchannel.HasProduct()
+		if !*i.HasProduct {
+			p = relayproductchannel.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasProductWith) > 0 {
+		with := make([]predicate.RelayProduct, 0, len(i.HasProductWith))
+		for _, w := range i.HasProductWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasProductWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, relayproductchannel.HasProductWith(with...))
+	}
+	if i.HasChannel != nil {
+		p := relayproductchannel.HasChannel()
+		if !*i.HasChannel {
+			p = relayproductchannel.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasChannelWith) > 0 {
+		with := make([]predicate.Channel, 0, len(i.HasChannelWith))
+		for _, w := range i.HasChannelWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasChannelWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, relayproductchannel.HasChannelWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyRelayProductChannelWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return relayproductchannel.And(predicates...), nil
+	}
+}
+
+// RelayWalletWhereInput represents a where input for filtering RelayWallet queries.
+type RelayWalletWhereInput struct {
+	Predicates []predicate.RelayWallet  `json:"-"`
+	Not        *RelayWalletWhereInput   `json:"not,omitempty"`
+	Or         []*RelayWalletWhereInput `json:"or,omitempty"`
+	And        []*RelayWalletWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "relay_key_id" field predicates.
+	RelayKeyID      *int  `json:"relayKeyID,omitempty"`
+	RelayKeyIDNEQ   *int  `json:"relayKeyIDNEQ,omitempty"`
+	RelayKeyIDIn    []int `json:"relayKeyIDIn,omitempty"`
+	RelayKeyIDNotIn []int `json:"relayKeyIDNotIn,omitempty"`
+
+	// "project_id" field predicates.
+	ProjectID      *int  `json:"projectID,omitempty"`
+	ProjectIDNEQ   *int  `json:"projectIDNEQ,omitempty"`
+	ProjectIDIn    []int `json:"projectIDIn,omitempty"`
+	ProjectIDNotIn []int `json:"projectIDNotIn,omitempty"`
+	ProjectIDGT    *int  `json:"projectIDGT,omitempty"`
+	ProjectIDGTE   *int  `json:"projectIDGTE,omitempty"`
+	ProjectIDLT    *int  `json:"projectIDLT,omitempty"`
+	ProjectIDLTE   *int  `json:"projectIDLTE,omitempty"`
+
+	// "currency" field predicates.
+	Currency             *string  `json:"currency,omitempty"`
+	CurrencyNEQ          *string  `json:"currencyNEQ,omitempty"`
+	CurrencyIn           []string `json:"currencyIn,omitempty"`
+	CurrencyNotIn        []string `json:"currencyNotIn,omitempty"`
+	CurrencyGT           *string  `json:"currencyGT,omitempty"`
+	CurrencyGTE          *string  `json:"currencyGTE,omitempty"`
+	CurrencyLT           *string  `json:"currencyLT,omitempty"`
+	CurrencyLTE          *string  `json:"currencyLTE,omitempty"`
+	CurrencyContains     *string  `json:"currencyContains,omitempty"`
+	CurrencyHasPrefix    *string  `json:"currencyHasPrefix,omitempty"`
+	CurrencyHasSuffix    *string  `json:"currencyHasSuffix,omitempty"`
+	CurrencyEqualFold    *string  `json:"currencyEqualFold,omitempty"`
+	CurrencyContainsFold *string  `json:"currencyContainsFold,omitempty"`
+
+	// "available_amount" field predicates.
+	AvailableAmount             *string  `json:"availableAmount,omitempty"`
+	AvailableAmountNEQ          *string  `json:"availableAmountNEQ,omitempty"`
+	AvailableAmountIn           []string `json:"availableAmountIn,omitempty"`
+	AvailableAmountNotIn        []string `json:"availableAmountNotIn,omitempty"`
+	AvailableAmountGT           *string  `json:"availableAmountGT,omitempty"`
+	AvailableAmountGTE          *string  `json:"availableAmountGTE,omitempty"`
+	AvailableAmountLT           *string  `json:"availableAmountLT,omitempty"`
+	AvailableAmountLTE          *string  `json:"availableAmountLTE,omitempty"`
+	AvailableAmountContains     *string  `json:"availableAmountContains,omitempty"`
+	AvailableAmountHasPrefix    *string  `json:"availableAmountHasPrefix,omitempty"`
+	AvailableAmountHasSuffix    *string  `json:"availableAmountHasSuffix,omitempty"`
+	AvailableAmountEqualFold    *string  `json:"availableAmountEqualFold,omitempty"`
+	AvailableAmountContainsFold *string  `json:"availableAmountContainsFold,omitempty"`
+
+	// "frozen_amount" field predicates.
+	FrozenAmount             *string  `json:"frozenAmount,omitempty"`
+	FrozenAmountNEQ          *string  `json:"frozenAmountNEQ,omitempty"`
+	FrozenAmountIn           []string `json:"frozenAmountIn,omitempty"`
+	FrozenAmountNotIn        []string `json:"frozenAmountNotIn,omitempty"`
+	FrozenAmountGT           *string  `json:"frozenAmountGT,omitempty"`
+	FrozenAmountGTE          *string  `json:"frozenAmountGTE,omitempty"`
+	FrozenAmountLT           *string  `json:"frozenAmountLT,omitempty"`
+	FrozenAmountLTE          *string  `json:"frozenAmountLTE,omitempty"`
+	FrozenAmountContains     *string  `json:"frozenAmountContains,omitempty"`
+	FrozenAmountHasPrefix    *string  `json:"frozenAmountHasPrefix,omitempty"`
+	FrozenAmountHasSuffix    *string  `json:"frozenAmountHasSuffix,omitempty"`
+	FrozenAmountEqualFold    *string  `json:"frozenAmountEqualFold,omitempty"`
+	FrozenAmountContainsFold *string  `json:"frozenAmountContainsFold,omitempty"`
+
+	// "overdraft_limit" field predicates.
+	OverdraftLimit             *string  `json:"overdraftLimit,omitempty"`
+	OverdraftLimitNEQ          *string  `json:"overdraftLimitNEQ,omitempty"`
+	OverdraftLimitIn           []string `json:"overdraftLimitIn,omitempty"`
+	OverdraftLimitNotIn        []string `json:"overdraftLimitNotIn,omitempty"`
+	OverdraftLimitGT           *string  `json:"overdraftLimitGT,omitempty"`
+	OverdraftLimitGTE          *string  `json:"overdraftLimitGTE,omitempty"`
+	OverdraftLimitLT           *string  `json:"overdraftLimitLT,omitempty"`
+	OverdraftLimitLTE          *string  `json:"overdraftLimitLTE,omitempty"`
+	OverdraftLimitContains     *string  `json:"overdraftLimitContains,omitempty"`
+	OverdraftLimitHasPrefix    *string  `json:"overdraftLimitHasPrefix,omitempty"`
+	OverdraftLimitHasSuffix    *string  `json:"overdraftLimitHasSuffix,omitempty"`
+	OverdraftLimitEqualFold    *string  `json:"overdraftLimitEqualFold,omitempty"`
+	OverdraftLimitContainsFold *string  `json:"overdraftLimitContainsFold,omitempty"`
+
+	// "version" field predicates.
+	Version      *int64  `json:"version,omitempty"`
+	VersionNEQ   *int64  `json:"versionNEQ,omitempty"`
+	VersionIn    []int64 `json:"versionIn,omitempty"`
+	VersionNotIn []int64 `json:"versionNotIn,omitempty"`
+	VersionGT    *int64  `json:"versionGT,omitempty"`
+	VersionGTE   *int64  `json:"versionGTE,omitempty"`
+	VersionLT    *int64  `json:"versionLT,omitempty"`
+	VersionLTE   *int64  `json:"versionLTE,omitempty"`
+
+	// "relay_key" edge predicates.
+	HasRelayKey     *bool                 `json:"hasRelayKey,omitempty"`
+	HasRelayKeyWith []*RelayKeyWhereInput `json:"hasRelayKeyWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *RelayWalletWhereInput) AddPredicates(predicates ...predicate.RelayWallet) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the RelayWalletWhereInput filter on the RelayWalletQuery builder.
+func (i *RelayWalletWhereInput) Filter(q *RelayWalletQuery) (*RelayWalletQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyRelayWalletWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyRelayWalletWhereInput is returned in case the RelayWalletWhereInput is empty.
+var ErrEmptyRelayWalletWhereInput = errors.New("ent: empty predicate RelayWalletWhereInput")
+
+// P returns a predicate for filtering relaywallets.
+// An error is returned if the input is empty or invalid.
+func (i *RelayWalletWhereInput) P() (predicate.RelayWallet, error) {
+	var predicates []predicate.RelayWallet
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, relaywallet.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.RelayWallet, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, relaywallet.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.RelayWallet, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, relaywallet.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, relaywallet.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, relaywallet.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, relaywallet.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, relaywallet.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, relaywallet.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, relaywallet.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, relaywallet.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, relaywallet.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, relaywallet.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, relaywallet.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, relaywallet.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, relaywallet.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, relaywallet.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, relaywallet.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, relaywallet.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, relaywallet.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, relaywallet.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, relaywallet.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, relaywallet.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, relaywallet.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, relaywallet.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, relaywallet.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, relaywallet.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, relaywallet.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.RelayKeyID != nil {
+		predicates = append(predicates, relaywallet.RelayKeyIDEQ(*i.RelayKeyID))
+	}
+	if i.RelayKeyIDNEQ != nil {
+		predicates = append(predicates, relaywallet.RelayKeyIDNEQ(*i.RelayKeyIDNEQ))
+	}
+	if len(i.RelayKeyIDIn) > 0 {
+		predicates = append(predicates, relaywallet.RelayKeyIDIn(i.RelayKeyIDIn...))
+	}
+	if len(i.RelayKeyIDNotIn) > 0 {
+		predicates = append(predicates, relaywallet.RelayKeyIDNotIn(i.RelayKeyIDNotIn...))
+	}
+	if i.ProjectID != nil {
+		predicates = append(predicates, relaywallet.ProjectIDEQ(*i.ProjectID))
+	}
+	if i.ProjectIDNEQ != nil {
+		predicates = append(predicates, relaywallet.ProjectIDNEQ(*i.ProjectIDNEQ))
+	}
+	if len(i.ProjectIDIn) > 0 {
+		predicates = append(predicates, relaywallet.ProjectIDIn(i.ProjectIDIn...))
+	}
+	if len(i.ProjectIDNotIn) > 0 {
+		predicates = append(predicates, relaywallet.ProjectIDNotIn(i.ProjectIDNotIn...))
+	}
+	if i.ProjectIDGT != nil {
+		predicates = append(predicates, relaywallet.ProjectIDGT(*i.ProjectIDGT))
+	}
+	if i.ProjectIDGTE != nil {
+		predicates = append(predicates, relaywallet.ProjectIDGTE(*i.ProjectIDGTE))
+	}
+	if i.ProjectIDLT != nil {
+		predicates = append(predicates, relaywallet.ProjectIDLT(*i.ProjectIDLT))
+	}
+	if i.ProjectIDLTE != nil {
+		predicates = append(predicates, relaywallet.ProjectIDLTE(*i.ProjectIDLTE))
+	}
+	if i.Currency != nil {
+		predicates = append(predicates, relaywallet.CurrencyEQ(*i.Currency))
+	}
+	if i.CurrencyNEQ != nil {
+		predicates = append(predicates, relaywallet.CurrencyNEQ(*i.CurrencyNEQ))
+	}
+	if len(i.CurrencyIn) > 0 {
+		predicates = append(predicates, relaywallet.CurrencyIn(i.CurrencyIn...))
+	}
+	if len(i.CurrencyNotIn) > 0 {
+		predicates = append(predicates, relaywallet.CurrencyNotIn(i.CurrencyNotIn...))
+	}
+	if i.CurrencyGT != nil {
+		predicates = append(predicates, relaywallet.CurrencyGT(*i.CurrencyGT))
+	}
+	if i.CurrencyGTE != nil {
+		predicates = append(predicates, relaywallet.CurrencyGTE(*i.CurrencyGTE))
+	}
+	if i.CurrencyLT != nil {
+		predicates = append(predicates, relaywallet.CurrencyLT(*i.CurrencyLT))
+	}
+	if i.CurrencyLTE != nil {
+		predicates = append(predicates, relaywallet.CurrencyLTE(*i.CurrencyLTE))
+	}
+	if i.CurrencyContains != nil {
+		predicates = append(predicates, relaywallet.CurrencyContains(*i.CurrencyContains))
+	}
+	if i.CurrencyHasPrefix != nil {
+		predicates = append(predicates, relaywallet.CurrencyHasPrefix(*i.CurrencyHasPrefix))
+	}
+	if i.CurrencyHasSuffix != nil {
+		predicates = append(predicates, relaywallet.CurrencyHasSuffix(*i.CurrencyHasSuffix))
+	}
+	if i.CurrencyEqualFold != nil {
+		predicates = append(predicates, relaywallet.CurrencyEqualFold(*i.CurrencyEqualFold))
+	}
+	if i.CurrencyContainsFold != nil {
+		predicates = append(predicates, relaywallet.CurrencyContainsFold(*i.CurrencyContainsFold))
+	}
+	if i.AvailableAmount != nil {
+		predicates = append(predicates, relaywallet.AvailableAmountEQ(*i.AvailableAmount))
+	}
+	if i.AvailableAmountNEQ != nil {
+		predicates = append(predicates, relaywallet.AvailableAmountNEQ(*i.AvailableAmountNEQ))
+	}
+	if len(i.AvailableAmountIn) > 0 {
+		predicates = append(predicates, relaywallet.AvailableAmountIn(i.AvailableAmountIn...))
+	}
+	if len(i.AvailableAmountNotIn) > 0 {
+		predicates = append(predicates, relaywallet.AvailableAmountNotIn(i.AvailableAmountNotIn...))
+	}
+	if i.AvailableAmountGT != nil {
+		predicates = append(predicates, relaywallet.AvailableAmountGT(*i.AvailableAmountGT))
+	}
+	if i.AvailableAmountGTE != nil {
+		predicates = append(predicates, relaywallet.AvailableAmountGTE(*i.AvailableAmountGTE))
+	}
+	if i.AvailableAmountLT != nil {
+		predicates = append(predicates, relaywallet.AvailableAmountLT(*i.AvailableAmountLT))
+	}
+	if i.AvailableAmountLTE != nil {
+		predicates = append(predicates, relaywallet.AvailableAmountLTE(*i.AvailableAmountLTE))
+	}
+	if i.AvailableAmountContains != nil {
+		predicates = append(predicates, relaywallet.AvailableAmountContains(*i.AvailableAmountContains))
+	}
+	if i.AvailableAmountHasPrefix != nil {
+		predicates = append(predicates, relaywallet.AvailableAmountHasPrefix(*i.AvailableAmountHasPrefix))
+	}
+	if i.AvailableAmountHasSuffix != nil {
+		predicates = append(predicates, relaywallet.AvailableAmountHasSuffix(*i.AvailableAmountHasSuffix))
+	}
+	if i.AvailableAmountEqualFold != nil {
+		predicates = append(predicates, relaywallet.AvailableAmountEqualFold(*i.AvailableAmountEqualFold))
+	}
+	if i.AvailableAmountContainsFold != nil {
+		predicates = append(predicates, relaywallet.AvailableAmountContainsFold(*i.AvailableAmountContainsFold))
+	}
+	if i.FrozenAmount != nil {
+		predicates = append(predicates, relaywallet.FrozenAmountEQ(*i.FrozenAmount))
+	}
+	if i.FrozenAmountNEQ != nil {
+		predicates = append(predicates, relaywallet.FrozenAmountNEQ(*i.FrozenAmountNEQ))
+	}
+	if len(i.FrozenAmountIn) > 0 {
+		predicates = append(predicates, relaywallet.FrozenAmountIn(i.FrozenAmountIn...))
+	}
+	if len(i.FrozenAmountNotIn) > 0 {
+		predicates = append(predicates, relaywallet.FrozenAmountNotIn(i.FrozenAmountNotIn...))
+	}
+	if i.FrozenAmountGT != nil {
+		predicates = append(predicates, relaywallet.FrozenAmountGT(*i.FrozenAmountGT))
+	}
+	if i.FrozenAmountGTE != nil {
+		predicates = append(predicates, relaywallet.FrozenAmountGTE(*i.FrozenAmountGTE))
+	}
+	if i.FrozenAmountLT != nil {
+		predicates = append(predicates, relaywallet.FrozenAmountLT(*i.FrozenAmountLT))
+	}
+	if i.FrozenAmountLTE != nil {
+		predicates = append(predicates, relaywallet.FrozenAmountLTE(*i.FrozenAmountLTE))
+	}
+	if i.FrozenAmountContains != nil {
+		predicates = append(predicates, relaywallet.FrozenAmountContains(*i.FrozenAmountContains))
+	}
+	if i.FrozenAmountHasPrefix != nil {
+		predicates = append(predicates, relaywallet.FrozenAmountHasPrefix(*i.FrozenAmountHasPrefix))
+	}
+	if i.FrozenAmountHasSuffix != nil {
+		predicates = append(predicates, relaywallet.FrozenAmountHasSuffix(*i.FrozenAmountHasSuffix))
+	}
+	if i.FrozenAmountEqualFold != nil {
+		predicates = append(predicates, relaywallet.FrozenAmountEqualFold(*i.FrozenAmountEqualFold))
+	}
+	if i.FrozenAmountContainsFold != nil {
+		predicates = append(predicates, relaywallet.FrozenAmountContainsFold(*i.FrozenAmountContainsFold))
+	}
+	if i.OverdraftLimit != nil {
+		predicates = append(predicates, relaywallet.OverdraftLimitEQ(*i.OverdraftLimit))
+	}
+	if i.OverdraftLimitNEQ != nil {
+		predicates = append(predicates, relaywallet.OverdraftLimitNEQ(*i.OverdraftLimitNEQ))
+	}
+	if len(i.OverdraftLimitIn) > 0 {
+		predicates = append(predicates, relaywallet.OverdraftLimitIn(i.OverdraftLimitIn...))
+	}
+	if len(i.OverdraftLimitNotIn) > 0 {
+		predicates = append(predicates, relaywallet.OverdraftLimitNotIn(i.OverdraftLimitNotIn...))
+	}
+	if i.OverdraftLimitGT != nil {
+		predicates = append(predicates, relaywallet.OverdraftLimitGT(*i.OverdraftLimitGT))
+	}
+	if i.OverdraftLimitGTE != nil {
+		predicates = append(predicates, relaywallet.OverdraftLimitGTE(*i.OverdraftLimitGTE))
+	}
+	if i.OverdraftLimitLT != nil {
+		predicates = append(predicates, relaywallet.OverdraftLimitLT(*i.OverdraftLimitLT))
+	}
+	if i.OverdraftLimitLTE != nil {
+		predicates = append(predicates, relaywallet.OverdraftLimitLTE(*i.OverdraftLimitLTE))
+	}
+	if i.OverdraftLimitContains != nil {
+		predicates = append(predicates, relaywallet.OverdraftLimitContains(*i.OverdraftLimitContains))
+	}
+	if i.OverdraftLimitHasPrefix != nil {
+		predicates = append(predicates, relaywallet.OverdraftLimitHasPrefix(*i.OverdraftLimitHasPrefix))
+	}
+	if i.OverdraftLimitHasSuffix != nil {
+		predicates = append(predicates, relaywallet.OverdraftLimitHasSuffix(*i.OverdraftLimitHasSuffix))
+	}
+	if i.OverdraftLimitEqualFold != nil {
+		predicates = append(predicates, relaywallet.OverdraftLimitEqualFold(*i.OverdraftLimitEqualFold))
+	}
+	if i.OverdraftLimitContainsFold != nil {
+		predicates = append(predicates, relaywallet.OverdraftLimitContainsFold(*i.OverdraftLimitContainsFold))
+	}
+	if i.Version != nil {
+		predicates = append(predicates, relaywallet.VersionEQ(*i.Version))
+	}
+	if i.VersionNEQ != nil {
+		predicates = append(predicates, relaywallet.VersionNEQ(*i.VersionNEQ))
+	}
+	if len(i.VersionIn) > 0 {
+		predicates = append(predicates, relaywallet.VersionIn(i.VersionIn...))
+	}
+	if len(i.VersionNotIn) > 0 {
+		predicates = append(predicates, relaywallet.VersionNotIn(i.VersionNotIn...))
+	}
+	if i.VersionGT != nil {
+		predicates = append(predicates, relaywallet.VersionGT(*i.VersionGT))
+	}
+	if i.VersionGTE != nil {
+		predicates = append(predicates, relaywallet.VersionGTE(*i.VersionGTE))
+	}
+	if i.VersionLT != nil {
+		predicates = append(predicates, relaywallet.VersionLT(*i.VersionLT))
+	}
+	if i.VersionLTE != nil {
+		predicates = append(predicates, relaywallet.VersionLTE(*i.VersionLTE))
+	}
+
+	if i.HasRelayKey != nil {
+		p := relaywallet.HasRelayKey()
+		if !*i.HasRelayKey {
+			p = relaywallet.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasRelayKeyWith) > 0 {
+		with := make([]predicate.RelayKey, 0, len(i.HasRelayKeyWith))
+		for _, w := range i.HasRelayKeyWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasRelayKeyWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, relaywallet.HasRelayKeyWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyRelayWalletWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return relaywallet.And(predicates...), nil
+	}
+}
+
+// RelayWalletLedgerEntryWhereInput represents a where input for filtering RelayWalletLedgerEntry queries.
+type RelayWalletLedgerEntryWhereInput struct {
+	Predicates []predicate.RelayWalletLedgerEntry  `json:"-"`
+	Not        *RelayWalletLedgerEntryWhereInput   `json:"not,omitempty"`
+	Or         []*RelayWalletLedgerEntryWhereInput `json:"or,omitempty"`
+	And        []*RelayWalletLedgerEntryWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "relay_key_id" field predicates.
+	RelayKeyID      *int  `json:"relayKeyID,omitempty"`
+	RelayKeyIDNEQ   *int  `json:"relayKeyIDNEQ,omitempty"`
+	RelayKeyIDIn    []int `json:"relayKeyIDIn,omitempty"`
+	RelayKeyIDNotIn []int `json:"relayKeyIDNotIn,omitempty"`
+
+	// "project_id" field predicates.
+	ProjectID      *int  `json:"projectID,omitempty"`
+	ProjectIDNEQ   *int  `json:"projectIDNEQ,omitempty"`
+	ProjectIDIn    []int `json:"projectIDIn,omitempty"`
+	ProjectIDNotIn []int `json:"projectIDNotIn,omitempty"`
+	ProjectIDGT    *int  `json:"projectIDGT,omitempty"`
+	ProjectIDGTE   *int  `json:"projectIDGTE,omitempty"`
+	ProjectIDLT    *int  `json:"projectIDLT,omitempty"`
+	ProjectIDLTE   *int  `json:"projectIDLTE,omitempty"`
+
+	// "request_id" field predicates.
+	RequestID       *int  `json:"requestID,omitempty"`
+	RequestIDNEQ    *int  `json:"requestIDNEQ,omitempty"`
+	RequestIDIn     []int `json:"requestIDIn,omitempty"`
+	RequestIDNotIn  []int `json:"requestIDNotIn,omitempty"`
+	RequestIDGT     *int  `json:"requestIDGT,omitempty"`
+	RequestIDGTE    *int  `json:"requestIDGTE,omitempty"`
+	RequestIDLT     *int  `json:"requestIDLT,omitempty"`
+	RequestIDLTE    *int  `json:"requestIDLTE,omitempty"`
+	RequestIDIsNil  bool  `json:"requestIDIsNil,omitempty"`
+	RequestIDNotNil bool  `json:"requestIDNotNil,omitempty"`
+
+	// "usage_log_id" field predicates.
+	UsageLogID       *int  `json:"usageLogID,omitempty"`
+	UsageLogIDNEQ    *int  `json:"usageLogIDNEQ,omitempty"`
+	UsageLogIDIn     []int `json:"usageLogIDIn,omitempty"`
+	UsageLogIDNotIn  []int `json:"usageLogIDNotIn,omitempty"`
+	UsageLogIDGT     *int  `json:"usageLogIDGT,omitempty"`
+	UsageLogIDGTE    *int  `json:"usageLogIDGTE,omitempty"`
+	UsageLogIDLT     *int  `json:"usageLogIDLT,omitempty"`
+	UsageLogIDLTE    *int  `json:"usageLogIDLTE,omitempty"`
+	UsageLogIDIsNil  bool  `json:"usageLogIDIsNil,omitempty"`
+	UsageLogIDNotNil bool  `json:"usageLogIDNotNil,omitempty"`
+
+	// "direction" field predicates.
+	Direction      *relaywalletledgerentry.Direction  `json:"direction,omitempty"`
+	DirectionNEQ   *relaywalletledgerentry.Direction  `json:"directionNEQ,omitempty"`
+	DirectionIn    []relaywalletledgerentry.Direction `json:"directionIn,omitempty"`
+	DirectionNotIn []relaywalletledgerentry.Direction `json:"directionNotIn,omitempty"`
+
+	// "scene" field predicates.
+	Scene      *relaywalletledgerentry.Scene  `json:"scene,omitempty"`
+	SceneNEQ   *relaywalletledgerentry.Scene  `json:"sceneNEQ,omitempty"`
+	SceneIn    []relaywalletledgerentry.Scene `json:"sceneIn,omitempty"`
+	SceneNotIn []relaywalletledgerentry.Scene `json:"sceneNotIn,omitempty"`
+
+	// "amount" field predicates.
+	Amount             *string  `json:"amount,omitempty"`
+	AmountNEQ          *string  `json:"amountNEQ,omitempty"`
+	AmountIn           []string `json:"amountIn,omitempty"`
+	AmountNotIn        []string `json:"amountNotIn,omitempty"`
+	AmountGT           *string  `json:"amountGT,omitempty"`
+	AmountGTE          *string  `json:"amountGTE,omitempty"`
+	AmountLT           *string  `json:"amountLT,omitempty"`
+	AmountLTE          *string  `json:"amountLTE,omitempty"`
+	AmountContains     *string  `json:"amountContains,omitempty"`
+	AmountHasPrefix    *string  `json:"amountHasPrefix,omitempty"`
+	AmountHasSuffix    *string  `json:"amountHasSuffix,omitempty"`
+	AmountEqualFold    *string  `json:"amountEqualFold,omitempty"`
+	AmountContainsFold *string  `json:"amountContainsFold,omitempty"`
+
+	// "balance_before" field predicates.
+	BalanceBefore             *string  `json:"balanceBefore,omitempty"`
+	BalanceBeforeNEQ          *string  `json:"balanceBeforeNEQ,omitempty"`
+	BalanceBeforeIn           []string `json:"balanceBeforeIn,omitempty"`
+	BalanceBeforeNotIn        []string `json:"balanceBeforeNotIn,omitempty"`
+	BalanceBeforeGT           *string  `json:"balanceBeforeGT,omitempty"`
+	BalanceBeforeGTE          *string  `json:"balanceBeforeGTE,omitempty"`
+	BalanceBeforeLT           *string  `json:"balanceBeforeLT,omitempty"`
+	BalanceBeforeLTE          *string  `json:"balanceBeforeLTE,omitempty"`
+	BalanceBeforeContains     *string  `json:"balanceBeforeContains,omitempty"`
+	BalanceBeforeHasPrefix    *string  `json:"balanceBeforeHasPrefix,omitempty"`
+	BalanceBeforeHasSuffix    *string  `json:"balanceBeforeHasSuffix,omitempty"`
+	BalanceBeforeEqualFold    *string  `json:"balanceBeforeEqualFold,omitempty"`
+	BalanceBeforeContainsFold *string  `json:"balanceBeforeContainsFold,omitempty"`
+
+	// "balance_after" field predicates.
+	BalanceAfter             *string  `json:"balanceAfter,omitempty"`
+	BalanceAfterNEQ          *string  `json:"balanceAfterNEQ,omitempty"`
+	BalanceAfterIn           []string `json:"balanceAfterIn,omitempty"`
+	BalanceAfterNotIn        []string `json:"balanceAfterNotIn,omitempty"`
+	BalanceAfterGT           *string  `json:"balanceAfterGT,omitempty"`
+	BalanceAfterGTE          *string  `json:"balanceAfterGTE,omitempty"`
+	BalanceAfterLT           *string  `json:"balanceAfterLT,omitempty"`
+	BalanceAfterLTE          *string  `json:"balanceAfterLTE,omitempty"`
+	BalanceAfterContains     *string  `json:"balanceAfterContains,omitempty"`
+	BalanceAfterHasPrefix    *string  `json:"balanceAfterHasPrefix,omitempty"`
+	BalanceAfterHasSuffix    *string  `json:"balanceAfterHasSuffix,omitempty"`
+	BalanceAfterEqualFold    *string  `json:"balanceAfterEqualFold,omitempty"`
+	BalanceAfterContainsFold *string  `json:"balanceAfterContainsFold,omitempty"`
+
+	// "upstream_cost" field predicates.
+	UpstreamCost             *string  `json:"upstreamCost,omitempty"`
+	UpstreamCostNEQ          *string  `json:"upstreamCostNEQ,omitempty"`
+	UpstreamCostIn           []string `json:"upstreamCostIn,omitempty"`
+	UpstreamCostNotIn        []string `json:"upstreamCostNotIn,omitempty"`
+	UpstreamCostGT           *string  `json:"upstreamCostGT,omitempty"`
+	UpstreamCostGTE          *string  `json:"upstreamCostGTE,omitempty"`
+	UpstreamCostLT           *string  `json:"upstreamCostLT,omitempty"`
+	UpstreamCostLTE          *string  `json:"upstreamCostLTE,omitempty"`
+	UpstreamCostContains     *string  `json:"upstreamCostContains,omitempty"`
+	UpstreamCostHasPrefix    *string  `json:"upstreamCostHasPrefix,omitempty"`
+	UpstreamCostHasSuffix    *string  `json:"upstreamCostHasSuffix,omitempty"`
+	UpstreamCostIsNil        bool     `json:"upstreamCostIsNil,omitempty"`
+	UpstreamCostNotNil       bool     `json:"upstreamCostNotNil,omitempty"`
+	UpstreamCostEqualFold    *string  `json:"upstreamCostEqualFold,omitempty"`
+	UpstreamCostContainsFold *string  `json:"upstreamCostContainsFold,omitempty"`
+
+	// "idempotency_key" field predicates.
+	IdempotencyKey             *string  `json:"idempotencyKey,omitempty"`
+	IdempotencyKeyNEQ          *string  `json:"idempotencyKeyNEQ,omitempty"`
+	IdempotencyKeyIn           []string `json:"idempotencyKeyIn,omitempty"`
+	IdempotencyKeyNotIn        []string `json:"idempotencyKeyNotIn,omitempty"`
+	IdempotencyKeyGT           *string  `json:"idempotencyKeyGT,omitempty"`
+	IdempotencyKeyGTE          *string  `json:"idempotencyKeyGTE,omitempty"`
+	IdempotencyKeyLT           *string  `json:"idempotencyKeyLT,omitempty"`
+	IdempotencyKeyLTE          *string  `json:"idempotencyKeyLTE,omitempty"`
+	IdempotencyKeyContains     *string  `json:"idempotencyKeyContains,omitempty"`
+	IdempotencyKeyHasPrefix    *string  `json:"idempotencyKeyHasPrefix,omitempty"`
+	IdempotencyKeyHasSuffix    *string  `json:"idempotencyKeyHasSuffix,omitempty"`
+	IdempotencyKeyEqualFold    *string  `json:"idempotencyKeyEqualFold,omitempty"`
+	IdempotencyKeyContainsFold *string  `json:"idempotencyKeyContainsFold,omitempty"`
+
+	// "operator_user_id" field predicates.
+	OperatorUserID       *int  `json:"operatorUserID,omitempty"`
+	OperatorUserIDNEQ    *int  `json:"operatorUserIDNEQ,omitempty"`
+	OperatorUserIDIn     []int `json:"operatorUserIDIn,omitempty"`
+	OperatorUserIDNotIn  []int `json:"operatorUserIDNotIn,omitempty"`
+	OperatorUserIDGT     *int  `json:"operatorUserIDGT,omitempty"`
+	OperatorUserIDGTE    *int  `json:"operatorUserIDGTE,omitempty"`
+	OperatorUserIDLT     *int  `json:"operatorUserIDLT,omitempty"`
+	OperatorUserIDLTE    *int  `json:"operatorUserIDLTE,omitempty"`
+	OperatorUserIDIsNil  bool  `json:"operatorUserIDIsNil,omitempty"`
+	OperatorUserIDNotNil bool  `json:"operatorUserIDNotNil,omitempty"`
+
+	// "remark" field predicates.
+	Remark             *string  `json:"remark,omitempty"`
+	RemarkNEQ          *string  `json:"remarkNEQ,omitempty"`
+	RemarkIn           []string `json:"remarkIn,omitempty"`
+	RemarkNotIn        []string `json:"remarkNotIn,omitempty"`
+	RemarkGT           *string  `json:"remarkGT,omitempty"`
+	RemarkGTE          *string  `json:"remarkGTE,omitempty"`
+	RemarkLT           *string  `json:"remarkLT,omitempty"`
+	RemarkLTE          *string  `json:"remarkLTE,omitempty"`
+	RemarkContains     *string  `json:"remarkContains,omitempty"`
+	RemarkHasPrefix    *string  `json:"remarkHasPrefix,omitempty"`
+	RemarkHasSuffix    *string  `json:"remarkHasSuffix,omitempty"`
+	RemarkIsNil        bool     `json:"remarkIsNil,omitempty"`
+	RemarkNotNil       bool     `json:"remarkNotNil,omitempty"`
+	RemarkEqualFold    *string  `json:"remarkEqualFold,omitempty"`
+	RemarkContainsFold *string  `json:"remarkContainsFold,omitempty"`
+
+	// "relay_key" edge predicates.
+	HasRelayKey     *bool                 `json:"hasRelayKey,omitempty"`
+	HasRelayKeyWith []*RelayKeyWhereInput `json:"hasRelayKeyWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *RelayWalletLedgerEntryWhereInput) AddPredicates(predicates ...predicate.RelayWalletLedgerEntry) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the RelayWalletLedgerEntryWhereInput filter on the RelayWalletLedgerEntryQuery builder.
+func (i *RelayWalletLedgerEntryWhereInput) Filter(q *RelayWalletLedgerEntryQuery) (*RelayWalletLedgerEntryQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyRelayWalletLedgerEntryWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyRelayWalletLedgerEntryWhereInput is returned in case the RelayWalletLedgerEntryWhereInput is empty.
+var ErrEmptyRelayWalletLedgerEntryWhereInput = errors.New("ent: empty predicate RelayWalletLedgerEntryWhereInput")
+
+// P returns a predicate for filtering relaywalletledgerentries.
+// An error is returned if the input is empty or invalid.
+func (i *RelayWalletLedgerEntryWhereInput) P() (predicate.RelayWalletLedgerEntry, error) {
+	var predicates []predicate.RelayWalletLedgerEntry
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, relaywalletledgerentry.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.RelayWalletLedgerEntry, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, relaywalletledgerentry.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.RelayWalletLedgerEntry, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, relaywalletledgerentry.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, relaywalletledgerentry.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, relaywalletledgerentry.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, relaywalletledgerentry.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, relaywalletledgerentry.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, relaywalletledgerentry.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, relaywalletledgerentry.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, relaywalletledgerentry.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, relaywalletledgerentry.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, relaywalletledgerentry.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, relaywalletledgerentry.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, relaywalletledgerentry.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, relaywalletledgerentry.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.RelayKeyID != nil {
+		predicates = append(predicates, relaywalletledgerentry.RelayKeyIDEQ(*i.RelayKeyID))
+	}
+	if i.RelayKeyIDNEQ != nil {
+		predicates = append(predicates, relaywalletledgerentry.RelayKeyIDNEQ(*i.RelayKeyIDNEQ))
+	}
+	if len(i.RelayKeyIDIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.RelayKeyIDIn(i.RelayKeyIDIn...))
+	}
+	if len(i.RelayKeyIDNotIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.RelayKeyIDNotIn(i.RelayKeyIDNotIn...))
+	}
+	if i.ProjectID != nil {
+		predicates = append(predicates, relaywalletledgerentry.ProjectIDEQ(*i.ProjectID))
+	}
+	if i.ProjectIDNEQ != nil {
+		predicates = append(predicates, relaywalletledgerentry.ProjectIDNEQ(*i.ProjectIDNEQ))
+	}
+	if len(i.ProjectIDIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.ProjectIDIn(i.ProjectIDIn...))
+	}
+	if len(i.ProjectIDNotIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.ProjectIDNotIn(i.ProjectIDNotIn...))
+	}
+	if i.ProjectIDGT != nil {
+		predicates = append(predicates, relaywalletledgerentry.ProjectIDGT(*i.ProjectIDGT))
+	}
+	if i.ProjectIDGTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.ProjectIDGTE(*i.ProjectIDGTE))
+	}
+	if i.ProjectIDLT != nil {
+		predicates = append(predicates, relaywalletledgerentry.ProjectIDLT(*i.ProjectIDLT))
+	}
+	if i.ProjectIDLTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.ProjectIDLTE(*i.ProjectIDLTE))
+	}
+	if i.RequestID != nil {
+		predicates = append(predicates, relaywalletledgerentry.RequestIDEQ(*i.RequestID))
+	}
+	if i.RequestIDNEQ != nil {
+		predicates = append(predicates, relaywalletledgerentry.RequestIDNEQ(*i.RequestIDNEQ))
+	}
+	if len(i.RequestIDIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.RequestIDIn(i.RequestIDIn...))
+	}
+	if len(i.RequestIDNotIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.RequestIDNotIn(i.RequestIDNotIn...))
+	}
+	if i.RequestIDGT != nil {
+		predicates = append(predicates, relaywalletledgerentry.RequestIDGT(*i.RequestIDGT))
+	}
+	if i.RequestIDGTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.RequestIDGTE(*i.RequestIDGTE))
+	}
+	if i.RequestIDLT != nil {
+		predicates = append(predicates, relaywalletledgerentry.RequestIDLT(*i.RequestIDLT))
+	}
+	if i.RequestIDLTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.RequestIDLTE(*i.RequestIDLTE))
+	}
+	if i.RequestIDIsNil {
+		predicates = append(predicates, relaywalletledgerentry.RequestIDIsNil())
+	}
+	if i.RequestIDNotNil {
+		predicates = append(predicates, relaywalletledgerentry.RequestIDNotNil())
+	}
+	if i.UsageLogID != nil {
+		predicates = append(predicates, relaywalletledgerentry.UsageLogIDEQ(*i.UsageLogID))
+	}
+	if i.UsageLogIDNEQ != nil {
+		predicates = append(predicates, relaywalletledgerentry.UsageLogIDNEQ(*i.UsageLogIDNEQ))
+	}
+	if len(i.UsageLogIDIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.UsageLogIDIn(i.UsageLogIDIn...))
+	}
+	if len(i.UsageLogIDNotIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.UsageLogIDNotIn(i.UsageLogIDNotIn...))
+	}
+	if i.UsageLogIDGT != nil {
+		predicates = append(predicates, relaywalletledgerentry.UsageLogIDGT(*i.UsageLogIDGT))
+	}
+	if i.UsageLogIDGTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.UsageLogIDGTE(*i.UsageLogIDGTE))
+	}
+	if i.UsageLogIDLT != nil {
+		predicates = append(predicates, relaywalletledgerentry.UsageLogIDLT(*i.UsageLogIDLT))
+	}
+	if i.UsageLogIDLTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.UsageLogIDLTE(*i.UsageLogIDLTE))
+	}
+	if i.UsageLogIDIsNil {
+		predicates = append(predicates, relaywalletledgerentry.UsageLogIDIsNil())
+	}
+	if i.UsageLogIDNotNil {
+		predicates = append(predicates, relaywalletledgerentry.UsageLogIDNotNil())
+	}
+	if i.Direction != nil {
+		predicates = append(predicates, relaywalletledgerentry.DirectionEQ(*i.Direction))
+	}
+	if i.DirectionNEQ != nil {
+		predicates = append(predicates, relaywalletledgerentry.DirectionNEQ(*i.DirectionNEQ))
+	}
+	if len(i.DirectionIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.DirectionIn(i.DirectionIn...))
+	}
+	if len(i.DirectionNotIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.DirectionNotIn(i.DirectionNotIn...))
+	}
+	if i.Scene != nil {
+		predicates = append(predicates, relaywalletledgerentry.SceneEQ(*i.Scene))
+	}
+	if i.SceneNEQ != nil {
+		predicates = append(predicates, relaywalletledgerentry.SceneNEQ(*i.SceneNEQ))
+	}
+	if len(i.SceneIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.SceneIn(i.SceneIn...))
+	}
+	if len(i.SceneNotIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.SceneNotIn(i.SceneNotIn...))
+	}
+	if i.Amount != nil {
+		predicates = append(predicates, relaywalletledgerentry.AmountEQ(*i.Amount))
+	}
+	if i.AmountNEQ != nil {
+		predicates = append(predicates, relaywalletledgerentry.AmountNEQ(*i.AmountNEQ))
+	}
+	if len(i.AmountIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.AmountIn(i.AmountIn...))
+	}
+	if len(i.AmountNotIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.AmountNotIn(i.AmountNotIn...))
+	}
+	if i.AmountGT != nil {
+		predicates = append(predicates, relaywalletledgerentry.AmountGT(*i.AmountGT))
+	}
+	if i.AmountGTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.AmountGTE(*i.AmountGTE))
+	}
+	if i.AmountLT != nil {
+		predicates = append(predicates, relaywalletledgerentry.AmountLT(*i.AmountLT))
+	}
+	if i.AmountLTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.AmountLTE(*i.AmountLTE))
+	}
+	if i.AmountContains != nil {
+		predicates = append(predicates, relaywalletledgerentry.AmountContains(*i.AmountContains))
+	}
+	if i.AmountHasPrefix != nil {
+		predicates = append(predicates, relaywalletledgerentry.AmountHasPrefix(*i.AmountHasPrefix))
+	}
+	if i.AmountHasSuffix != nil {
+		predicates = append(predicates, relaywalletledgerentry.AmountHasSuffix(*i.AmountHasSuffix))
+	}
+	if i.AmountEqualFold != nil {
+		predicates = append(predicates, relaywalletledgerentry.AmountEqualFold(*i.AmountEqualFold))
+	}
+	if i.AmountContainsFold != nil {
+		predicates = append(predicates, relaywalletledgerentry.AmountContainsFold(*i.AmountContainsFold))
+	}
+	if i.BalanceBefore != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceBeforeEQ(*i.BalanceBefore))
+	}
+	if i.BalanceBeforeNEQ != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceBeforeNEQ(*i.BalanceBeforeNEQ))
+	}
+	if len(i.BalanceBeforeIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.BalanceBeforeIn(i.BalanceBeforeIn...))
+	}
+	if len(i.BalanceBeforeNotIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.BalanceBeforeNotIn(i.BalanceBeforeNotIn...))
+	}
+	if i.BalanceBeforeGT != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceBeforeGT(*i.BalanceBeforeGT))
+	}
+	if i.BalanceBeforeGTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceBeforeGTE(*i.BalanceBeforeGTE))
+	}
+	if i.BalanceBeforeLT != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceBeforeLT(*i.BalanceBeforeLT))
+	}
+	if i.BalanceBeforeLTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceBeforeLTE(*i.BalanceBeforeLTE))
+	}
+	if i.BalanceBeforeContains != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceBeforeContains(*i.BalanceBeforeContains))
+	}
+	if i.BalanceBeforeHasPrefix != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceBeforeHasPrefix(*i.BalanceBeforeHasPrefix))
+	}
+	if i.BalanceBeforeHasSuffix != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceBeforeHasSuffix(*i.BalanceBeforeHasSuffix))
+	}
+	if i.BalanceBeforeEqualFold != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceBeforeEqualFold(*i.BalanceBeforeEqualFold))
+	}
+	if i.BalanceBeforeContainsFold != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceBeforeContainsFold(*i.BalanceBeforeContainsFold))
+	}
+	if i.BalanceAfter != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceAfterEQ(*i.BalanceAfter))
+	}
+	if i.BalanceAfterNEQ != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceAfterNEQ(*i.BalanceAfterNEQ))
+	}
+	if len(i.BalanceAfterIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.BalanceAfterIn(i.BalanceAfterIn...))
+	}
+	if len(i.BalanceAfterNotIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.BalanceAfterNotIn(i.BalanceAfterNotIn...))
+	}
+	if i.BalanceAfterGT != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceAfterGT(*i.BalanceAfterGT))
+	}
+	if i.BalanceAfterGTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceAfterGTE(*i.BalanceAfterGTE))
+	}
+	if i.BalanceAfterLT != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceAfterLT(*i.BalanceAfterLT))
+	}
+	if i.BalanceAfterLTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceAfterLTE(*i.BalanceAfterLTE))
+	}
+	if i.BalanceAfterContains != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceAfterContains(*i.BalanceAfterContains))
+	}
+	if i.BalanceAfterHasPrefix != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceAfterHasPrefix(*i.BalanceAfterHasPrefix))
+	}
+	if i.BalanceAfterHasSuffix != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceAfterHasSuffix(*i.BalanceAfterHasSuffix))
+	}
+	if i.BalanceAfterEqualFold != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceAfterEqualFold(*i.BalanceAfterEqualFold))
+	}
+	if i.BalanceAfterContainsFold != nil {
+		predicates = append(predicates, relaywalletledgerentry.BalanceAfterContainsFold(*i.BalanceAfterContainsFold))
+	}
+	if i.UpstreamCost != nil {
+		predicates = append(predicates, relaywalletledgerentry.UpstreamCostEQ(*i.UpstreamCost))
+	}
+	if i.UpstreamCostNEQ != nil {
+		predicates = append(predicates, relaywalletledgerentry.UpstreamCostNEQ(*i.UpstreamCostNEQ))
+	}
+	if len(i.UpstreamCostIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.UpstreamCostIn(i.UpstreamCostIn...))
+	}
+	if len(i.UpstreamCostNotIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.UpstreamCostNotIn(i.UpstreamCostNotIn...))
+	}
+	if i.UpstreamCostGT != nil {
+		predicates = append(predicates, relaywalletledgerentry.UpstreamCostGT(*i.UpstreamCostGT))
+	}
+	if i.UpstreamCostGTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.UpstreamCostGTE(*i.UpstreamCostGTE))
+	}
+	if i.UpstreamCostLT != nil {
+		predicates = append(predicates, relaywalletledgerentry.UpstreamCostLT(*i.UpstreamCostLT))
+	}
+	if i.UpstreamCostLTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.UpstreamCostLTE(*i.UpstreamCostLTE))
+	}
+	if i.UpstreamCostContains != nil {
+		predicates = append(predicates, relaywalletledgerentry.UpstreamCostContains(*i.UpstreamCostContains))
+	}
+	if i.UpstreamCostHasPrefix != nil {
+		predicates = append(predicates, relaywalletledgerentry.UpstreamCostHasPrefix(*i.UpstreamCostHasPrefix))
+	}
+	if i.UpstreamCostHasSuffix != nil {
+		predicates = append(predicates, relaywalletledgerentry.UpstreamCostHasSuffix(*i.UpstreamCostHasSuffix))
+	}
+	if i.UpstreamCostIsNil {
+		predicates = append(predicates, relaywalletledgerentry.UpstreamCostIsNil())
+	}
+	if i.UpstreamCostNotNil {
+		predicates = append(predicates, relaywalletledgerentry.UpstreamCostNotNil())
+	}
+	if i.UpstreamCostEqualFold != nil {
+		predicates = append(predicates, relaywalletledgerentry.UpstreamCostEqualFold(*i.UpstreamCostEqualFold))
+	}
+	if i.UpstreamCostContainsFold != nil {
+		predicates = append(predicates, relaywalletledgerentry.UpstreamCostContainsFold(*i.UpstreamCostContainsFold))
+	}
+	if i.IdempotencyKey != nil {
+		predicates = append(predicates, relaywalletledgerentry.IdempotencyKeyEQ(*i.IdempotencyKey))
+	}
+	if i.IdempotencyKeyNEQ != nil {
+		predicates = append(predicates, relaywalletledgerentry.IdempotencyKeyNEQ(*i.IdempotencyKeyNEQ))
+	}
+	if len(i.IdempotencyKeyIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.IdempotencyKeyIn(i.IdempotencyKeyIn...))
+	}
+	if len(i.IdempotencyKeyNotIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.IdempotencyKeyNotIn(i.IdempotencyKeyNotIn...))
+	}
+	if i.IdempotencyKeyGT != nil {
+		predicates = append(predicates, relaywalletledgerentry.IdempotencyKeyGT(*i.IdempotencyKeyGT))
+	}
+	if i.IdempotencyKeyGTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.IdempotencyKeyGTE(*i.IdempotencyKeyGTE))
+	}
+	if i.IdempotencyKeyLT != nil {
+		predicates = append(predicates, relaywalletledgerentry.IdempotencyKeyLT(*i.IdempotencyKeyLT))
+	}
+	if i.IdempotencyKeyLTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.IdempotencyKeyLTE(*i.IdempotencyKeyLTE))
+	}
+	if i.IdempotencyKeyContains != nil {
+		predicates = append(predicates, relaywalletledgerentry.IdempotencyKeyContains(*i.IdempotencyKeyContains))
+	}
+	if i.IdempotencyKeyHasPrefix != nil {
+		predicates = append(predicates, relaywalletledgerentry.IdempotencyKeyHasPrefix(*i.IdempotencyKeyHasPrefix))
+	}
+	if i.IdempotencyKeyHasSuffix != nil {
+		predicates = append(predicates, relaywalletledgerentry.IdempotencyKeyHasSuffix(*i.IdempotencyKeyHasSuffix))
+	}
+	if i.IdempotencyKeyEqualFold != nil {
+		predicates = append(predicates, relaywalletledgerentry.IdempotencyKeyEqualFold(*i.IdempotencyKeyEqualFold))
+	}
+	if i.IdempotencyKeyContainsFold != nil {
+		predicates = append(predicates, relaywalletledgerentry.IdempotencyKeyContainsFold(*i.IdempotencyKeyContainsFold))
+	}
+	if i.OperatorUserID != nil {
+		predicates = append(predicates, relaywalletledgerentry.OperatorUserIDEQ(*i.OperatorUserID))
+	}
+	if i.OperatorUserIDNEQ != nil {
+		predicates = append(predicates, relaywalletledgerentry.OperatorUserIDNEQ(*i.OperatorUserIDNEQ))
+	}
+	if len(i.OperatorUserIDIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.OperatorUserIDIn(i.OperatorUserIDIn...))
+	}
+	if len(i.OperatorUserIDNotIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.OperatorUserIDNotIn(i.OperatorUserIDNotIn...))
+	}
+	if i.OperatorUserIDGT != nil {
+		predicates = append(predicates, relaywalletledgerentry.OperatorUserIDGT(*i.OperatorUserIDGT))
+	}
+	if i.OperatorUserIDGTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.OperatorUserIDGTE(*i.OperatorUserIDGTE))
+	}
+	if i.OperatorUserIDLT != nil {
+		predicates = append(predicates, relaywalletledgerentry.OperatorUserIDLT(*i.OperatorUserIDLT))
+	}
+	if i.OperatorUserIDLTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.OperatorUserIDLTE(*i.OperatorUserIDLTE))
+	}
+	if i.OperatorUserIDIsNil {
+		predicates = append(predicates, relaywalletledgerentry.OperatorUserIDIsNil())
+	}
+	if i.OperatorUserIDNotNil {
+		predicates = append(predicates, relaywalletledgerentry.OperatorUserIDNotNil())
+	}
+	if i.Remark != nil {
+		predicates = append(predicates, relaywalletledgerentry.RemarkEQ(*i.Remark))
+	}
+	if i.RemarkNEQ != nil {
+		predicates = append(predicates, relaywalletledgerentry.RemarkNEQ(*i.RemarkNEQ))
+	}
+	if len(i.RemarkIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.RemarkIn(i.RemarkIn...))
+	}
+	if len(i.RemarkNotIn) > 0 {
+		predicates = append(predicates, relaywalletledgerentry.RemarkNotIn(i.RemarkNotIn...))
+	}
+	if i.RemarkGT != nil {
+		predicates = append(predicates, relaywalletledgerentry.RemarkGT(*i.RemarkGT))
+	}
+	if i.RemarkGTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.RemarkGTE(*i.RemarkGTE))
+	}
+	if i.RemarkLT != nil {
+		predicates = append(predicates, relaywalletledgerentry.RemarkLT(*i.RemarkLT))
+	}
+	if i.RemarkLTE != nil {
+		predicates = append(predicates, relaywalletledgerentry.RemarkLTE(*i.RemarkLTE))
+	}
+	if i.RemarkContains != nil {
+		predicates = append(predicates, relaywalletledgerentry.RemarkContains(*i.RemarkContains))
+	}
+	if i.RemarkHasPrefix != nil {
+		predicates = append(predicates, relaywalletledgerentry.RemarkHasPrefix(*i.RemarkHasPrefix))
+	}
+	if i.RemarkHasSuffix != nil {
+		predicates = append(predicates, relaywalletledgerentry.RemarkHasSuffix(*i.RemarkHasSuffix))
+	}
+	if i.RemarkIsNil {
+		predicates = append(predicates, relaywalletledgerentry.RemarkIsNil())
+	}
+	if i.RemarkNotNil {
+		predicates = append(predicates, relaywalletledgerentry.RemarkNotNil())
+	}
+	if i.RemarkEqualFold != nil {
+		predicates = append(predicates, relaywalletledgerentry.RemarkEqualFold(*i.RemarkEqualFold))
+	}
+	if i.RemarkContainsFold != nil {
+		predicates = append(predicates, relaywalletledgerentry.RemarkContainsFold(*i.RemarkContainsFold))
+	}
+
+	if i.HasRelayKey != nil {
+		p := relaywalletledgerentry.HasRelayKey()
+		if !*i.HasRelayKey {
+			p = relaywalletledgerentry.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasRelayKeyWith) > 0 {
+		with := make([]predicate.RelayKey, 0, len(i.HasRelayKeyWith))
+		for _, w := range i.HasRelayKeyWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasRelayKeyWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, relaywalletledgerentry.HasRelayKeyWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyRelayWalletLedgerEntryWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return relaywalletledgerentry.And(predicates...), nil
 	}
 }
 
@@ -9885,6 +13461,10 @@ type UserWhereInput struct {
 	HasAPIKeys     *bool               `json:"hasAPIKeys,omitempty"`
 	HasAPIKeysWith []*APIKeyWhereInput `json:"hasAPIKeysWith,omitempty"`
 
+	// "relay_keys" edge predicates.
+	HasRelayKeys     *bool                 `json:"hasRelayKeys,omitempty"`
+	HasRelayKeysWith []*RelayKeyWhereInput `json:"hasRelayKeysWith,omitempty"`
+
 	// "roles" edge predicates.
 	HasRoles     *bool             `json:"hasRoles,omitempty"`
 	HasRolesWith []*RoleWhereInput `json:"hasRolesWith,omitempty"`
@@ -10339,6 +13919,24 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasAPIKeysWith(with...))
+	}
+	if i.HasRelayKeys != nil {
+		p := user.HasRelayKeys()
+		if !*i.HasRelayKeys {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasRelayKeysWith) > 0 {
+		with := make([]predicate.RelayKey, 0, len(i.HasRelayKeysWith))
+		for _, w := range i.HasRelayKeysWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasRelayKeysWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasRelayKeysWith(with...))
 	}
 	if i.HasRoles != nil {
 		p := user.HasRoles()

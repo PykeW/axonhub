@@ -39,6 +39,8 @@ const (
 	EdgeRoles = "roles"
 	// EdgeAPIKeys holds the string denoting the api_keys edge name in mutations.
 	EdgeAPIKeys = "api_keys"
+	// EdgeRelayKeys holds the string denoting the relay_keys edge name in mutations.
+	EdgeRelayKeys = "relay_keys"
 	// EdgeRequests holds the string denoting the requests edge name in mutations.
 	EdgeRequests = "requests"
 	// EdgeUsageLogs holds the string denoting the usage_logs edge name in mutations.
@@ -72,6 +74,13 @@ const (
 	APIKeysInverseTable = "api_keys"
 	// APIKeysColumn is the table column denoting the api_keys relation/edge.
 	APIKeysColumn = "project_id"
+	// RelayKeysTable is the table that holds the relay_keys relation/edge.
+	RelayKeysTable = "relay_keys"
+	// RelayKeysInverseTable is the table name for the RelayKey entity.
+	// It exists in this package in order to avoid circular dependency with the "relaykey" package.
+	RelayKeysInverseTable = "relay_keys"
+	// RelayKeysColumn is the table column denoting the relay_keys relation/edge.
+	RelayKeysColumn = "project_id"
 	// RequestsTable is the table that holds the requests relation/edge.
 	RequestsTable = "requests"
 	// RequestsInverseTable is the table name for the Request entity.
@@ -274,6 +283,20 @@ func ByAPIKeys(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByRelayKeysCount orders the results by relay_keys count.
+func ByRelayKeysCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRelayKeysStep(), opts...)
+	}
+}
+
+// ByRelayKeys orders the results by relay_keys terms.
+func ByRelayKeys(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRelayKeysStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByRequestsCount orders the results by requests count.
 func ByRequestsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -376,6 +399,13 @@ func newAPIKeysStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(APIKeysInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, APIKeysTable, APIKeysColumn),
+	)
+}
+func newRelayKeysStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RelayKeysInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RelayKeysTable, RelayKeysColumn),
 	)
 }
 func newRequestsStep() *sqlgraph.Step {

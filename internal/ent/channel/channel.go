@@ -69,6 +69,8 @@ const (
 	EdgeChannelProbes = "channel_probes"
 	// EdgeChannelModelPrices holds the string denoting the channel_model_prices edge name in mutations.
 	EdgeChannelModelPrices = "channel_model_prices"
+	// EdgeRelayProductBindings holds the string denoting the relay_product_bindings edge name in mutations.
+	EdgeRelayProductBindings = "relay_product_bindings"
 	// EdgeProviderQuotaStatus holds the string denoting the provider_quota_status edge name in mutations.
 	EdgeProviderQuotaStatus = "provider_quota_status"
 	// Table holds the table name of the channel in the database.
@@ -108,6 +110,13 @@ const (
 	ChannelModelPricesInverseTable = "channel_model_prices"
 	// ChannelModelPricesColumn is the table column denoting the channel_model_prices relation/edge.
 	ChannelModelPricesColumn = "channel_id"
+	// RelayProductBindingsTable is the table that holds the relay_product_bindings relation/edge.
+	RelayProductBindingsTable = "relay_product_channels"
+	// RelayProductBindingsInverseTable is the table name for the RelayProductChannel entity.
+	// It exists in this package in order to avoid circular dependency with the "relayproductchannel" package.
+	RelayProductBindingsInverseTable = "relay_product_channels"
+	// RelayProductBindingsColumn is the table column denoting the relay_product_bindings relation/edge.
+	RelayProductBindingsColumn = "channel_id"
 	// ProviderQuotaStatusTable is the table that holds the provider_quota_status relation/edge.
 	ProviderQuotaStatusTable = "provider_quota_status"
 	// ProviderQuotaStatusInverseTable is the table name for the ProviderQuotaStatus entity.
@@ -424,6 +433,20 @@ func ByChannelModelPrices(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOptio
 	}
 }
 
+// ByRelayProductBindingsCount orders the results by relay_product_bindings count.
+func ByRelayProductBindingsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRelayProductBindingsStep(), opts...)
+	}
+}
+
+// ByRelayProductBindings orders the results by relay_product_bindings terms.
+func ByRelayProductBindings(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRelayProductBindingsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByProviderQuotaStatusField orders the results by provider_quota_status field.
 func ByProviderQuotaStatusField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -463,6 +486,13 @@ func newChannelModelPricesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ChannelModelPricesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ChannelModelPricesTable, ChannelModelPricesColumn),
+	)
+}
+func newRelayProductBindingsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RelayProductBindingsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RelayProductBindingsTable, RelayProductBindingsColumn),
 	)
 }
 func newProviderQuotaStatusStep() *sqlgraph.Step {

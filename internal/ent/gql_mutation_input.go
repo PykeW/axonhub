@@ -12,6 +12,8 @@ import (
 	"github.com/looplj/axonhub/internal/ent/project"
 	"github.com/looplj/axonhub/internal/ent/prompt"
 	"github.com/looplj/axonhub/internal/ent/promptprotectionrule"
+	"github.com/looplj/axonhub/internal/ent/relayproduct"
+	"github.com/looplj/axonhub/internal/ent/relayproductchannel"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/ent/role"
 	"github.com/looplj/axonhub/internal/ent/usagelog"
@@ -755,6 +757,206 @@ func (c *PromptProtectionRuleUpdate) SetInput(i UpdatePromptProtectionRuleInput)
 
 // SetInput applies the change-set in the UpdatePromptProtectionRuleInput on the PromptProtectionRuleUpdateOne builder.
 func (c *PromptProtectionRuleUpdateOne) SetInput(i UpdatePromptProtectionRuleInput) *PromptProtectionRuleUpdateOne {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// CreateRelayProductInput represents a mutation input for creating relayproducts.
+type CreateRelayProductInput struct {
+	Code                  string
+	Name                  string
+	ProviderType          relayproduct.ProviderType
+	AccessMode            *relayproduct.AccessMode
+	BillingMode           *relayproduct.BillingMode
+	Status                *relayproduct.Status
+	Currency              *string
+	ListPriceConfig       map[string]interface{}
+	AllowedModels         []string
+	RequestTimeoutSeconds *int
+}
+
+// Mutate applies the CreateRelayProductInput on the RelayProductMutation builder.
+func (i *CreateRelayProductInput) Mutate(m *RelayProductMutation) {
+	m.SetCode(i.Code)
+	m.SetName(i.Name)
+	m.SetProviderType(i.ProviderType)
+	if v := i.AccessMode; v != nil {
+		m.SetAccessMode(*v)
+	}
+	if v := i.BillingMode; v != nil {
+		m.SetBillingMode(*v)
+	}
+	if v := i.Status; v != nil {
+		m.SetStatus(*v)
+	}
+	if v := i.Currency; v != nil {
+		m.SetCurrency(*v)
+	}
+	if v := i.ListPriceConfig; v != nil {
+		m.SetListPriceConfig(v)
+	}
+	if v := i.AllowedModels; v != nil {
+		m.SetAllowedModels(v)
+	}
+	if v := i.RequestTimeoutSeconds; v != nil {
+		m.SetRequestTimeoutSeconds(*v)
+	}
+}
+
+// SetInput applies the change-set in the CreateRelayProductInput on the RelayProductCreate builder.
+func (c *RelayProductCreate) SetInput(i CreateRelayProductInput) *RelayProductCreate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// UpdateRelayProductInput represents a mutation input for updating relayproducts.
+type UpdateRelayProductInput struct {
+	Name                  *string
+	BillingMode           *relayproduct.BillingMode
+	Status                *relayproduct.Status
+	Currency              *string
+	ClearListPriceConfig  bool
+	ListPriceConfig       map[string]interface{}
+	ClearAllowedModels    bool
+	AllowedModels         []string
+	AppendAllowedModels   []string
+	RequestTimeoutSeconds *int
+}
+
+// Mutate applies the UpdateRelayProductInput on the RelayProductMutation builder.
+func (i *UpdateRelayProductInput) Mutate(m *RelayProductMutation) {
+	if v := i.Name; v != nil {
+		m.SetName(*v)
+	}
+	if v := i.BillingMode; v != nil {
+		m.SetBillingMode(*v)
+	}
+	if v := i.Status; v != nil {
+		m.SetStatus(*v)
+	}
+	if v := i.Currency; v != nil {
+		m.SetCurrency(*v)
+	}
+	if i.ClearListPriceConfig {
+		m.ClearListPriceConfig()
+	}
+	if v := i.ListPriceConfig; v != nil {
+		m.SetListPriceConfig(v)
+	}
+	if i.ClearAllowedModels {
+		m.ClearAllowedModels()
+	}
+	if v := i.AllowedModels; v != nil {
+		m.SetAllowedModels(v)
+	}
+	if i.AppendAllowedModels != nil {
+		m.AppendAllowedModels(i.AllowedModels)
+	}
+	if v := i.RequestTimeoutSeconds; v != nil {
+		m.SetRequestTimeoutSeconds(*v)
+	}
+}
+
+// SetInput applies the change-set in the UpdateRelayProductInput on the RelayProductUpdate builder.
+func (c *RelayProductUpdate) SetInput(i UpdateRelayProductInput) *RelayProductUpdate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// SetInput applies the change-set in the UpdateRelayProductInput on the RelayProductUpdateOne builder.
+func (c *RelayProductUpdateOne) SetInput(i UpdateRelayProductInput) *RelayProductUpdateOne {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// CreateRelayProductChannelInput represents a mutation input for creating relayproductchannels.
+type CreateRelayProductChannelInput struct {
+	Priority      *int
+	Weight        *int
+	Status        *relayproductchannel.Status
+	AllowFallback *bool
+	ModelFilter   map[string]interface{}
+	MaxInflight   *int
+	ProductID     int
+}
+
+// Mutate applies the CreateRelayProductChannelInput on the RelayProductChannelMutation builder.
+func (i *CreateRelayProductChannelInput) Mutate(m *RelayProductChannelMutation) {
+	if v := i.Priority; v != nil {
+		m.SetPriority(*v)
+	}
+	if v := i.Weight; v != nil {
+		m.SetWeight(*v)
+	}
+	if v := i.Status; v != nil {
+		m.SetStatus(*v)
+	}
+	if v := i.AllowFallback; v != nil {
+		m.SetAllowFallback(*v)
+	}
+	if v := i.ModelFilter; v != nil {
+		m.SetModelFilter(v)
+	}
+	if v := i.MaxInflight; v != nil {
+		m.SetMaxInflight(*v)
+	}
+	m.SetProductID(i.ProductID)
+}
+
+// SetInput applies the change-set in the CreateRelayProductChannelInput on the RelayProductChannelCreate builder.
+func (c *RelayProductChannelCreate) SetInput(i CreateRelayProductChannelInput) *RelayProductChannelCreate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// UpdateRelayProductChannelInput represents a mutation input for updating relayproductchannels.
+type UpdateRelayProductChannelInput struct {
+	Priority         *int
+	Weight           *int
+	Status           *relayproductchannel.Status
+	AllowFallback    *bool
+	ClearModelFilter bool
+	ModelFilter      map[string]interface{}
+	ClearMaxInflight bool
+	MaxInflight      *int
+}
+
+// Mutate applies the UpdateRelayProductChannelInput on the RelayProductChannelMutation builder.
+func (i *UpdateRelayProductChannelInput) Mutate(m *RelayProductChannelMutation) {
+	if v := i.Priority; v != nil {
+		m.SetPriority(*v)
+	}
+	if v := i.Weight; v != nil {
+		m.SetWeight(*v)
+	}
+	if v := i.Status; v != nil {
+		m.SetStatus(*v)
+	}
+	if v := i.AllowFallback; v != nil {
+		m.SetAllowFallback(*v)
+	}
+	if i.ClearModelFilter {
+		m.ClearModelFilter()
+	}
+	if v := i.ModelFilter; v != nil {
+		m.SetModelFilter(v)
+	}
+	if i.ClearMaxInflight {
+		m.ClearMaxInflight()
+	}
+	if v := i.MaxInflight; v != nil {
+		m.SetMaxInflight(*v)
+	}
+}
+
+// SetInput applies the change-set in the UpdateRelayProductChannelInput on the RelayProductChannelUpdate builder.
+func (c *RelayProductChannelUpdate) SetInput(i UpdateRelayProductChannelInput) *RelayProductChannelUpdate {
+	i.Mutate(c.Mutation())
+	return c
+}
+
+// SetInput applies the change-set in the UpdateRelayProductChannelInput on the RelayProductChannelUpdateOne builder.
+func (c *RelayProductChannelUpdateOne) SetInput(i UpdateRelayProductChannelInput) *RelayProductChannelUpdateOne {
 	i.Mutate(c.Mutation())
 	return c
 }

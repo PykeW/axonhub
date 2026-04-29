@@ -17,6 +17,7 @@ import (
 	"github.com/looplj/axonhub/internal/ent/channelprobe"
 	"github.com/looplj/axonhub/internal/ent/predicate"
 	"github.com/looplj/axonhub/internal/ent/providerquotastatus"
+	"github.com/looplj/axonhub/internal/ent/relayproductchannel"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/ent/requestexecution"
 	"github.com/looplj/axonhub/internal/ent/usagelog"
@@ -422,6 +423,21 @@ func (_u *ChannelUpdate) AddChannelModelPrices(v ...*ChannelModelPrice) *Channel
 	return _u.AddChannelModelPriceIDs(ids...)
 }
 
+// AddRelayProductBindingIDs adds the "relay_product_bindings" edge to the RelayProductChannel entity by IDs.
+func (_u *ChannelUpdate) AddRelayProductBindingIDs(ids ...int) *ChannelUpdate {
+	_u.mutation.AddRelayProductBindingIDs(ids...)
+	return _u
+}
+
+// AddRelayProductBindings adds the "relay_product_bindings" edges to the RelayProductChannel entity.
+func (_u *ChannelUpdate) AddRelayProductBindings(v ...*RelayProductChannel) *ChannelUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRelayProductBindingIDs(ids...)
+}
+
 // SetProviderQuotaStatusID sets the "provider_quota_status" edge to the ProviderQuotaStatus entity by ID.
 func (_u *ChannelUpdate) SetProviderQuotaStatusID(id int) *ChannelUpdate {
 	_u.mutation.SetProviderQuotaStatusID(id)
@@ -549,6 +565,27 @@ func (_u *ChannelUpdate) RemoveChannelModelPrices(v ...*ChannelModelPrice) *Chan
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveChannelModelPriceIDs(ids...)
+}
+
+// ClearRelayProductBindings clears all "relay_product_bindings" edges to the RelayProductChannel entity.
+func (_u *ChannelUpdate) ClearRelayProductBindings() *ChannelUpdate {
+	_u.mutation.ClearRelayProductBindings()
+	return _u
+}
+
+// RemoveRelayProductBindingIDs removes the "relay_product_bindings" edge to RelayProductChannel entities by IDs.
+func (_u *ChannelUpdate) RemoveRelayProductBindingIDs(ids ...int) *ChannelUpdate {
+	_u.mutation.RemoveRelayProductBindingIDs(ids...)
+	return _u
+}
+
+// RemoveRelayProductBindings removes "relay_product_bindings" edges to RelayProductChannel entities.
+func (_u *ChannelUpdate) RemoveRelayProductBindings(v ...*RelayProductChannel) *ChannelUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRelayProductBindingIDs(ids...)
 }
 
 // ClearProviderQuotaStatus clears the "provider_quota_status" edge to the ProviderQuotaStatus entity.
@@ -960,6 +997,51 @@ func (_u *ChannelUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(channelmodelprice.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RelayProductBindingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   channel.RelayProductBindingsTable,
+			Columns: []string{channel.RelayProductBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relayproductchannel.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRelayProductBindingsIDs(); len(nodes) > 0 && !_u.mutation.RelayProductBindingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   channel.RelayProductBindingsTable,
+			Columns: []string{channel.RelayProductBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relayproductchannel.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RelayProductBindingsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   channel.RelayProductBindingsTable,
+			Columns: []string{channel.RelayProductBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relayproductchannel.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -1403,6 +1485,21 @@ func (_u *ChannelUpdateOne) AddChannelModelPrices(v ...*ChannelModelPrice) *Chan
 	return _u.AddChannelModelPriceIDs(ids...)
 }
 
+// AddRelayProductBindingIDs adds the "relay_product_bindings" edge to the RelayProductChannel entity by IDs.
+func (_u *ChannelUpdateOne) AddRelayProductBindingIDs(ids ...int) *ChannelUpdateOne {
+	_u.mutation.AddRelayProductBindingIDs(ids...)
+	return _u
+}
+
+// AddRelayProductBindings adds the "relay_product_bindings" edges to the RelayProductChannel entity.
+func (_u *ChannelUpdateOne) AddRelayProductBindings(v ...*RelayProductChannel) *ChannelUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRelayProductBindingIDs(ids...)
+}
+
 // SetProviderQuotaStatusID sets the "provider_quota_status" edge to the ProviderQuotaStatus entity by ID.
 func (_u *ChannelUpdateOne) SetProviderQuotaStatusID(id int) *ChannelUpdateOne {
 	_u.mutation.SetProviderQuotaStatusID(id)
@@ -1530,6 +1627,27 @@ func (_u *ChannelUpdateOne) RemoveChannelModelPrices(v ...*ChannelModelPrice) *C
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveChannelModelPriceIDs(ids...)
+}
+
+// ClearRelayProductBindings clears all "relay_product_bindings" edges to the RelayProductChannel entity.
+func (_u *ChannelUpdateOne) ClearRelayProductBindings() *ChannelUpdateOne {
+	_u.mutation.ClearRelayProductBindings()
+	return _u
+}
+
+// RemoveRelayProductBindingIDs removes the "relay_product_bindings" edge to RelayProductChannel entities by IDs.
+func (_u *ChannelUpdateOne) RemoveRelayProductBindingIDs(ids ...int) *ChannelUpdateOne {
+	_u.mutation.RemoveRelayProductBindingIDs(ids...)
+	return _u
+}
+
+// RemoveRelayProductBindings removes "relay_product_bindings" edges to RelayProductChannel entities.
+func (_u *ChannelUpdateOne) RemoveRelayProductBindings(v ...*RelayProductChannel) *ChannelUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRelayProductBindingIDs(ids...)
 }
 
 // ClearProviderQuotaStatus clears the "provider_quota_status" edge to the ProviderQuotaStatus entity.
@@ -1971,6 +2089,51 @@ func (_u *ChannelUpdateOne) sqlSave(ctx context.Context) (_node *Channel, err er
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(channelmodelprice.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RelayProductBindingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   channel.RelayProductBindingsTable,
+			Columns: []string{channel.RelayProductBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relayproductchannel.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRelayProductBindingsIDs(); len(nodes) > 0 && !_u.mutation.RelayProductBindingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   channel.RelayProductBindingsTable,
+			Columns: []string{channel.RelayProductBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relayproductchannel.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RelayProductBindingsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   channel.RelayProductBindingsTable,
+			Columns: []string{channel.RelayProductBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relayproductchannel.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

@@ -17,6 +17,7 @@ import (
 	"github.com/looplj/axonhub/internal/ent/predicate"
 	"github.com/looplj/axonhub/internal/ent/project"
 	"github.com/looplj/axonhub/internal/ent/prompt"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/ent/role"
 	"github.com/looplj/axonhub/internal/ent/thread"
@@ -36,6 +37,7 @@ type ProjectQuery struct {
 	withUsers             *UserQuery
 	withRoles             *RoleQuery
 	withAPIKeys           *APIKeyQuery
+	withRelayKeys         *RelayKeyQuery
 	withRequests          *RequestQuery
 	withUsageLogs         *UsageLogQuery
 	withThreads           *ThreadQuery
@@ -47,6 +49,7 @@ type ProjectQuery struct {
 	withNamedUsers        map[string]*UserQuery
 	withNamedRoles        map[string]*RoleQuery
 	withNamedAPIKeys      map[string]*APIKeyQuery
+	withNamedRelayKeys    map[string]*RelayKeyQuery
 	withNamedRequests     map[string]*RequestQuery
 	withNamedUsageLogs    map[string]*UsageLogQuery
 	withNamedThreads      map[string]*ThreadQuery
@@ -148,6 +151,28 @@ func (_q *ProjectQuery) QueryAPIKeys() *APIKeyQuery {
 			sqlgraph.From(project.Table, project.FieldID, selector),
 			sqlgraph.To(apikey.Table, apikey.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, project.APIKeysTable, project.APIKeysColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRelayKeys chains the current query on the "relay_keys" edge.
+func (_q *ProjectQuery) QueryRelayKeys() *RelayKeyQuery {
+	query := (&RelayKeyClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(project.Table, project.FieldID, selector),
+			sqlgraph.To(relaykey.Table, relaykey.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, project.RelayKeysTable, project.RelayKeysColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -482,6 +507,7 @@ func (_q *ProjectQuery) Clone() *ProjectQuery {
 		withUsers:        _q.withUsers.Clone(),
 		withRoles:        _q.withRoles.Clone(),
 		withAPIKeys:      _q.withAPIKeys.Clone(),
+		withRelayKeys:    _q.withRelayKeys.Clone(),
 		withRequests:     _q.withRequests.Clone(),
 		withUsageLogs:    _q.withUsageLogs.Clone(),
 		withThreads:      _q.withThreads.Clone(),
@@ -525,6 +551,17 @@ func (_q *ProjectQuery) WithAPIKeys(opts ...func(*APIKeyQuery)) *ProjectQuery {
 		opt(query)
 	}
 	_q.withAPIKeys = query
+	return _q
+}
+
+// WithRelayKeys tells the query-builder to eager-load the nodes that are connected to
+// the "relay_keys" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ProjectQuery) WithRelayKeys(opts ...func(*RelayKeyQuery)) *ProjectQuery {
+	query := (&RelayKeyClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRelayKeys = query
 	return _q
 }
 
@@ -678,10 +715,11 @@ func (_q *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Proj
 	var (
 		nodes       = []*Project{}
 		_spec       = _q.querySpec()
-		loadedTypes = [9]bool{
+		loadedTypes = [10]bool{
 			_q.withUsers != nil,
 			_q.withRoles != nil,
 			_q.withAPIKeys != nil,
+			_q.withRelayKeys != nil,
 			_q.withRequests != nil,
 			_q.withUsageLogs != nil,
 			_q.withThreads != nil,
@@ -729,6 +767,13 @@ func (_q *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Proj
 		if err := _q.loadAPIKeys(ctx, query, nodes,
 			func(n *Project) { n.Edges.APIKeys = []*APIKey{} },
 			func(n *Project, e *APIKey) { n.Edges.APIKeys = append(n.Edges.APIKeys, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRelayKeys; query != nil {
+		if err := _q.loadRelayKeys(ctx, query, nodes,
+			func(n *Project) { n.Edges.RelayKeys = []*RelayKey{} },
+			func(n *Project, e *RelayKey) { n.Edges.RelayKeys = append(n.Edges.RelayKeys, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -792,6 +837,13 @@ func (_q *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Proj
 		if err := _q.loadAPIKeys(ctx, query, nodes,
 			func(n *Project) { n.appendNamedAPIKeys(name) },
 			func(n *Project, e *APIKey) { n.appendNamedAPIKeys(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRelayKeys {
+		if err := _q.loadRelayKeys(ctx, query, nodes,
+			func(n *Project) { n.appendNamedRelayKeys(name) },
+			func(n *Project, e *RelayKey) { n.appendNamedRelayKeys(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -954,6 +1006,36 @@ func (_q *ProjectQuery) loadAPIKeys(ctx context.Context, query *APIKeyQuery, nod
 	}
 	query.Where(predicate.APIKey(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(project.APIKeysColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ProjectID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "project_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *ProjectQuery) loadRelayKeys(ctx context.Context, query *RelayKeyQuery, nodes []*Project, init func(*Project), assign func(*Project, *RelayKey)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Project)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(relaykey.FieldProjectID)
+	}
+	query.Where(predicate.RelayKey(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(project.RelayKeysColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -1313,6 +1395,20 @@ func (_q *ProjectQuery) WithNamedAPIKeys(name string, opts ...func(*APIKeyQuery)
 		_q.withNamedAPIKeys = make(map[string]*APIKeyQuery)
 	}
 	_q.withNamedAPIKeys[name] = query
+	return _q
+}
+
+// WithNamedRelayKeys tells the query-builder to eager-load the nodes that are connected to the "relay_keys"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *ProjectQuery) WithNamedRelayKeys(name string, opts ...func(*RelayKeyQuery)) *ProjectQuery {
+	query := (&RelayKeyClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRelayKeys == nil {
+		_q.withNamedRelayKeys = make(map[string]*RelayKeyQuery)
+	}
+	_q.withNamedRelayKeys[name] = query
 	return _q
 }
 
