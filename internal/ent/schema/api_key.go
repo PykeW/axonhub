@@ -99,6 +99,11 @@ func (APIKey) Edges() []ent.Edge {
 				entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),
 				entgql.RelayConnection(),
 			),
+		edge.To("relay_key", RelayKey.Type).
+			Unique().
+			Annotations(
+				entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),
+			),
 	}
 }
 
