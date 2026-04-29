@@ -21,5 +21,6 @@ var Module = fx.Module("api",
 	fx.Provide(NewCopilotHandlers),
 	fx.Provide(NewRequestContentHandlers),
 	fx.Provide(NewRequestPreviewHandlers),
+	fx.Provide(NewRelaySubKeyHandlers),
 	fx.Invoke(initLogger),
 )

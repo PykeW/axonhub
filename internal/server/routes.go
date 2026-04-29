@@ -7,6 +7,7 @@ import (
 
 	"github.com/looplj/axonhub/internal/ent"
 	"github.com/looplj/axonhub/internal/ent/request"
+	"github.com/looplj/axonhub/internal/scopes"
 	"github.com/looplj/axonhub/internal/server/api"
 	"github.com/looplj/axonhub/internal/server/biz"
 	"github.com/looplj/axonhub/internal/server/gql"
@@ -35,6 +36,7 @@ type Handlers struct {
 	Copilot        *api.CopilotHandlers
 	RequestContent *api.RequestContentHandlers
 	RequestPreview *api.RequestPreviewHandlers
+	RelaySubKeys   *api.RelaySubKeyHandlers
 }
 
 type Services struct {
@@ -126,6 +128,37 @@ func SetupRoutes(server *Server, handlers Handlers, client *ent.Client, services
 			middleware.WithTimeout(server.Config.RequestTimeout),
 			handlers.RequestPreview.PreviewRequest,
 		)
+
+		relaySubKeysGroup := adminGroup.Group("/relay-subkeys", middleware.WithTimeout(server.Config.RequestTimeout))
+		{
+			relaySubKeysGroup.GET("/products", middleware.RequireScopes(scopes.ScopeReadChannels), handlers.RelaySubKeys.ListProducts)
+			relaySubKeysGroup.GET("/products/:id", middleware.RequireScopes(scopes.ScopeReadChannels), handlers.RelaySubKeys.GetProduct)
+			relaySubKeysGroup.POST("/products", middleware.RequireScopes(scopes.ScopeWriteChannels), handlers.RelaySubKeys.CreateProduct)
+			relaySubKeysGroup.PATCH("/products/:id", middleware.RequireScopes(scopes.ScopeWriteChannels), handlers.RelaySubKeys.UpdateProduct)
+			relaySubKeysGroup.POST("/product-channels", middleware.RequireScopes(scopes.ScopeWriteChannels), handlers.RelaySubKeys.CreateProductChannel)
+
+			relaySubKeysGroup.GET("/keys", middleware.RequireScopes(scopes.ScopeReadAPIKeys), handlers.RelaySubKeys.ListKeys)
+			relaySubKeysGroup.GET("/keys/:id", middleware.RequireScopes(scopes.ScopeReadAPIKeys), handlers.RelaySubKeys.GetKey)
+			relaySubKeysGroup.POST("/keys", middleware.RequireScopes(scopes.ScopeWriteAPIKeys), handlers.RelaySubKeys.CreateKey)
+			relaySubKeysGroup.PATCH("/keys/:id/status", middleware.RequireScopes(scopes.ScopeWriteAPIKeys), handlers.RelaySubKeys.UpdateKeyStatus)
+			relaySubKeysGroup.PATCH("/keys/:id/limits", middleware.RequireScopes(scopes.ScopeWriteAPIKeys), handlers.RelaySubKeys.UpdateKeyLimits)
+			relaySubKeysGroup.GET("/keys/:id/wallet", middleware.RequireScopes(scopes.ScopeReadAPIKeys), handlers.RelaySubKeys.GetWallet)
+			relaySubKeysGroup.GET("/keys/:id/ledger", middleware.RequireScopes(scopes.ScopeReadAPIKeys), handlers.RelaySubKeys.ListLedger)
+
+			relaySubKeysGroup.POST("/wallets/recharge", middleware.RequireScopes(scopes.ScopeWriteAPIKeys), handlers.RelaySubKeys.RechargeWallet)
+			relaySubKeysGroup.GET("/requests", middleware.RequireScopes(scopes.ScopeReadRequests), handlers.RelaySubKeys.ListRequests)
+			relaySubKeysGroup.GET("/channel-pool-health", middleware.RequireScopes(scopes.ScopeReadChannels), handlers.RelaySubKeys.ChannelPoolHealth)
+		}
+
+		projectRelaySubKeysGroup := adminGroup.Group(
+			"/projects/:projectId/relay-subkeys",
+			middleware.WithTimeout(server.Config.RequestTimeout),
+			middleware.RequireProjectScopes("projectId", scopes.ScopeReadAPIKeys, scopes.ScopeReadRequests),
+		)
+		{
+			projectRelaySubKeysGroup.GET("/overview", handlers.RelaySubKeys.ProjectOverview)
+			projectRelaySubKeysGroup.GET("/usage", handlers.RelaySubKeys.ProjectUsage)
+		}
 	}
 
 	openAPIGroup := server.Group("/openapi", middleware.WithOpenAPIAuth(services.AuthService), middleware.WithTimeout(server.Config.RequestTimeout))
