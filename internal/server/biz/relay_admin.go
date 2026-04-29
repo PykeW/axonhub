@@ -16,6 +16,7 @@ import (
 
 	"github.com/looplj/axonhub/internal/contexts"
 	"github.com/looplj/axonhub/internal/ent"
+	"github.com/looplj/axonhub/internal/log"
 	"github.com/looplj/axonhub/internal/objects"
 )
 
@@ -548,8 +549,20 @@ func (s *RelayAdminService) UpdateKeyStatus(ctx context.Context, id int, input R
 	if err != nil {
 		return nil, err
 	}
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin update key status transaction: %w", err)
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback()
+		}
+	}()
+
 	query := fmt.Sprintf("UPDATE relay_keys SET status = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s AND deleted_at = 0", relayPlaceholder(dialectName, 1), relayPlaceholder(dialectName, 2))
-	result, err := db.ExecContext(ctx, query, string(input.Status), id)
+	result, err := tx.ExecContext(ctx, query, string(input.Status), id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update relay key status: %w", err)
 	}
@@ -567,9 +580,15 @@ func (s *RelayAdminService) UpdateKeyStatus(ctx context.Context, id int, input R
 		apiStatus = "archived"
 	}
 	apiQuery := fmt.Sprintf("UPDATE api_keys SET status = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s", relayPlaceholder(dialectName, 1), relayPlaceholder(dialectName, 2))
-	if _, err := db.ExecContext(ctx, apiQuery, apiStatus, apiKeyID); err != nil {
+	if _, err := tx.ExecContext(ctx, apiQuery, apiStatus, apiKeyID); err != nil {
 		return nil, fmt.Errorf("failed to update backing api key status: %w", err)
 	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit update key status transaction: %w", err)
+	}
+	committed = true
+
 	if s.apiKeyService != nil && apiKeyValue != "" {
 		s.apiKeyService.invalidateAPIKeyCaches(ctx, apiKeyValue)
 	}
@@ -610,7 +629,7 @@ func (s *RelayAdminService) GetWallet(ctx context.Context, relayKeyID int) (*Rel
 }
 
 func (s *RelayAdminService) ListLedgerEntries(ctx context.Context, relayKeyID int) ([]RelayAdminWalletLedgerEntry, error) {
-	return s.listLedgerEntries(ctx, &relayKeyID, nil)
+	return s.listLedgerEntries(ctx, &relayKeyID, nil, nil)
 }
 
 func (s *RelayAdminService) RechargeWallet(ctx context.Context, input RelayAdminRechargeInput) (*RelayAdminWalletLedgerEntry, error) {
@@ -636,14 +655,10 @@ func (s *RelayAdminService) RechargeWallet(ctx context.Context, input RelayAdmin
 			_ = tx.Rollback()
 		}
 	}()
-	lockClause := ""
-	if dialectName == dialect.Postgres {
-		lockClause = " FOR UPDATE"
-	}
 	selectQuery := fmt.Sprintf(`SELECT rk.project_id, COALESCE(rw.currency, 'USD'), COALESCE(rw.available_amount, '0')
 FROM relay_keys rk
 LEFT JOIN relay_wallets rw ON rw.relay_key_id = rk.id
-WHERE rk.id = %s AND rk.deleted_at = 0%s`, relayPlaceholder(dialectName, 1), lockClause)
+WHERE rk.id = %s AND rk.deleted_at = 0`, relayPlaceholder(dialectName, 1))
 	var (
 		projectID    int
 		currency     string
@@ -660,8 +675,9 @@ WHERE rk.id = %s AND rk.deleted_at = 0%s`, relayPlaceholder(dialectName, 1), loc
 		return nil, err
 	}
 	balanceAfter := available.Add(amount)
-	updateQuery := fmt.Sprintf("UPDATE relay_wallets SET available_amount = %s, version = version + 1, updated_at = CURRENT_TIMESTAMP WHERE relay_key_id = %s", relayPlaceholder(dialectName, 1), relayPlaceholder(dialectName, 2))
-	result, err := tx.ExecContext(ctx, updateQuery, balanceAfter.String(), relayKeyID)
+	// Use atomic increment to avoid lost-update under concurrency.
+	updateQuery := fmt.Sprintf("UPDATE relay_wallets SET available_amount = available_amount + %s, version = version + 1, updated_at = CURRENT_TIMESTAMP WHERE relay_key_id = %s", relayPlaceholder(dialectName, 1), relayPlaceholder(dialectName, 2))
+	result, err := tx.ExecContext(ctx, updateQuery, amount.String(), relayKeyID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update relay wallet: %w", err)
 	}
@@ -672,7 +688,7 @@ WHERE rk.id = %s AND rk.deleted_at = 0%s`, relayPlaceholder(dialectName, 1), loc
 	if rows == 0 {
 		_, err = execRelayInsertTx(ctx, tx, dialectName,
 			fmt.Sprintf("INSERT INTO relay_wallets (relay_key_id, project_id, currency, available_amount, frozen_amount, overdraft_limit, version) VALUES (%s)", strings.Join(relayPlaceholders(dialectName, 7, 1), ",")),
-			relayKeyID, projectID, currency, balanceAfter.String(), "0", "0", 1,
+			relayKeyID, projectID, currency, amount.String(), "0", "0", 1,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create relay wallet: %w", err)
@@ -701,7 +717,7 @@ WHERE rk.id = %s AND rk.deleted_at = 0%s`, relayPlaceholder(dialectName, 1), loc
 		return nil, fmt.Errorf("failed to commit relay wallet recharge: %w", err)
 	}
 	committed = true
-	entries, err := s.listLedgerEntries(ctx, nil, &ledgerID)
+	entries, err := s.listLedgerEntries(ctx, nil, &ledgerID, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -778,22 +794,9 @@ func (s *RelayAdminService) GetUsage(ctx context.Context, projectID *int) (*Proj
 	if err != nil {
 		return nil, err
 	}
-	ledger, err := s.listLedgerEntries(ctx, nil, nil)
+	ledger, err := s.listLedgerEntries(ctx, nil, nil, projectID)
 	if err != nil {
 		return nil, err
-	}
-	if projectID != nil {
-		filtered := ledger[:0]
-		walletKeyIDs := map[string]struct{}{}
-		for _, wallet := range wallets {
-			walletKeyIDs[wallet.RelayKeyID] = struct{}{}
-		}
-		for _, entry := range ledger {
-			if _, ok := walletKeyIDs[entry.RelayKeyID]; ok {
-				filtered = append(filtered, entry)
-			}
-		}
-		ledger = filtered
 	}
 	usage, err := s.listUsageSummaries(ctx, projectID)
 	if err != nil {
@@ -1051,10 +1054,16 @@ func (s *RelayAdminService) deriveKeyStates(ctx context.Context, key *RelayAdmin
 	if (key.Limits.DailyRequestLimit > 0 && key.Usage.TodayRequests >= key.Limits.DailyRequestLimit) || (key.Limits.DailyTokenLimit > 0 && key.Usage.TodayTokens >= key.Limits.DailyTokenLimit) || (key.Limits.MonthlyCostLimit > 0 && key.Usage.MonthlyCost >= key.Limits.MonthlyCostLimit) {
 		states = append(states, RelayDerivedStateQuotaReached)
 	}
-	productID, _ := strconv.Atoi(key.ProductID)
-	product, err := s.GetProduct(ctx, productID)
-	if err == nil && product.PoolHealth != RelayHealthStatusHealthy {
-		states = append(states, RelayDerivedStateUpstreamPoolDegraded)
+	productID, err := strconv.Atoi(key.ProductID)
+	if err != nil {
+		log.Error(ctx, "failed to parse relay key product id", log.String("product_id", key.ProductID), log.Cause(err))
+	} else {
+		product, err := s.GetProduct(ctx, productID)
+		if err != nil {
+			log.Error(ctx, "failed to get relay product for key state derivation", log.Int("product_id", productID), log.Cause(err))
+		} else if product.PoolHealth != RelayHealthStatusHealthy {
+			states = append(states, RelayDerivedStateUpstreamPoolDegraded)
+		}
 	}
 	return states
 }
@@ -1122,7 +1131,7 @@ ORDER BY rw.id ASC`, ledgerAmountExpr, ledgerAmountExpr, strings.Join(clauses, "
 	return out, nil
 }
 
-func (s *RelayAdminService) listLedgerEntries(ctx context.Context, relayKeyID *int, ledgerID *int) ([]RelayAdminWalletLedgerEntry, error) {
+func (s *RelayAdminService) listLedgerEntries(ctx context.Context, relayKeyID *int, ledgerID *int, projectID *int) ([]RelayAdminWalletLedgerEntry, error) {
 	db, dialectName, err := relaySQLDB(s.entFromContext(ctx))
 	if err != nil {
 		return nil, err
@@ -1136,6 +1145,10 @@ func (s *RelayAdminService) listLedgerEntries(ctx context.Context, relayKeyID *i
 	if ledgerID != nil {
 		args = append(args, *ledgerID)
 		clauses = append(clauses, fmt.Sprintf("le.id = %s", relayPlaceholder(dialectName, len(args))))
+	}
+	if projectID != nil {
+		args = append(args, *projectID)
+		clauses = append(clauses, fmt.Sprintf("rw.project_id = %s", relayPlaceholder(dialectName, len(args))))
 	}
 	query := fmt.Sprintf(`SELECT le.id, le.relay_key_id, le.direction, le.scene, le.amount, COALESCE(rw.currency, 'USD'), le.balance_after, le.request_id, le.usage_log_id, le.operator_user_id, le.remark, le.created_at
 FROM relay_wallet_ledger_entries le
