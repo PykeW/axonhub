@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -328,11 +329,18 @@ func relaySubKeyParseID(value, name string) (int, error) {
 }
 
 func relaySubKeyJSONError(c *gin.Context, err error) {
-	message := strings.ToLower(err.Error())
 	status := http.StatusInternalServerError
-	if strings.Contains(message, "not found") {
+	if errors.Is(err, biz.ErrRelayProductNotFound) ||
+		errors.Is(err, biz.ErrRelayKeyNotFound) ||
+		errors.Is(err, biz.ErrRelayBindingNotFound) ||
+		errors.Is(err, biz.ErrRelayWalletNotFound) ||
+		errors.Is(err, biz.ErrRelayLedgerNotFound) {
 		status = http.StatusNotFound
-	} else if strings.Contains(message, "required") || strings.Contains(message, "invalid") || strings.Contains(message, "unsupported") || strings.Contains(message, "cannot") || strings.Contains(message, "must") || strings.Contains(message, "negative") || strings.Contains(message, "already exists") || strings.Contains(message, "already bound") {
+	} else if errors.Is(err, biz.ErrRelayInvalidInput) ||
+		errors.Is(err, biz.ErrRelayRequiredField) ||
+		errors.Is(err, biz.ErrRelayUnsupportedValue) ||
+		errors.Is(err, biz.ErrRelayProductCodeExists) ||
+		errors.Is(err, biz.ErrRelayProductAlreadyBound) {
 		status = http.StatusBadRequest
 	}
 	JSONError(c, status, err)

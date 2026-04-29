@@ -364,7 +364,7 @@ func (s *RelayProductService) CreateRelayProduct(ctx context.Context, input Rela
 	id, err := execRelayInsert(ctx, db, dialectName, query, args...)
 	if err != nil {
 		if isUniqueConstraintError(err) {
-			return nil, fmt.Errorf("relay product code %q already exists: %w", code, err)
+			return nil, fmt.Errorf("relay product code %q: %w: %v", code, ErrRelayProductCodeExists, err)
 		}
 		return nil, fmt.Errorf("failed to create relay product: %w", err)
 	}
@@ -440,7 +440,7 @@ func (s *RelayProductService) UpdateRelayProduct(ctx context.Context, id int, in
 		return nil, fmt.Errorf("failed to inspect relay product update result: %w", err)
 	}
 	if rows == 0 {
-		return nil, fmt.Errorf("relay product %d not found", id)
+		return nil, fmt.Errorf("relay product %d: %w", id, ErrRelayProductNotFound)
 	}
 
 	return s.getRelayProduct(ctx, id)
@@ -480,7 +480,7 @@ func (s *RelayProductService) CreateRelayProductChannelBinding(ctx context.Conte
 	id, err := execRelayInsert(ctx, db, dialectName, query, args...)
 	if err != nil {
 		if isUniqueConstraintError(err) {
-			return nil, fmt.Errorf("relay product %d is already bound to channel %d: %w", input.ProductID, input.ChannelID, err)
+			return nil, fmt.Errorf("relay product %d is already bound to channel %d: %w: %v", input.ProductID, input.ChannelID, ErrRelayProductAlreadyBound, err)
 		}
 		return nil, fmt.Errorf("failed to create relay product channel binding: %w", err)
 	}
@@ -548,7 +548,7 @@ func (s *RelayProductService) UpdateRelayProductChannelBinding(ctx context.Conte
 		return nil, fmt.Errorf("failed to inspect relay product channel binding update result: %w", err)
 	}
 	if rows == 0 {
-		return nil, fmt.Errorf("relay product channel binding %d not found", id)
+		return nil, fmt.Errorf("relay product channel binding %d: %w", id, ErrRelayBindingNotFound)
 	}
 
 	return s.getRelayProductChannelBinding(ctx, id)
@@ -573,7 +573,7 @@ func (s *RelayProductService) DeleteRelayProductChannelBinding(ctx context.Conte
 		return fmt.Errorf("failed to inspect relay product channel binding delete result: %w", err)
 	}
 	if rows == 0 {
-		return fmt.Errorf("relay product channel binding %d not found", id)
+		return fmt.Errorf("relay product channel binding %d: %w", id, ErrRelayBindingNotFound)
 	}
 
 	return nil
@@ -806,7 +806,7 @@ LIMIT 1`, relayPlaceholder(dialectName, 1))
 	product, err := scanRelayProductRecord(db.QueryRowContext(ctx, query, id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("relay product %d not found", id)
+			return nil, fmt.Errorf("relay product %d: %w", id, ErrRelayProductNotFound)
 		}
 		return nil, fmt.Errorf("failed to load relay product %d: %w", id, err)
 	}
@@ -830,7 +830,7 @@ LIMIT 1`, relayPlaceholder(dialectName, 1))
 	binding, err := scanRelayProductChannelBindingRecord(db.QueryRowContext(ctx, query, id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("relay product channel binding %d not found", id)
+			return nil, fmt.Errorf("relay product channel binding %d: %w", id, ErrRelayBindingNotFound)
 		}
 		return nil, fmt.Errorf("failed to load relay product channel binding %d: %w", id, err)
 	}

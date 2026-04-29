@@ -108,10 +108,6 @@ func userCanAccessProjectWithScopes(user *ent.User, projectID int, requiredScope
 		return true
 	}
 
-	if userHasAllSystemScopes(user, requiredScopes...) {
-		return true
-	}
-
 	membership := userProjectMembership(user, projectID)
 	if membership == nil {
 		return false
@@ -135,30 +131,6 @@ func userProjectMembership(user *ent.User, projectID int) *ent.UserProject {
 		}
 	}
 	return nil
-}
-
-func userHasAllSystemScopes(user *ent.User, requiredScopes ...scopes.ScopeSlug) bool {
-	for _, requiredScope := range requiredScopes {
-		if !userHasSystemScope(user, requiredScope) {
-			return false
-		}
-	}
-	return true
-}
-
-func userHasSystemScope(user *ent.User, requiredScope scopes.ScopeSlug) bool {
-	required := string(requiredScope)
-	if slices.Contains(user.Scopes, required) {
-		return true
-	}
-
-	for _, role := range user.Edges.Roles {
-		if role != nil && role.IsSystemRole() && slices.Contains(role.Scopes, required) {
-			return true
-		}
-	}
-
-	return false
 }
 
 func userHasProjectScope(user *ent.User, membership *ent.UserProject, projectID int, requiredScope scopes.ScopeSlug) bool {

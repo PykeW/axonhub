@@ -415,7 +415,7 @@ func (s *RelayAdminService) CreateProductChannelBinding(ctx context.Context, inp
 			return &ch, nil
 		}
 	}
-	return nil, fmt.Errorf("relay product channel binding %d not found", binding.ID)
+	return nil, fmt.Errorf("relay product channel binding %d: %w", binding.ID, ErrRelayBindingNotFound)
 }
 
 func (s *RelayAdminService) ListKeys(ctx context.Context, projectID *int) ([]RelayAdminKey, error) {
@@ -428,7 +428,7 @@ func (s *RelayAdminService) GetKey(ctx context.Context, id int) (*RelayAdminKey,
 		return nil, err
 	}
 	if len(keys) == 0 {
-		return nil, fmt.Errorf("relay key %d not found", id)
+		return nil, fmt.Errorf("relay key %d: %w", id, ErrRelayKeyNotFound)
 	}
 	return &keys[0], nil
 }
@@ -444,20 +444,20 @@ func (s *RelayAdminService) CreateKey(ctx context.Context, input RelayAdminCreat
 	}
 	name := strings.TrimSpace(input.Name)
 	if name == "" {
-		return nil, fmt.Errorf("relay key name is required")
+		return nil, fmt.Errorf("relay key name: %w", ErrRelayRequiredField)
 	}
 	balanceMode := input.BalanceMode
 	if balanceMode == "" {
 		balanceMode = RelayKeyBalanceModePrepaid
 	}
 	if balanceMode != RelayKeyBalanceModePrepaid && balanceMode != RelayKeyBalanceModeQuotaOnly {
-		return nil, fmt.Errorf("unsupported relay key balance mode %q", balanceMode)
+		return nil, fmt.Errorf("unsupported relay key balance mode %q: %w", balanceMode, ErrRelayUnsupportedValue)
 	}
 	var expiresAt any
 	if strings.TrimSpace(input.ExpiresAt) != "" {
 		parsed, err := time.Parse(time.RFC3339, strings.TrimSpace(input.ExpiresAt))
 		if err != nil {
-			return nil, fmt.Errorf("invalid expiresAt: %w", err)
+			return nil, fmt.Errorf("invalid expiresAt: %w", errors.Join(ErrRelayInvalidInput, err))
 		}
 		expiresAt = parsed
 	}
@@ -539,7 +539,7 @@ VALUES (%s)`, strings.Join(relayPlaceholders(dialectName, 11, 1), ",")),
 
 func (s *RelayAdminService) UpdateKeyStatus(ctx context.Context, id int, input RelayAdminKeyStatusInput) (*RelayAdminKey, error) {
 	if input.Status != RelayKeyStatusActive && input.Status != RelayKeyStatusSuspended && input.Status != RelayKeyStatusExhausted && input.Status != RelayKeyStatusArchived {
-		return nil, fmt.Errorf("unsupported relay key status %q", input.Status)
+		return nil, fmt.Errorf("unsupported relay key status %q: %w", input.Status, ErrRelayUnsupportedValue)
 	}
 	db, dialectName, err := relaySQLDB(s.entFromContext(ctx))
 	if err != nil {
@@ -571,7 +571,7 @@ func (s *RelayAdminService) UpdateKeyStatus(ctx context.Context, id int, input R
 		return nil, err
 	}
 	if rows == 0 {
-		return nil, fmt.Errorf("relay key %d not found", id)
+		return nil, fmt.Errorf("relay key %d: %w", id, ErrRelayKeyNotFound)
 	}
 	apiStatus := "disabled"
 	if input.Status == RelayKeyStatusActive {
@@ -612,7 +612,7 @@ func (s *RelayAdminService) UpdateKeyLimits(ctx context.Context, id int, input R
 		return nil, err
 	}
 	if rows == 0 {
-		return nil, fmt.Errorf("relay key %d not found", id)
+		return nil, fmt.Errorf("relay key %d: %w", id, ErrRelayKeyNotFound)
 	}
 	return s.GetKey(ctx, id)
 }
@@ -623,7 +623,7 @@ func (s *RelayAdminService) GetWallet(ctx context.Context, relayKeyID int) (*Rel
 		return nil, err
 	}
 	if len(wallets) == 0 {
-		return nil, fmt.Errorf("relay wallet for key %d not found", relayKeyID)
+		return nil, fmt.Errorf("relay wallet for key %d: %w", relayKeyID, ErrRelayWalletNotFound)
 	}
 	return &wallets[0], nil
 }
@@ -666,7 +666,7 @@ WHERE rk.id = %s AND rk.deleted_at = 0`, relayPlaceholder(dialectName, 1))
 	)
 	if err := tx.QueryRowContext(ctx, selectQuery, relayKeyID).Scan(&projectID, &currency, &availableRaw); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("relay key %d not found", relayKeyID)
+			return nil, fmt.Errorf("relay key %d: %w", relayKeyID, ErrRelayKeyNotFound)
 		}
 		return nil, fmt.Errorf("failed to load relay wallet: %w", err)
 	}
@@ -722,7 +722,7 @@ WHERE rk.id = %s AND rk.deleted_at = 0`, relayPlaceholder(dialectName, 1))
 		return nil, err
 	}
 	if len(entries) == 0 {
-		return nil, fmt.Errorf("relay wallet ledger entry %d not found", ledgerID)
+		return nil, fmt.Errorf("relay wallet ledger entry %d: %w", ledgerID, ErrRelayLedgerNotFound)
 	}
 	return &entries[0], nil
 }
@@ -858,7 +858,7 @@ LIMIT 1`, relayPlaceholder(dialectName, 1))
 	product, err := scanRelayAdminProduct(db.QueryRowContext(ctx, query, id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("relay product %d not found", id)
+			return nil, fmt.Errorf("relay product %d: %w", id, ErrRelayProductNotFound)
 		}
 		return nil, err
 	}
@@ -1585,7 +1585,7 @@ LIMIT 1`, relayPlaceholder(dialectName, 1))
 	var apiKeyValue string
 	if err := db.QueryRowContext(ctx, query, relayKeyID).Scan(&apiKeyID, &apiKeyValue); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return 0, "", fmt.Errorf("relay key %d not found", relayKeyID)
+			return 0, "", fmt.Errorf("relay key %d: %w", relayKeyID, ErrRelayKeyNotFound)
 		}
 		return 0, "", err
 	}
@@ -1599,7 +1599,7 @@ func (s *RelayAdminService) resolveProjectID(ctx context.Context, value string) 
 	if projectID, ok := contexts.GetProjectID(ctx); ok && projectID > 0 {
 		return projectID, nil
 	}
-	return 0, fmt.Errorf("projectId is required")
+	return 0, fmt.Errorf("projectId: %w", ErrRelayRequiredField)
 }
 
 func (input RelayAdminKeyLimitsInput) normalizedLimits() RelayKeyLimitSnapshot {
@@ -1625,7 +1625,7 @@ func (input RelayAdminKeyLimitsInput) normalizedLimits() RelayKeyLimitSnapshot {
 func parseRelayAdminID(value, field string) (int, error) {
 	value = strings.TrimSpace(value)
 	if value == "" {
-		return 0, fmt.Errorf("%s is required", field)
+		return 0, fmt.Errorf("%s: %w", field, ErrRelayRequiredField)
 	}
 	if guid, err := objects.ParseGUID(value); err == nil {
 		if guid.ID <= 0 {
