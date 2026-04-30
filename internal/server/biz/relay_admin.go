@@ -1228,48 +1228,55 @@ ORDER BY rw.id ASC`, ledgerAmountExpr, ledgerAmountExpr, strings.Join(clauses, "
 }
 
 func (s *RelayAdminService) listLedgerEntries(ctx context.Context, relayKeyID *int, ledgerID *int, projectID *int) ([]RelayAdminWalletLedgerEntry, error) {
-	db, dialectName, err := relaySQLDB(s.entFromContext(ctx))
-	if err != nil {
-		return nil, err
-	}
-	clauses := []string{"1 = 1"}
-	args := []any{}
+	client := s.entFromContext(ctx)
+	q := client.RelayWalletLedgerEntry.Query()
 	if relayKeyID != nil {
-		args = append(args, *relayKeyID)
-		clauses = append(clauses, fmt.Sprintf("le.relay_key_id = %s", relayPlaceholder(dialectName, len(args))))
+		q = q.Where(relaywalletledgerentry.RelayKeyID(*relayKeyID))
 	}
 	if ledgerID != nil {
-		args = append(args, *ledgerID)
-		clauses = append(clauses, fmt.Sprintf("le.id = %s", relayPlaceholder(dialectName, len(args))))
+		q = q.Where(relaywalletledgerentry.ID(*ledgerID))
 	}
 	if projectID != nil {
-		args = append(args, *projectID)
-		clauses = append(clauses, fmt.Sprintf("rw.project_id = %s", relayPlaceholder(dialectName, len(args))))
+		q = q.Where(relaywalletledgerentry.ProjectID(*projectID))
 	}
-	query := fmt.Sprintf(`SELECT le.id, le.relay_key_id, le.direction, le.scene, le.amount, COALESCE(rw.currency, 'USD'), le.balance_after, le.request_id, le.usage_log_id, le.operator_user_id, le.remark, le.created_at
-FROM relay_wallet_ledger_entries le
-LEFT JOIN relay_wallets rw ON rw.relay_key_id = le.relay_key_id
-WHERE %s
-ORDER BY le.created_at DESC, le.id DESC
-LIMIT 200`, strings.Join(clauses, " AND "))
-	rows, err := db.QueryContext(ctx, query, args...)
+	entries, err := q.Order(
+		relaywalletledgerentry.ByCreatedAt(entsql.OrderDesc()),
+		relaywalletledgerentry.ByID(entsql.OrderDesc()),
+	).Limit(200).All(ctx)
 	if err != nil {
 		if isMissingRelayTableError(err) {
 			return []RelayAdminWalletLedgerEntry{}, nil
 		}
 		return nil, fmt.Errorf("failed to list relay wallet ledger entries: %w", err)
 	}
-	defer rows.Close()
-	out := []RelayAdminWalletLedgerEntry{}
-	for rows.Next() {
-		entry, err := scanRelayAdminLedgerEntry(rows)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, entry)
+	if len(entries) == 0 {
+		return []RelayAdminWalletLedgerEntry{}, nil
 	}
-	if err := rows.Err(); err != nil {
-		return nil, err
+
+	relayKeyIDs := make([]int, 0, len(entries))
+	seenRelayKeyIDs := make(map[int]struct{}, len(entries))
+	for _, entry := range entries {
+		if _, ok := seenRelayKeyIDs[entry.RelayKeyID]; ok {
+			continue
+		}
+		seenRelayKeyIDs[entry.RelayKeyID] = struct{}{}
+		relayKeyIDs = append(relayKeyIDs, entry.RelayKeyID)
+	}
+	wallets, err := client.RelayWallet.Query().Where(relaywallet.RelayKeyIDIn(relayKeyIDs...)).All(ctx)
+	if err != nil {
+		if isMissingRelayTableError(err) {
+			return []RelayAdminWalletLedgerEntry{}, nil
+		}
+		return nil, fmt.Errorf("failed to list relay wallets for ledger entries: %w", err)
+	}
+	currenciesByRelayKeyID := make(map[int]string, len(wallets))
+	for _, wallet := range wallets {
+		currenciesByRelayKeyID[wallet.RelayKeyID] = wallet.Currency
+	}
+
+	out := make([]RelayAdminWalletLedgerEntry, 0, len(entries))
+	for _, entry := range entries {
+		out = append(out, relayAdminLedgerEntryFromEnt(entry, currenciesByRelayKeyID[entry.RelayKeyID]))
 	}
 	return out, nil
 }
@@ -1508,6 +1515,34 @@ func scanRelayAdminKey(row relayScanner) (RelayAdminKey, RelayProductProviderTyp
 		return key, "", decimal.Zero, err
 	}
 	return key, RelayProductProviderType(providerType), walletAmount, nil
+}
+
+func relayAdminLedgerEntryFromEnt(e *ent.RelayWalletLedgerEntry, currency string) RelayAdminWalletLedgerEntry {
+	if currency == "" {
+		currency = "USD"
+	}
+	entry := RelayAdminWalletLedgerEntry{
+		ID:           relayStringID(e.ID),
+		RelayKeyID:   relayStringID(e.RelayKeyID),
+		Currency:     currency,
+		Type:         relayLedgerType(e.Scene.String()),
+		Amount:       relayLedgerSignedAmount(e.Direction.String(), relayDecimalFloat(sql.NullString{String: e.Amount, Valid: e.Amount != ""})),
+		BalanceAfter: relayDecimalFloat(sql.NullString{String: e.BalanceAfter, Valid: e.BalanceAfter != ""}),
+		Operator:     "system",
+		CreatedAt:    e.CreatedAt.UTC().Format(time.RFC3339),
+	}
+	if e.RequestID != nil {
+		entry.ReferenceID = relayStringID(*e.RequestID)
+	} else if e.UsageLogID != nil {
+		entry.ReferenceID = relayStringID(*e.UsageLogID)
+	}
+	if e.OperatorUserID != nil {
+		entry.Operator = fmt.Sprintf("user:%d", *e.OperatorUserID)
+	}
+	if e.Remark != nil {
+		entry.Note = *e.Remark
+	}
+	return entry
 }
 
 func scanRelayAdminLedgerEntry(row relayScanner) (RelayAdminWalletLedgerEntry, error) {
