@@ -30,10 +30,16 @@ var Module = fx.Module("biz",
 	fx.Provide(NewRelayProductService),
 	fx.Provide(NewRelayAdminService),
 	fx.Provide(NewRelayRouterService),
+	fx.Provide(NewRelayRuntimeService),
 	fx.Provide(NewRelayAccessService),
 	fx.Provide(NewRelaySettlementService),
-	fx.Invoke(func(usageLogService *UsageLogService, settlementService *RelaySettlementService) {
-		usageLogService.SetRelaySettlementRecorder(settlementService)
+	fx.Invoke(func(runtime *RelayRuntimeService, access *RelayAccessService, settlement *RelaySettlementService) {
+		runtime.SetResolver(access)
+		runtime.SetAccessChecker(access)
+		runtime.SetSettlementRecorder(settlement)
+	}),
+	fx.Invoke(func(usageLogService *UsageLogService, runtime *RelayRuntimeService) {
+		usageLogService.SetRelaySettlementRecorder(runtime)
 	}),
 	fx.Provide(NewQuotaService),
 	fx.Provide(NewProviderQuotaService),

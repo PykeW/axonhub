@@ -136,6 +136,8 @@ func SetupRoutes(server *Server, handlers Handlers, client *ent.Client, services
 			relaySubKeysGroup.POST("/products", middleware.RequireScopes(scopes.ScopeWriteChannels), handlers.RelaySubKeys.CreateProduct)
 			relaySubKeysGroup.PATCH("/products/:id", middleware.RequireScopes(scopes.ScopeWriteChannels), handlers.RelaySubKeys.UpdateProduct)
 			relaySubKeysGroup.POST("/product-channels", middleware.RequireScopes(scopes.ScopeWriteChannels), handlers.RelaySubKeys.CreateProductChannel)
+			relaySubKeysGroup.PATCH("/product-channels/:id", middleware.RequireScopes(scopes.ScopeWriteChannels), handlers.RelaySubKeys.UpdateProductChannel)
+			relaySubKeysGroup.DELETE("/product-channels/:id", middleware.RequireScopes(scopes.ScopeWriteChannels), handlers.RelaySubKeys.DeleteProductChannel)
 
 			relaySubKeysGroup.GET("/keys", middleware.RequireScopes(scopes.ScopeReadAPIKeys), handlers.RelaySubKeys.ListKeys)
 			relaySubKeysGroup.GET("/keys/:id", middleware.RequireScopes(scopes.ScopeReadAPIKeys), handlers.RelaySubKeys.GetKey)

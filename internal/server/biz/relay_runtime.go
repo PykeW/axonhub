@@ -78,6 +78,7 @@ type RelayAuthContext struct {
 	Wallet        *RelayWalletSnapshot
 	Quota         RelayKeyQuotaSnapshot
 	DailyUsage    RelayUsageSnapshot
+	MonthlyUsage  RelayUsageSnapshot
 	ChannelPool   RelayChannelPool
 	Metadata      map[string]any
 }
@@ -272,6 +273,10 @@ func (s *RelayRuntimeService) RecordUsageSettlement(ctx context.Context, relay *
 	return s.settlement.RecordRelayUsage(ctx, relay, input)
 }
 
+func (s *RelayRuntimeService) RecordRelayUsage(ctx context.Context, relay *RelayAuthContext, input RelayUsageSettlementInput) error {
+	return s.RecordUsageSettlement(ctx, relay, input)
+}
+
 func (s *RelayRuntimeService) defaultAccessDecision(relay *RelayAuthContext, now time.Time) *RelayAccessDecision {
 	if relay.Status != "" && relay.Status != RelayKeyStatusActive {
 		return denyRelayAccess(http.StatusForbidden, "relay_key_inactive", fmt.Sprintf("relay key is %s", relay.Status))
@@ -291,6 +296,12 @@ func (s *RelayRuntimeService) defaultAccessDecision(relay *RelayAuthContext, now
 	if relay.Quota.DailyTokenLimit != nil && relay.DailyUsage.TotalTokens >= *relay.Quota.DailyTokenLimit {
 		return denyRelayAccess(http.StatusForbidden, "relay_daily_token_quota_exceeded", "relay key daily token quota exceeded")
 	}
+	if relay.Quota.MonthlyCostLimit != nil && relay.MonthlyUsage.TotalCharge.GreaterThanOrEqual(*relay.Quota.MonthlyCostLimit) {
+		return denyRelayAccess(http.StatusForbidden, "relay_monthly_cost_quota_exceeded", "relay key monthly cost quota exceeded")
+	}
+	if relay.Quota.ConcurrencyLimit != nil && *relay.Quota.ConcurrencyLimit <= 0 {
+		return denyRelayAccess(http.StatusForbidden, "relay_concurrency_quota_exceeded", "relay key concurrency quota exceeded")
+	}
 	return allowRelayAccess()
 }
 
@@ -309,7 +320,7 @@ func (d *RelayAccessDecision) ErrorOrNil() error {
 	switch d.Code {
 	case "relay_balance_exhausted":
 		return fmt.Errorf("%w: %s", ErrRelayInsufficientBalance, d.Message)
-	case "relay_daily_request_quota_exceeded", "relay_daily_token_quota_exceeded":
+	case "relay_daily_request_quota_exceeded", "relay_daily_token_quota_exceeded", "relay_monthly_cost_quota_exceeded", "relay_concurrency_quota_exceeded":
 		return fmt.Errorf("%w: %s", ErrRelayQuotaExceeded, d.Message)
 	default:
 		return fmt.Errorf("%w: %s", ErrRelayAccessDenied, d.Message)
@@ -361,7 +372,23 @@ func (c *RelayAuthContext) HasRoutingConstraints() bool {
 
 // AuthenticateRelayAPIKey is the post-API-key-auth Relay hook.
 func (s *AuthService) AuthenticateRelayAPIKey(ctx context.Context, apiKey *ent.APIKey) (*RelayAuthContext, error) {
-	if s == nil || s.RelayAccess == nil || apiKey == nil {
+	if s == nil || apiKey == nil {
+		return nil, nil
+	}
+
+	if s.RelayRuntime != nil {
+		relay, decision, err := s.RelayRuntime.ResolveAndCheckAccess(ctx, apiKey)
+		if err != nil {
+			return relay, err
+		}
+		if relayErr := NewRelayAuthError(decision); relayErr != nil {
+			return relay, relayErr
+		}
+
+		return relay, nil
+	}
+
+	if s.RelayAccess == nil {
 		return nil, nil
 	}
 

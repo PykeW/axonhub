@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -35,7 +36,7 @@ func RequireScopes(requiredScopes ...scopes.ScopeSlug) gin.HandlerFunc {
 	}
 }
 
-// RequireProjectScopes enforces project membership plus the supplied project scopes.
+// RequireProjectScopes allows owner/system-scope users or project members with all supplied project scopes.
 func RequireProjectScopes(projectParam string, requiredScopes ...scopes.ScopeSlug) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !requireUserPrincipal(c) {
@@ -53,7 +54,7 @@ func RequireProjectScopes(projectParam string, requiredScopes ...scopes.ScopeSlu
 			return
 		}
 
-		if !userCanAccessProjectWithScopes(user, projectID, requiredScopes...) {
+		if !userCanAccessProjectWithScopes(c.Request.Context(), user, projectID, requiredScopes...) {
 			AbortWithError(c, http.StatusForbidden, fmt.Errorf("project %d access denied", projectID))
 			return
 		}
@@ -100,11 +101,11 @@ func projectIDFromParam(c *gin.Context, param string) (int, bool) {
 	return id, true
 }
 
-func userCanAccessProjectWithScopes(user *ent.User, projectID int, requiredScopes ...scopes.ScopeSlug) bool {
+func userCanAccessProjectWithScopes(ctx context.Context, user *ent.User, projectID int, requiredScopes ...scopes.ScopeSlug) bool {
 	if user == nil {
 		return false
 	}
-	if user.IsOwner {
+	if user.IsOwner || userHasAllSystemScopes(ctx, requiredScopes...) {
 		return true
 	}
 
@@ -118,6 +119,15 @@ func userCanAccessProjectWithScopes(user *ent.User, projectID int, requiredScope
 
 	for _, requiredScope := range requiredScopes {
 		if !userHasProjectScope(user, membership, projectID, requiredScope) {
+			return false
+		}
+	}
+	return true
+}
+
+func userHasAllSystemScopes(ctx context.Context, requiredScopes ...scopes.ScopeSlug) bool {
+	for _, requiredScope := range requiredScopes {
+		if !authz.HasScope(ctx, requiredScope) {
 			return false
 		}
 	}

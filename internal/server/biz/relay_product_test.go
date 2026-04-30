@@ -72,6 +72,7 @@ func TestRelayProductService_ValidateCreateRelayProductChannelBinding(t *testing
 	ch, err := client.Channel.Create().
 		SetType(channel.TypeCodex).
 		SetName("codex relay").
+		SetStatus(channel.StatusEnabled).
 		SetCredentials(objects.ChannelCredentials{}).
 		SetSupportedModels([]string{"o3"}).
 		SetDefaultTestModel("o3").

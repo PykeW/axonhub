@@ -17,6 +17,7 @@ import (
 
 	"github.com/looplj/axonhub/internal/ent"
 	"github.com/looplj/axonhub/internal/ent/channel"
+	"github.com/looplj/axonhub/internal/ent/providerquotastatus"
 	"github.com/looplj/axonhub/internal/ent/relaydailyusagesummary"
 	"github.com/looplj/axonhub/internal/ent/relaykey"
 	"github.com/looplj/axonhub/internal/ent/relayproduct"
@@ -80,16 +81,17 @@ func (s *RelayAccessService) LoadContextByAPIKey(ctx context.Context, apiKeyID i
 	}
 
 	relay := &RelayAccessContext{
-		RelayKeyID:  relayKey.ID,
-		APIKeyID:    relayKey.APIKeyID,
-		ProjectID:   relayKey.ProjectID,
-		ProductID:   relayKey.ProductID,
-		Status:      RelayKeyStatus(relayKey.Status),
-		BalanceMode: RelayKeyBalanceMode(relayKey.BalanceMode),
-		ExpiresAt:   relayKey.ExpiresAt,
-		Quota:       RelayKeyQuotaSnapshot{},
-		DailyUsage:  RelayUsageSnapshot{},
-		ChannelPool: RelayChannelPool{},
+		RelayKeyID:   relayKey.ID,
+		APIKeyID:     relayKey.APIKeyID,
+		ProjectID:    relayKey.ProjectID,
+		ProductID:    relayKey.ProductID,
+		Status:       RelayKeyStatus(relayKey.Status),
+		BalanceMode:  RelayKeyBalanceMode(relayKey.BalanceMode),
+		ExpiresAt:    relayKey.ExpiresAt,
+		Quota:        RelayKeyQuotaSnapshot{},
+		DailyUsage:   RelayUsageSnapshot{},
+		MonthlyUsage: RelayUsageSnapshot{},
+		ChannelPool:  RelayChannelPool{},
 	}
 
 	if product := relayKey.Edges.Product; product != nil {
@@ -131,6 +133,16 @@ func (s *RelayAccessService) LoadContextByAPIKey(ctx context.Context, apiKeyID i
 		relay.DailyUsage.TotalTokens = dailyUsage.TotalTokens
 		charge, _ := decimal.NewFromString(dailyUsage.TotalCharge)
 		relay.DailyUsage.TotalCharge = charge
+		relay.MonthlyUsage.RequestCount += dailyUsage.RequestCount
+		relay.MonthlyUsage.TotalTokens += dailyUsage.TotalTokens
+		relay.MonthlyUsage.TotalCharge = relay.MonthlyUsage.TotalCharge.Add(charge)
+	}
+	if relay.Quota.MonthlyCostLimit != nil {
+		monthlyUsage, err := s.loadMonthlyUsage(ctx, relay.RelayKeyID, time.Now())
+		if err != nil {
+			return nil, err
+		}
+		relay.MonthlyUsage = monthlyUsage
 	}
 
 	if s.router != nil {
@@ -142,6 +154,34 @@ func (s *RelayAccessService) LoadContextByAPIKey(ctx context.Context, apiKeyID i
 	}
 
 	return relay, nil
+}
+
+func (s *RelayAccessService) loadMonthlyUsage(ctx context.Context, relayKeyID int, now time.Time) (RelayUsageSnapshot, error) {
+	if relayKeyID <= 0 {
+		return RelayUsageSnapshot{}, nil
+	}
+	db, dialectName, err := relaySQLDB(s.db)
+	if err != nil {
+		return RelayUsageSnapshot{}, err
+	}
+	monthStart := time.Date(now.UTC().Year(), now.UTC().Month(), 1, 0, 0, 0, 0, time.UTC)
+	totalChargeExpr := relayAdminDecimalCast(dialectName, "total_charge")
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(request_count), 0), COALESCE(SUM(total_tokens), 0), COALESCE(SUM(%s), 0)
+FROM relay_daily_usage_summaries
+WHERE relay_key_id = %s AND stat_date >= %s`, totalChargeExpr, relayPlaceholder(dialectName, 1), relayPlaceholder(dialectName, 2))
+	var usage RelayUsageSnapshot
+	var totalCharge sql.NullString
+	if err := db.QueryRowContext(ctx, query, relayKeyID, monthStart).Scan(&usage.RequestCount, &usage.TotalTokens, &totalCharge); err != nil {
+		if isMissingRelayTableError(err) {
+			return RelayUsageSnapshot{}, nil
+		}
+		return RelayUsageSnapshot{}, fmt.Errorf("failed to load relay monthly usage: %w", err)
+	}
+	usage.TotalCharge, err = parseRelayDecimal(totalCharge, "monthly total charge")
+	if err != nil {
+		return RelayUsageSnapshot{}, err
+	}
+	return usage, nil
 }
 
 func (s *RelayAccessService) CheckAccess(ctx context.Context, relay *RelayAccessContext, input RelayAccessCheckInput) error {
@@ -196,6 +236,14 @@ func (s *RelayAccessService) CheckRelayAccess(_ context.Context, relay *RelayAut
 	if relay.Quota.DailyTokenLimit != nil && relay.DailyUsage.TotalTokens >= *relay.Quota.DailyTokenLimit {
 		return denyRelayAccess(http.StatusForbidden, "relay_daily_token_quota_exceeded", "relay key daily token quota exceeded"), nil
 	}
+	if relay.Quota.MonthlyCostLimit != nil && relay.MonthlyUsage.TotalCharge.GreaterThanOrEqual(*relay.Quota.MonthlyCostLimit) {
+		return denyRelayAccess(http.StatusForbidden, "relay_monthly_cost_quota_exceeded", "relay key monthly cost quota exceeded"), nil
+	}
+	if relay.Quota.ConcurrencyLimit != nil && *relay.Quota.ConcurrencyLimit <= 0 {
+		return denyRelayAccess(http.StatusForbidden, "relay_concurrency_quota_exceeded", "relay key concurrency quota exceeded"), nil
+	}
+	// MVP note: positive concurrency limits require request-scoped inflight tracking.
+	// They are loaded for contracts/UI but are not enforced until that tracker is wired.
 
 	return allowRelayAccess(), nil
 }
@@ -236,7 +284,14 @@ func (s *RelayRouterService) listActivePool(ctx context.Context, productID int, 
 		WithChannelBindings(func(q *ent.RelayProductChannelQuery) {
 			q.Where(relayproductchannel.StatusEQ(relayproductchannel.Status(RelayProductChannelStatusActive))).
 				WithChannel(func(cq *ent.ChannelQuery) {
-					cq.Where(channel.DeletedAt(0), channel.StatusEQ(channel.StatusEnabled))
+					cq.Where(
+						channel.DeletedAt(0),
+						channel.StatusEQ(channel.StatusEnabled),
+						channel.Or(
+							channel.Not(channel.HasProviderQuotaStatus()),
+							channel.HasProviderQuotaStatusWith(providerquotastatus.ReadyEQ(true)),
+						),
+					)
 				}).
 				Order(
 					ent.Asc(relayproductchannel.FieldPriority),
@@ -377,9 +432,10 @@ func (s *RelaySettlementService) SettleUsage(ctx context.Context, relay *RelayAc
 		UpstreamCost:   charge,
 		IdempotencyKey: idempotencyKey,
 	}); err != nil {
+		// Keep the wallet debit in this transaction uncommitted when a concurrent
+		// settlement has already claimed the usage log idempotency key.
 		if isUniqueConstraintError(err) {
-			committed = true
-			return tx.Commit()
+			return nil
 		}
 
 		return err
@@ -424,6 +480,9 @@ func scanRelayAccessContext(row relayScanner) (*RelayAccessContext, error) {
 		dailyRequestCount     sql.NullInt64
 		dailyTotalTokens      sql.NullInt64
 		dailyTotalCharge      sql.NullString
+		monthlyRequestCount   sql.NullInt64
+		monthlyTotalTokens    sql.NullInt64
+		monthlyTotalCharge    sql.NullString
 	)
 
 	if err := row.Scan(
@@ -450,6 +509,9 @@ func scanRelayAccessContext(row relayScanner) (*RelayAccessContext, error) {
 		&dailyRequestCount,
 		&dailyTotalTokens,
 		&dailyTotalCharge,
+		&monthlyRequestCount,
+		&monthlyTotalTokens,
+		&monthlyTotalCharge,
 	); err != nil {
 		return nil, err
 	}
@@ -489,6 +551,19 @@ func scanRelayAccessContext(row relayScanner) (*RelayAccessContext, error) {
 			return nil, fmt.Errorf("invalid relay daily total charge %q: %w", dailyTotalCharge.String, err)
 		}
 		relay.DailyUsage.TotalCharge = value
+	}
+	if monthlyRequestCount.Valid {
+		relay.MonthlyUsage.RequestCount = monthlyRequestCount.Int64
+	}
+	if monthlyTotalTokens.Valid {
+		relay.MonthlyUsage.TotalTokens = monthlyTotalTokens.Int64
+	}
+	if monthlyTotalCharge.Valid && strings.TrimSpace(monthlyTotalCharge.String) != "" {
+		value, err := decimal.NewFromString(monthlyTotalCharge.String)
+		if err != nil {
+			return nil, fmt.Errorf("invalid relay monthly total charge %q: %w", monthlyTotalCharge.String, err)
+		}
+		relay.MonthlyUsage.TotalCharge = value
 	}
 	if walletCurrency.Valid {
 		wallet := &RelayWalletSnapshot{

@@ -85,6 +85,7 @@ const (
 
 type RelayAdminProductChannel struct {
 	ID                    string                    `json:"id"`
+	ProductID             string                    `json:"productId,omitempty"`
 	ChannelID             string                    `json:"channelId"`
 	ChannelName           string                    `json:"channelName"`
 	Provider              RelayProductProviderType  `json:"provider"`
@@ -144,6 +145,7 @@ type RelayKeyUsageSnapshot struct {
 type RelayAdminKey struct {
 	ID            string                `json:"id"`
 	APIKeyID      string                `json:"apiKeyId"`
+	PlaintextKey  string                `json:"plaintextKey,omitempty"`
 	ProjectID     string                `json:"projectId"`
 	ProjectName   string                `json:"projectName"`
 	ProductID     string                `json:"productId"`
@@ -275,6 +277,14 @@ type RelayAdminChannelBindingInput struct {
 	AllowFallback *bool    `json:"allowFallback,omitempty"`
 }
 
+type RelayAdminChannelBindingUpdateInput struct {
+	Priority      *int                       `json:"priority,omitempty"`
+	Weight        *int                       `json:"weight,omitempty"`
+	Status        *RelayProductChannelStatus `json:"status,omitempty"`
+	ModelFilter   []string                   `json:"modelFilter,omitempty"`
+	AllowFallback *bool                      `json:"allowFallback,omitempty"`
+}
+
 type RelayAdminCreateKeyInput struct {
 	ProjectID      string                `json:"projectId"`
 	ProductID      string                `json:"productId"`
@@ -399,10 +409,6 @@ func (s *RelayAdminService) CreateProductChannelBinding(ctx context.Context, inp
 	if input.AllowFallback != nil {
 		allowFallback = *input.AllowFallback
 	}
-	modelFilter := map[string]any{}
-	if len(input.ModelFilter) > 0 {
-		modelFilter["models"] = input.ModelFilter
-	}
 	binding, err := s.productService.CreateRelayProductChannelBinding(ctx, RelayProductChannelBindingInput{
 		ProductID:     productID,
 		ChannelID:     channelID,
@@ -410,21 +416,52 @@ func (s *RelayAdminService) CreateProductChannelBinding(ctx context.Context, inp
 		Weight:        input.Weight,
 		Status:        RelayProductChannelStatusActive,
 		AllowFallback: &allowFallback,
-		ModelFilter:   modelFilter,
+		ModelFilter:   relayAdminModelFilterToMap(input.ModelFilter),
 	})
 	if err != nil {
 		return nil, err
 	}
-	product, err := s.GetProduct(ctx, binding.ProductID)
+	return s.getProductChannelBinding(ctx, binding.ProductID, binding.ID)
+}
+
+func (s *RelayAdminService) UpdateProductChannelBinding(ctx context.Context, id int, input RelayAdminChannelBindingUpdateInput) (*RelayAdminProductChannel, error) {
+	if s.productService == nil {
+		return nil, fmt.Errorf("relay product service is not configured")
+	}
+	update := RelayProductChannelBindingUpdateInput{
+		Priority:      input.Priority,
+		Weight:        input.Weight,
+		Status:        input.Status,
+		AllowFallback: input.AllowFallback,
+	}
+	if input.ModelFilter != nil {
+		update.ModelFilter = relayAdminModelFilterToMap(input.ModelFilter)
+	}
+	binding, err := s.productService.UpdateRelayProductChannelBinding(ctx, id, update)
+	if err != nil {
+		return nil, err
+	}
+	return s.getProductChannelBinding(ctx, binding.ProductID, binding.ID)
+}
+
+func (s *RelayAdminService) DeleteProductChannelBinding(ctx context.Context, id int) error {
+	if s.productService == nil {
+		return fmt.Errorf("relay product service is not configured")
+	}
+	return s.productService.DeleteRelayProductChannelBinding(ctx, id)
+}
+
+func (s *RelayAdminService) getProductChannelBinding(ctx context.Context, productID int, bindingID int) (*RelayAdminProductChannel, error) {
+	product, err := s.GetProduct(ctx, productID)
 	if err != nil {
 		return nil, err
 	}
 	for _, ch := range product.ChannelPool {
-		if ch.ID == relayStringID(binding.ID) {
+		if ch.ID == relayStringID(bindingID) {
 			return &ch, nil
 		}
 	}
-	return nil, fmt.Errorf("relay product channel binding %d: %w", binding.ID, ErrRelayBindingNotFound)
+	return nil, fmt.Errorf("relay product channel binding %d: %w", bindingID, ErrRelayBindingNotFound)
 }
 
 func (s *RelayAdminService) ListKeys(ctx context.Context, projectID *int) ([]RelayAdminKey, error) {
@@ -464,6 +501,12 @@ func (s *RelayAdminService) CreateKey(ctx context.Context, input RelayAdminCreat
 	}
 	if input.InitialBalance < 0 {
 		return nil, fmt.Errorf("initialBalance cannot be negative")
+	}
+	if s.productService == nil {
+		return nil, fmt.Errorf("relay product service is not configured")
+	}
+	if _, err := s.productService.getRelayProduct(ctx, productID); err != nil {
+		return nil, err
 	}
 	apiKeyValue, err := GenerateAPIKey()
 	if err != nil {
@@ -588,7 +631,12 @@ func (s *RelayAdminService) CreateKey(ctx context.Context, input RelayAdminCreat
 	if s.apiKeyService != nil {
 		s.apiKeyService.invalidateAPIKeyCaches(ctx, apiKeyValue)
 	}
-	return s.GetKey(ctx, relayKey.ID)
+	key, err := s.GetKey(ctx, relayKey.ID)
+	if err != nil {
+		return nil, err
+	}
+	key.PlaintextKey = apiKeyValue
+	return key, nil
 }
 
 func (s *RelayAdminService) UpdateKeyStatus(ctx context.Context, id int, input RelayAdminKeyStatusInput) (*RelayAdminKey, error) {
@@ -696,6 +744,9 @@ func (s *RelayAdminService) RechargeWallet(ctx context.Context, input RelayAdmin
 	if err != nil {
 		return nil, err
 	}
+	if math.IsNaN(input.Amount) || math.IsInf(input.Amount, 0) {
+		return nil, fmt.Errorf("recharge amount must be finite")
+	}
 	amount := decimal.NewFromFloat(input.Amount)
 	if amount.LessThanOrEqual(decimal.Zero) {
 		return nil, fmt.Errorf("recharge amount must be greater than 0")
@@ -776,6 +827,24 @@ func (s *RelayAdminService) RechargeWallet(ctx context.Context, input RelayAdmin
 	if err != nil {
 		return nil, fmt.Errorf("failed to create relay wallet ledger entry: %w", err)
 	}
+	if relayKey.Status == relaykey.StatusExhausted && balanceAfter.GreaterThan(decimal.Zero) {
+		if _, err := tx.RelayKey.UpdateOneID(relayKey.ID).
+			Where(relaykey.DeletedAt(0)).
+			SetStatus(relaykey.StatusActive).
+			Save(ctx); err != nil {
+			return nil, fmt.Errorf("failed to restore exhausted relay key: %w", err)
+		}
+		apiKey, err := tx.APIKey.Query().Where(apikey.ID(relayKey.APIKeyID)).First(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load backing api key: %w", err)
+		}
+		if _, err := tx.APIKey.UpdateOneID(apiKey.ID).SetStatus(apikey.StatusEnabled).Save(ctx); err != nil {
+			return nil, fmt.Errorf("failed to restore backing api key status: %w", err)
+		}
+		if s.apiKeyService != nil && apiKey.Key != "" {
+			defer s.apiKeyService.invalidateAPIKeyCaches(ctx, apiKey.Key)
+		}
+	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit relay wallet recharge: %w", err)
@@ -830,11 +899,11 @@ func (s *RelayAdminService) ListChannelPoolHealth(ctx context.Context) ([]RelayC
 }
 
 func (s *RelayAdminService) GetOverview(ctx context.Context, projectID *int) (*ProjectRelayOverviewView, error) {
-	products, err := s.ListProducts(ctx)
+	keys, err := s.ListKeys(ctx, projectID)
 	if err != nil {
 		return nil, err
 	}
-	keys, err := s.ListKeys(ctx, projectID)
+	products, err := s.projectScopedProducts(ctx, projectID, keys)
 	if err != nil {
 		return nil, err
 	}
@@ -871,6 +940,39 @@ func (s *RelayAdminService) GetUsage(ctx context.Context, projectID *int) (*Proj
 		return nil, err
 	}
 	return &ProjectRelayUsageView{Wallets: wallets, LedgerEntries: ledger, Usage: usage, RecentRequests: requests}, nil
+}
+
+func (s *RelayAdminService) projectScopedProducts(ctx context.Context, projectID *int, keys []RelayAdminKey) ([]RelayAdminProduct, error) {
+	if projectID == nil {
+		return s.ListProducts(ctx)
+	}
+	if len(keys) == 0 {
+		return []RelayAdminProduct{}, nil
+	}
+
+	productIDs := make(map[string]struct{}, len(keys))
+	out := make([]RelayAdminProduct, 0, len(keys))
+	for _, key := range keys {
+		if _, exists := productIDs[key.ProductID]; exists {
+			continue
+		}
+		productIDs[key.ProductID] = struct{}{}
+		id, err := strconv.Atoi(key.ProductID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid relay product id %q for project overview: %w", key.ProductID, err)
+		}
+		product, err := s.entFromContext(ctx).RelayProduct.Query().
+			Where(relayproduct.ID(id), relayproduct.DeletedAt(0)).
+			First(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, fmt.Errorf("relay product %d: %w", id, ErrRelayProductNotFound)
+			}
+			return nil, err
+		}
+		out = append(out, relayAdminProductFromEnt(product))
+	}
+	return out, nil
 }
 
 func (s *RelayAdminService) listProductRows(ctx context.Context) ([]RelayAdminProduct, error) {
@@ -1029,6 +1131,7 @@ func (s *RelayAdminService) listProductChannels(ctx context.Context, productID i
 	for _, b := range bindings {
 		ch := RelayAdminProductChannel{
 			ID:            relayStringID(b.ID),
+			ProductID:     relayStringID(b.ProductID),
 			ChannelID:     relayStringID(b.ChannelID),
 			Provider:      provider,
 			Priority:      b.Priority,
@@ -1437,6 +1540,22 @@ func relayAdminProductFromEnt(e *ent.RelayProduct) RelayAdminProduct {
 		product.Description = description
 	}
 	return product
+}
+
+func relayAdminModelFilterToMap(models []string) map[string]any {
+	modelFilter := map[string]any{}
+	if models != nil {
+		clean := make([]string, 0, len(models))
+		for _, model := range models {
+			if trimmed := strings.TrimSpace(model); trimmed != "" {
+				clean = append(clean, trimmed)
+			}
+		}
+		if len(clean) > 0 {
+			modelFilter["models"] = clean
+		}
+	}
+	return modelFilter
 }
 
 func relayAdminModelFilterFromMap(m any) []string {

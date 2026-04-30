@@ -227,7 +227,7 @@ func relayProductChannelFromEnt(e *ent.RelayProductChannel) *RelayProductChannel
 		Weight:        e.Weight,
 		Status:        RelayProductChannelStatus(e.Status),
 		AllowFallback: e.AllowFallback,
-		ModelFilter:   func() map[string]any {
+		ModelFilter: func() map[string]any {
 			if mf, ok := e.ModelFilter.(map[string]any); ok {
 				return mf
 			}
@@ -474,7 +474,14 @@ func (s *RelayProductService) UpdateRelayProductChannelBinding(ctx context.Conte
 	if id <= 0 {
 		return nil, fmt.Errorf("relay product channel binding id must be greater than 0")
 	}
-	if err := s.ValidateUpdateRelayProductChannelBinding(input); err != nil {
+	existing, err := s.entFromContext(ctx).RelayProductChannel.Get(ctx, id)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, fmt.Errorf("relay product channel binding %d: %w", id, ErrRelayBindingNotFound)
+		}
+		return nil, fmt.Errorf("failed to load relay product channel binding %d: %w", id, err)
+	}
+	if err := s.ValidateUpdateRelayProductChannelBinding(ctx, existing, input); err != nil {
 		return nil, err
 	}
 
@@ -621,13 +628,18 @@ func (s *RelayProductService) ValidateCreateRelayProductChannelBinding(ctx conte
 	return nil
 }
 
-func (s *RelayProductService) ValidateUpdateRelayProductChannelBinding(input RelayProductChannelBindingUpdateInput) error {
+func (s *RelayProductService) ValidateUpdateRelayProductChannelBinding(ctx context.Context, existing *ent.RelayProductChannel, input RelayProductChannelBindingUpdateInput) error {
 	if input.Weight != nil && *input.Weight <= 0 {
 		return fmt.Errorf("relay product channel weight must be greater than 0")
 	}
 	if input.Status != nil {
 		if err := validateRelayProductChannelStatus(*input.Status); err != nil {
 			return err
+		}
+		if *input.Status == RelayProductChannelStatusActive {
+			if err := s.validateRelayChannel(ctx, existing.ChannelID); err != nil {
+				return err
+			}
 		}
 	}
 	if input.MaxInflight != nil && *input.MaxInflight <= 0 {
@@ -651,8 +663,8 @@ func (s *RelayProductService) validateRelayChannel(ctx context.Context, channelI
 	if err != nil {
 		return fmt.Errorf("failed to load relay product channel %d: %w", channelID, err)
 	}
-	if ch.Status == channel.StatusArchived {
-		return fmt.Errorf("channel %d is archived and cannot be added to a relay product pool", channelID)
+	if ch.Status != channel.StatusEnabled {
+		return fmt.Errorf("channel %d must be enabled before it can be added to an active relay product pool", channelID)
 	}
 	return nil
 }

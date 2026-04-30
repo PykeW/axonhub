@@ -20,6 +20,8 @@ func TestRelaySubKeyRESTContract(t *testing.T) {
 		{Method: http.MethodPost, Path: "/admin/relay-subkeys/products"},
 		{Method: http.MethodPatch, Path: "/admin/relay-subkeys/products/:id"},
 		{Method: http.MethodPost, Path: "/admin/relay-subkeys/product-channels"},
+		{Method: http.MethodPatch, Path: "/admin/relay-subkeys/product-channels/:id"},
+		{Method: http.MethodDelete, Path: "/admin/relay-subkeys/product-channels/:id"},
 		{Method: http.MethodGet, Path: "/admin/relay-subkeys/keys"},
 		{Method: http.MethodGet, Path: "/admin/relay-subkeys/keys/:id"},
 		{Method: http.MethodPost, Path: "/admin/relay-subkeys/keys"},

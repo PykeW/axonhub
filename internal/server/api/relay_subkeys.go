@@ -40,6 +40,8 @@ func RelaySubKeyRESTContract() []RelaySubKeyEndpoint {
 		{Method: http.MethodPost, Path: "/admin/relay-subkeys/products"},
 		{Method: http.MethodPatch, Path: "/admin/relay-subkeys/products/:id"},
 		{Method: http.MethodPost, Path: "/admin/relay-subkeys/product-channels"},
+		{Method: http.MethodPatch, Path: "/admin/relay-subkeys/product-channels/:id"},
+		{Method: http.MethodDelete, Path: "/admin/relay-subkeys/product-channels/:id"},
 		{Method: http.MethodGet, Path: "/admin/relay-subkeys/keys"},
 		{Method: http.MethodGet, Path: "/admin/relay-subkeys/keys/:id"},
 		{Method: http.MethodPost, Path: "/admin/relay-subkeys/keys"},
@@ -118,6 +120,35 @@ func (h *RelaySubKeyHandlers) CreateProductChannel(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"channel": channel, "data": channel})
+}
+
+func (h *RelaySubKeyHandlers) UpdateProductChannel(c *gin.Context) {
+	id, ok := relaySubKeyIDParam(c, "id")
+	if !ok {
+		return
+	}
+	var input biz.RelayAdminChannelBindingUpdateInput
+	if !relaySubKeyBindJSON(c, &input) {
+		return
+	}
+	channel, err := h.RelayAdminService.UpdateProductChannelBinding(c.Request.Context(), id, input)
+	if err != nil {
+		relaySubKeyJSONError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"channel": channel, "data": channel})
+}
+
+func (h *RelaySubKeyHandlers) DeleteProductChannel(c *gin.Context) {
+	id, ok := relaySubKeyIDParam(c, "id")
+	if !ok {
+		return
+	}
+	if err := h.RelayAdminService.DeleteProductChannelBinding(c.Request.Context(), id); err != nil {
+		relaySubKeyJSONError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"deleted": true, "data": true})
 }
 
 func (h *RelaySubKeyHandlers) ListKeys(c *gin.Context) {
