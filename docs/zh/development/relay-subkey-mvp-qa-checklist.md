@@ -21,16 +21,17 @@
 - 渠道绑定状态：`active`、`paused`
 - 默认值：`USD`、`shared_capacity`、`prepaid`、`draft`、超时 `600`、绑定权重 `100`
 
-## 当前阻塞项（2026-04-30 Phase 5 收口复核）
+## 当前收口状态（2026-05-01 Relay 限额语义收口）
 
 - 数据基础：6 个 Relay Ent schema 已存在（`RelayProduct`、`RelayProductChannel`、`RelayKey`、`RelayWallet`、`RelayWalletLedgerEntry`、`RelayDailyUsageSummary`），且对应生成资产已存在：`internal/ent/relayproduct*`、`internal/ent/relayproductchannel*`、`internal/ent/relaykey*`、`internal/ent/relaywallet*`、`internal/ent/relaywalletledgerentry*`、`internal/ent/relaydailyusagesummary*`。
 - 工具链：当前环境 PATH 未找到 `go`/`gofmt`，因此本轮无法执行 `go fmt`/`go test`；**不要降级** `go.mod` 的 `go 1.26.0` 或 `tool` directive。后端 targeted tests 与 `gofmt` 必须在 Go 1.26 环境补跑（命令见末尾）。
 - 产品/运营 REST 最小闭环：已落地 product-channel PATCH/DELETE 路由与 contract、归档/未启用渠道拦截、`CreateKey` 一次性 `plaintextKey`、`RechargeWallet` finite + exhausted 恢复；剩余 `RelayProductService` 是否完全替换 raw SQL 至 Ent 路径需在补跑时复核。
 - Runtime 接入：`RelayRuntimeService` Fx wiring + `AuthenticateRelayAPIKey -> ResolveAndCheckAccess` + `UsageLogService -> RecordRelayUsage -> RelaySettlementService` 已接入；orchestrator `select_candidates` 已叠加产品池、绑定状态、模型过滤、渠道状态、`ProviderQuotaStatus.ready` 过滤；结算 idempotency 在 unique conflict 后回滚钱包。
 - 前端 REST 接入：`VITE_RELAY_SUBKEYS_API_MODE=rest` 时 401/403/contract 错误进入错误态、不 fallback；REST 模式缺 projectId 抛错而非 mock；`filterKeysByProject` 不再回退 `project-alpha`；项目侧详情页 keyId 不存在不再回退首条 key；route permission 已对齐后端 all-scopes 语义；admin Relay 路由 `scopeLevel='system'` 显式标注；运营详情页写操作（产品激活/绑定/Pause/Resume/Remove/Suspend/Archive/Increase concurrency/Recharge）已按 `write_channels`/`write_api_keys` 在组件级隐藏。
-- 已知遗留风险（必须在补测时确认或显式标注）：
-  - `MonthlyCostLimit` preflight 与 settle 之间存在 TOCTOU，并发请求可能突破 limit；当前等同 soft limit。
-  - `ConcurrencyLimit` 已读但未强制——缺 inflight tracker；正向值不能阻塞超额并发。
+- 已决策限制 / 已知语义：
+  - `MonthlyCostLimit` 当前语义为请求前 soft/preflight guard，基于 `relay_daily_usage_summaries` 月度聚合判断；它降低明显超限请求，但不承诺并发下的严格财务 hard cap。
+  - 正向 `ConcurrencyLimit` 当前语义为 preview/config-only，不强制阻塞超额 in-flight；`<= 0` 仍可表达拒绝/停用语义，Post-MVP 通过 inflight Begin/Release tracker 才能变成硬阻塞。
+- 仍需关注的已知风险：
   - `PromptTokens` / `CompletionTokens` 字段语义不完美：后端目前只有 totals 摘要，前端聚合 token 总量可用但分项语义不准。
 
 ## 后端数据基础合并后补测
@@ -43,7 +44,7 @@
 
 ## 运行时/API 合并后补测
 
-- 鉴权后钩子：普通 API Key 不应被 Relay 逻辑误拦截；绑定 `relay_keys` 的 Sub-Key 必须校验 status、expires_at、余额和硬限额。
+- 鉴权后钩子：普通 API Key 不应被 Relay 逻辑误拦截；绑定 `relay_keys` 的 Sub-Key 必须校验 status、expires_at、余额、日级硬限额和月度 soft/preflight guard。
 - 路由前钩子：候选渠道必须受产品池、绑定状态、模型过滤、渠道状态和 provider quota 状态共同约束；带 `ProviderQuotaStatus.ready=false` 的渠道必须被排除，未绑定 quota status 或 `ready=true` 的渠道可保留。
 - 结算钩子：基于 `usage_log_id` 的扣费必须幂等，重复调用不得重复写账本或重复扣余额；唯一冲突必须回滚同事务内钱包扣减。
 - 项目侧隔离：`ProjectOverview` 只能返回当前项目持有 Key 对应产品的基础元数据，不得暴露全局 channelPool 或全局产品请求/token/cost 统计。
@@ -55,7 +56,7 @@
 
 ```bash
 gofmt -w internal/ent/schema/relay_*.go internal/server/biz/relay_product.go internal/server/biz/relay_runtime.go internal/server/biz/relay_services.go internal/server/biz/relay_admin.go internal/server/middleware/relay_authz.go
-GOTOOLCHAIN=local go test ./internal/server/biz -run 'Relay(Product|Runtime)' -count=1
+GOTOOLCHAIN=local go test ./internal/server/biz -run 'Relay(Product|Runtime|Access|Settlement)' -count=1
 GOTOOLCHAIN=local go generate ./internal/server/gql
 ```
 
@@ -79,12 +80,12 @@ pnpm --dir frontend build
 
 注意：仓库存在历史 lint 噪音，关注新增/修改文件的 ESLint 是否 0 报错；本轮 `frontend/src/hooks/useRoutePermissions.ts` 与 `frontend/src/features/relay-subkeys/pages.tsx` 经 `pnpm exec eslint` 检查 0 报错；`pnpm --dir frontend build` exit 0。
 
-## Phase 5 补测 backlog（仅在 Go 1.26 环境可执行）
+## Post-MVP 验收 backlog（仅在 Go 1.26 环境可执行）
 
 - 并发同 `usageLog.ID` 结算只扣一次（验证 `RelaySettlementService.SettleUsage` 的 unique conflict 回滚 + idempotency key）。
 - `RelayAdminService.GetOverview(ctx, projectID)` 不暴露其他项目/全局产品/全局 channelPool 统计。
-- `MonthlyCostLimit`：要么在 settle 事务内 atomic check + debit 拒绝超限，要么在文档/字段上显式标注为 soft limit；同时为并发场景补对照测试。
-- 正向 `ConcurrencyLimit`：要么实现 inflight Begin/Release tracker，要么在文档/UI 标注为不支持。
+- Post-MVP hard monthly cap：通过请求预授权/额度保留，或 settlement 事务内 serial lock/atomic check + debit 实现；补并发对照测试，并评估上游已完成后 settlement 拒绝的体验与对账风险。
+- Post-MVP inflight tracker：实现 request-scoped Begin/Release tracker 后，正向 `ConcurrencyLimit` 才能阻塞超额 in-flight；补正常释放、异常释放和并发拒绝测试。
 - `ProviderQuotaStatus.ready=false` 渠道必须从 `RelayRouterService.listActivePool` 候选中排除；`ready=true` 与无 status 必须保留。
 - 前端 REST 模式 401/403 不 fallback、contract drift/unwrap 失败抛 `relayContractError`、缺 projectId 不返回 mock；新增 `requireEntityResponse` 对 primitive bare 响应的严格性。
 - `routePathMatches('/project/relay-subkeys/keys/$keyId', '/project/relay-subkeys/keys/abc')` 必须 true；`ProjectRelaySubkeysKeyDetailPage` keyId 不存在显示 not-found 而非首条 key。

@@ -48,13 +48,13 @@ AxonHub 已经具备 API 网关、渠道路由、请求审计与 API Key 鉴权�
 
 以下状态不一定单独落库，但必须在页面上有清晰 badge：
 
-| 派生状态                 | 判定来源                                         | 页面用途                            |
-| ------------------------ | ------------------------------------------------ | ----------------------------------- |
-| `expired`                | `expires_at < now()`                             | 告知 Key 已过期，需要续期或重发     |
-| `low_balance`            | `relay_wallets.available_amount` 低于阈值        | 在列表和详情页提前预警              |
-| `quota_reached`          | `relay_daily_usage_summaries` 或月度聚合超过限制 | 标记为什么进入 `exhausted`          |
-| `concurrency_blocked`    | 当前并发超过 `concurrency_limit`                 | 请求失败时给出可解释错误            |
-| `upstream_pool_degraded` | 关联产品的候选渠道不足或全部 unhealthy           | 提示是共享池问题，而不是单 Key 问题 |
+| 派生状态                 | 判定来源                                                                   | 页面用途                            |
+| ------------------------ | -------------------------------------------------------------------------- | ----------------------------------- |
+| `expired`                | `expires_at < now()`                                                       | 告知 Key 已过期，需要续期或重发     |
+| `low_balance`            | `relay_wallets.available_amount` 低于阈值                                  | 在列表和详情页提前预警              |
+| `quota_reached`          | 日级 usage summary 达到硬限额，或月度聚合触发 preflight guard              | 标记为什么进入 `exhausted`          |
+| `concurrency_blocked`    | Post-MVP inflight tracker 判定当前并发超过 `concurrency_limit`；MVP 不出现 | tracker 上线后为并发拒绝提供解释    |
+| `upstream_pool_degraded` | 关联产品的候选渠道不足或全部 unhealthy                                     | 提示是共享池问题，而不是单 Key 问题 |
 
 实现建议：列表页展示“持久化状态 + 派生 badge”双层信息，避免把上游池故障误判成用户余额问题。
 
@@ -129,7 +129,7 @@ AxonHub 已经具备 API 网关、渠道路由、请求审计与 API Key 鉴权�
 ### 流程 2：运营为项目发放 Sub-Key
 
 1. 运营进入“Sub-Key 列表”，点击“创建 Sub-Key”。
-2. 选择目标 `project_id`、绑定产品、填写显示名、有效期、余额模式与硬限额。
+2. 选择目标 `project_id`、绑定产品、填写显示名、有效期、余额模式、日限额、月度成本 guard 与预览并发值。
 3. 后端创建 `api_keys` 记录，并同步创建 `relay_keys`、`relay_wallets`。
 4. 创建成功后返回 Key 详情页，显示一次性可复制的明文 Key。
 5. 若是预付费模式，运营可立即在“余额与流水”Tab 完成首充。
@@ -149,22 +149,22 @@ AxonHub 已经具备 API 网关、渠道路由、请求审计与 API Key 鉴权�
 
 1. 客户端携带 AxonHub Sub-Key 访问兼容接口。
 2. 鉴权中间件先校验 `api_keys`，随后加载 `relay_keys` 与 `relay_wallets`。
-3. 如果 Key 状态正常、余额与硬限额通过，则根据 `product_id` 加载渠道池。
+3. 如果 Key 状态正常，余额、日限额与月度 preflight guard 通过，则根据 `product_id` 加载渠道池。
 4. 路由层过滤不可用渠道，选出最终命中的 `channel_id`，并写入 `requests` 与 `request_executions`。
 5. 上游响应成功后，结算层依据 `usage_logs` 生成账务流水并更新钱包快照。
 6. 项目侧详情页与运营侧请求页都能看到这次调用，包括模型、token、成本和命中渠道。
 
 实现要点：页面显示的“请求成功”和“扣费成功”要拆成两个状态位，避免上游成功但结算延迟时让用户误解为未记录。
 
-### 流程 5：余额不足或硬限额触发耗尽
+### 流程 5：余额不足或限额 guard 触发耗尽
 
-1. 请求进入后，系统检测到 `available_amount <= 0`，或日限额/月限额已达上限。
+1. 请求进入后，系统检测到 `available_amount <= 0`，或日限额已达上限，或月度成本 preflight guard 判定已超限。
 2. 后端把 Key 标记为 `exhausted`，并返回可解释错误信息。
 3. Key 列表页显示 `exhausted`，同时带上 `low_balance` 或 `quota_reached` badge。
 4. 项目管理员在详情页看到失败原因和最近一次触发时间。
 5. 运营在账务页完成充值或调整限额后，Key 恢复为 `active`。
 
-实现要点：`exhausted` 应是可恢复状态，不要与 `suspended` 共用文案；页面操作按钮也要区分“充值恢复”和“人工解封”。
+实现要点：`exhausted` 应是可恢复状态，不要与 `suspended` 共用文案；页面操作按钮也要区分“充值恢复”和“人工解封”。月度成本在 MVP 中是 soft/preflight guard，正向并发值仅用于展示与后续 tracker 预留，页面限额文案应避免承诺 settlement hard cap 或当前已阻塞超额 in-flight。
 
 ### 流程 6：运营主动暂停或归档 Key
 
@@ -320,17 +320,17 @@ frontend/src/routes/
 
 #### 运营侧页面
 
-| 页面         | 路由                                          | 对应 Flow                  | 核心职责                                     |
-| ------------ | --------------------------------------------- | -------------------------- | -------------------------------------------- |
-| 产品列表     | `/operator/relay-subkeys/products`            | 运营创建共享容量产品       | 查看状态、筛选、上下架、进入详情             |
-| 产品新建     | `/operator/relay-subkeys/products/create`     | 运营创建共享容量产品       | 填写产品编码、名称、provider 类型、模型范围  |
-| 产品详情     | `/operator/relay-subkeys/products/:productId` | 产品详情与渠道池配置       | 配置渠道池、优先级、权重、模型过滤           |
-| Sub-Key 列表 | `/operator/relay-subkeys/keys`                | 运营为项目发放 Sub-Key     | 查看所有 Key、筛选状态、识别低余额和过期 Key |
-| Sub-Key 新建 | `/operator/relay-subkeys/keys/create`         | 运营为项目发放 Sub-Key     | 选择项目、产品、余额模式、有效期、硬限额     |
-| Sub-Key 详情 | `/operator/relay-subkeys/keys/:keyId`         | Key 管理、暂停、恢复、归档 | 查看概览、最近失败原因、执行管理动作         |
-| 账务页       | `/operator/relay-subkeys/keys/:keyId/billing` | 充值/流水页                | 充值、退款、人工调整、查看账务凭证           |
-| 请求排障页   | `/operator/relay-subkeys/requests`            | 共享池故障排查             | 按 Key / 产品 / 渠道检索失败请求             |
-| 渠道健康看板 | `/operator/relay-subkeys/channel-pool-health` | 共享池故障排查             | 查看产品池健康、识别上游容量风险             |
+| 页面         | 路由                                          | 对应 Flow                  | 核心职责                                                          |
+| ------------ | --------------------------------------------- | -------------------------- | ----------------------------------------------------------------- |
+| 产品列表     | `/operator/relay-subkeys/products`            | 运营创建共享容量产品       | 查看状态、筛选、上下架、进入详情                                  |
+| 产品新建     | `/operator/relay-subkeys/products/create`     | 运营创建共享容量产品       | 填写产品编码、名称、provider 类型、模型范围                       |
+| 产品详情     | `/operator/relay-subkeys/products/:productId` | 产品详情与渠道池配置       | 配置渠道池、优先级、权重、模型过滤                                |
+| Sub-Key 列表 | `/operator/relay-subkeys/keys`                | 运营为项目发放 Sub-Key     | 查看所有 Key、筛选状态、识别低余额和过期 Key                      |
+| Sub-Key 新建 | `/operator/relay-subkeys/keys/create`         | 运营为项目发放 Sub-Key     | 选择项目、产品、余额模式、有效期、日限额、月度 guard 与预览并发值 |
+| Sub-Key 详情 | `/operator/relay-subkeys/keys/:keyId`         | Key 管理、暂停、恢复、归档 | 查看概览、最近失败原因、执行管理动作                              |
+| 账务页       | `/operator/relay-subkeys/keys/:keyId/billing` | 充值/流水页                | 充值、退款、人工调整、查看账务凭证                                |
+| 请求排障页   | `/operator/relay-subkeys/requests`            | 共享池故障排查             | 按 Key / 产品 / 渠道检索失败请求                                  |
+| 渠道健康看板 | `/operator/relay-subkeys/channel-pool-health` | 共享池故障排查             | 查看产品池健康、识别上游容量风险                                  |
 
 #### 项目侧页面
 

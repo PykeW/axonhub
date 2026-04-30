@@ -29,14 +29,14 @@
 - [ ] 每个贡献渠道能关联到现有 `channels.id`。
 - [ ] 每个贡献渠道能追溯 `contributor_user_id`。
 - [ ] `declared_provider` 与 `declared_models` 可记录用户声明。
-- [ ] `share_status` 覆盖 `pending_verification`、`active`、`watch`、`suspended`、`blocked`、`withdrawn`。
+- [ ] `share_status` 覆盖 `pending_verification`、`verification_timeout`、`active`、`watch`、`suspended`、`blocked`、`withdrawn`。
 - [ ] `quality_score` 范围限制为 0-100。
 - [ ] `quality_status` 覆盖 `unverified`、`verified`、`degraded`、`blocked`。
 - [ ] 支持 `daily_token_limit`、`daily_request_limit` 和 `max_inflight`。
 - [ ] 支持 `last_verified_at`、`last_probe_at` 和 `penalty_active_until`。
 - [ ] 贡献者不能读取其他贡献者的贡献渠道。
 
-### `model_probe_cases`
+### `model_authenticity_probe_cases`
 
 - [ ] 探针题能按 provider、模型族、类别和难度筛选。
 - [ ] 支持 `exact`、`regex`、`json_schema`、`judge_model`、`embedding_similarity`、`human_review` 等校验类型。
@@ -45,19 +45,19 @@
 - [ ] 支持成本权重，用于抽检预算控制。
 - [ ] 普通贡献者无权读取完整 prompt、标准答案和 private rubric。
 
-### `model_probe_runs`
+### `model_authenticity_probe_runs`
 
-- [ ] 每次抽检都有唯一 `probe_run_id`。
+- [ ] 每次模型真实性抽检都有唯一 `authenticity_probe_run_id` 或等价任务 ID。
 - [ ] 每次抽检都有 `trigger_type`。
 - [ ] 抽检请求和响应只存 hash 或脱敏摘要，不默认保存敏感明文。
 - [ ] 记录 `status`、`score`、`latency_ms`、`token_usage` 和 `failure_reason`。
-- [ ] 重复执行同一 probe run 不会重复处罚。
+- [ ] 重复执行同一模型真实性抽检任务不会重复处罚。
 - [ ] `inconclusive` 不应直接触发严重处罚。
 
 ### `channel_quality_events`
 
 - [ ] 质量分变动、降权、冻结、扣罚、恢复、申诉都落事件。
-- [ ] 每个事件可关联 probe run、request 或积分流水。
+- [ ] 每个事件可关联模型真实性抽检任务、request 或积分流水。
 - [ ] 贡献者可看摘要原因，不可看私密探针内容。
 - [ ] 人工操作记录 `operator_user_id`。
 - [ ] 事件不可硬删除，只能追加纠正事件。
@@ -68,18 +68,22 @@
 - [ ] 所有积分变动都有不可变流水。
 - [ ] 每条流水有 `idempotency_key`。
 - [ ] 并发释放、冻结、扣罚不会导致负数余额。
-- [ ] 同一 request / usage / probe 不能重复生成积分。
+- [ ] 同一 request / usage / 模型真实性抽检任务不能重复生成积分。
 - [ ] 人工调整必须记录操作人和备注。
 
 ## 入驻验证验收
 
+- [ ] 提交后立即创建 `pending_verification` 状态的贡献渠道，不同步等待完整验证完成。
+- [ ] 入驻验证由后台任务异步执行，任务状态、开始时间、结束时间和失败原因可追踪。
+- [ ] 前端能轮询、刷新或订阅验证状态，不依赖提交接口长时间阻塞。
 - [ ] 无效 API Key 不能通过入驻验证。
 - [ ] provider / base URL 不可达时给出可解释错误。
 - [ ] 声明模型不存在时给出可解释错误。
-- [ ] 至少执行基础可用性探针。
-- [ ] 至少执行 1 个反缓存或 nonce 探针。
+- [ ] 至少执行 3-5 个轻量探针，其中包含基础可用性探针和 1 个反缓存或 nonce 探针。
+- [ ] 超时后，例如 5 分钟未完成，转为可解释失败或 `verification_timeout`。
+- [ ] 重复提交或重试同一验证任务具备幂等键，不会重复创建渠道、扣费或处罚。
 - [ ] 入驻验证成功后 `share_status` 从 `pending_verification` 进入 `active` 或 `watch`。
-- [ ] 入驻验证失败不会进入正常路由候选池。
+- [ ] 入驻验证失败或超时不会进入正常路由候选池。
 - [ ] 入驻验证产生的 probe 成本不扣消费方积分。
 - [ ] 入驻验证结果能在运营侧追溯。
 
@@ -161,6 +165,16 @@
 - [ ] 由平台或消费方原因导致失败时，不应错误处罚贡献者。
 - [ ] 积分流水可通过 request / usage / channel 追溯。
 - [ ] 同一 request 不会重复奖励。
+- [ ] 贡献者 user/project 与消费方 user/project 判定为同主体时，不发放或降低贡献奖励，且原因可追溯。
+
+## 积分与 Relay 钱包兑换验收
+
+- [ ] 积分抵扣 token 前先写入 `user_point_ledger_entries` 扣减流水，`scene` 为 `consume` 或 `point_redeem`，并带 `idempotency_key`。
+- [ ] 积分扣减与 Relay 钱包侧充值/抵扣流水能通过 `related_wallet_ledger_entry_id` 或等价关联记录互相追溯。
+- [ ] 保存 `conversion_rate_snapshot`、`related_relay_key_id`、`related_project_id` 等兑换快照，便于审计和回滚。
+- [ ] 同一兑换请求重复执行时不会重复扣积分、重复入账或重复抵扣。
+- [ ] 兑换失败时能追加补偿流水或回滚积分扣减。
+- [ ] 积分余额与 Relay 钱包余额不会双扣、漏扣或重复入账。
 
 ## 惩罚与冻结验收
 
@@ -179,7 +193,7 @@
 - [ ] 贡献者能看到处罚摘要、时间、等级、影响积分和状态。
 - [ ] 贡献者不能看到完整探针题和标准答案。
 - [ ] 贡献者可以提交申诉说明。
-- [ ] 运营能查看申诉关联的 probe run、请求摘要、质量事件和积分流水。
+- [ ] 运营能查看申诉关联的模型真实性抽检任务、请求摘要、质量事件和积分流水。
 - [ ] 申诉通过能恢复质量分和释放冻结积分。
 - [ ] 申诉失败能维持处罚并记录复核备注。
 - [ ] 申诉处理全程有审计记录。
@@ -217,24 +231,24 @@
 
 ## 成功指标
 
-| 指标 | 目标 |
-| --- | --- |
-| 明显无效 API 入驻拦截率 | >= 90% |
-| 劣质 API 降权/暂停时间 | 5-15 分钟内 |
-| 积分重复入账 | 0 |
-| 积分并发错账 | 0 |
-| 探针题泄漏 | 0 |
-| API Key 明文泄漏 | 0 |
-| P3/P4 处罚证据链完整率 | 100% |
-| 申诉可追溯率 | 100% |
+| 指标                    | 目标        |
+| ----------------------- | ----------- |
+| 明显无效 API 入驻拦截率 | >= 90%      |
+| 劣质 API 降权/暂停时间  | 5-15 分钟内 |
+| 积分重复入账            | 0           |
+| 积分并发错账            | 0           |
+| 探针题泄漏              | 0           |
+| API Key 明文泄漏        | 0           |
+| P3/P4 处罚证据链完整率  | 100%        |
+| 申诉可追溯率            | 100%        |
 
 ## 推荐验证命令
 
-当前文档阶段不要求新增代码命令。进入实现阶段后建议补充：
+当前文档阶段不要求新增代码命令。进入实现阶段后建议补充，避免用泛化 `Probe` 误跑现有 `ChannelProbe` 测试：
 
 ```bash
-go test ./internal/server/biz -run 'Contributed|Probe|Quality|Point|Relay' -count=1
-go test ./internal/server/api -run 'Contributed|Probe|Quality|Point' -count=1
+go test ./internal/server/biz -run 'Contributed|Authenticity|Quality|Point|Relay' -count=1
+go test ./internal/server/api -run 'Contributed|Authenticity|Quality|Point|Relay' -count=1
 pnpm --dir frontend lint
 pnpm --dir frontend build
 ```

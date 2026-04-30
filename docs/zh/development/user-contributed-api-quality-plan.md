@@ -29,6 +29,12 @@ AxonHub 当前 Relay/Sub-Key MVP 的核心是“平台运营方自托管共享�
 - 不让未知用户直接把贡献 API 承接生产核心流量。
 - 不对所有 provider 一次性泛化，先选择 1-2 类兼容协议做试点。
 
+### OpenAI-compatible 试点适配边界
+
+- 前期只对选定 provider / base_url 组合做严格校验，例如模型列表、usage 字段、错误码和声明模型一致性。
+- 其他 OpenAI-compatible 兼容层先只做基础可用性、鉴权、响应格式和最小 usage 存在性校验，不把 provider 身份作为强承诺。
+- usage 统计、错误码归一化、model list 解析和特殊能力边界需按 provider adapter 逐步扩展，不能用一套泛化规则覆盖所有兼容接口。
+
 ## 当前基础与缺口
 
 ### 可复用基础
@@ -63,7 +69,7 @@ AxonHub 当前 Relay/Sub-Key MVP 的核心是“平台运营方自托管共享�
 | 消费方 | 使用平台积分调用模型的用户或项目 | 使用平台 Sub-Key、查看消费积分、反馈质量问题 | 指定命中某贡献者 API、自行篡改结算 |
 | 平台运营 | 管理试点和共享池的管理员 | 审核贡献渠道、查看抽检结果、调整权重、处理申诉 | 直接修改不可变积分流水 |
 | 风控/客服 | 处理异常、投诉和处罚 | 冻结、解冻、备注、人工复核 | 绕过审计删除证据 |
-| 系统任务 | 定时抽检、质量计算和积分释放 | 创建 probe run、计算质量分、生成幂等积分流水 | 使用普通用户上下文访问私密题库 |
+| 系统任务 | 定时抽检、质量计算和积分释放 | 创建模型真实性抽检任务、计算质量分、生成幂等积分流水 | 使用普通用户上下文访问私密题库 |
 
 ## 模型真实性定义
 
@@ -105,7 +111,7 @@ AxonHub 当前 Relay/Sub-Key MVP 的核心是“平台运营方自托管共享�
 
 ### 题目字段
 
-建议 `model_probe_cases` 至少包含：
+建议 `model_authenticity_probe_cases` 至少包含：
 
 | 字段 | 说明 |
 | --- | --- |
@@ -128,7 +134,7 @@ AxonHub 当前 Relay/Sub-Key MVP 的核心是“平台运营方自托管共享�
 - 探针原题和标准答案只允许系统任务和少数运营角色访问。
 - 贡献者只看抽检结论、类别、摘要和影响，不看原题。
 - 题库需要定期轮换，旧题降权或停用。
-- 所有探针请求注入 `probe_run_id`、nonce 和 payload hash，防止复用标准答案。
+- 所有模型真实性探针请求注入 `authenticity_probe_run_id`、nonce 和 payload hash，防止复用标准答案。
 - 生产环境日志不得打印完整探针 prompt。
 
 ## 判别方法
@@ -247,6 +253,21 @@ excellent -> 原始权重 * 1.1，但仍受成本、额度和公平性限制
 
 ## 积分奖励机制
 
+### 积分与 Relay 钱包的关系
+
+试点期推荐把用户积分账本和 Relay 钱包账本保持独立：
+
+- 用户积分使用独立 `user_point_accounts` / `user_point_ledger_entries`，表达贡献奖励、释放、冻结、扣罚、消费和过期。
+- Relay 钱包继续使用 `relay_wallets` / `relay_wallet_ledger_entries`，表达 Sub-Key 或项目侧 token 使用、充值、扣费和退款。
+- 积分用于兑换或抵扣 token 使用时，必须通过可追溯的转换/抵扣记录连接两套账本，不直接混写积分流水和钱包流水。
+
+推荐兑换/抵扣流程：
+
+1. 先扣减用户积分，写入 `user_point_ledger_entries`，`scene` 使用 `consume` 或 `point_redeem`，并带独立 `idempotency_key`。
+2. 积分扣减成功后，再创建或关联 Relay 钱包侧充值/抵扣流水，避免钱包入账成功但积分未扣减。
+3. 记录 `conversion_rate_snapshot`、`related_wallet_ledger_entry_id`、`related_relay_key_id`、`related_project_id` 等关联字段，或在策略配置中保存等价快照。
+4. 若钱包侧入账或抵扣失败，必须追加补偿流水或回滚积分扣减，保证同一兑换请求可审计、可回滚、不会重复入账。
+
 ### 积分状态
 
 | 状态 | 说明 |
@@ -287,6 +308,12 @@ contribution_points_pending =
 - 大额释放前触发 `pre_reward_release` 抽检。
 - 释放和扣罚都必须通过不可变积分流水完成。
 
+### 自刷与同主体消费规则
+
+- 当贡献者 `contributor_user_id` / `contributor_project_id` 与消费方 `user_id` / `project_id` 判定为同主体时，默认不发放贡献奖励，或只按保守低倍率发放。
+- 试点期先采用保守规则，例如同用户、同项目、同组织或明显关联项目直接判定为同主体。
+- 后续再引入异常图谱、设备/IP/支付主体/调用模式等更复杂信号，避免过早依赖不可解释的自动风控。
+
 ## 惩罚机制
 
 | 等级 | 场景 | 处理 | 是否需要人工复核 |
@@ -301,7 +328,7 @@ contribution_points_pending =
 
 - 优先冻结 `pending_points`，不要直接扣可用积分。
 - 只有证据链完整时才扣罚已释放积分。
-- 扣罚必须绑定 `quality_event_id`、`probe_run_id` 或 `request_id`。
+- 扣罚必须绑定 `quality_event_id`、`authenticity_probe_run_id` 或 `request_id`。
 - 每次扣罚必须有 `idempotency_key`。
 - 人工调整必须记录 `operator_user_id` 和备注。
 
@@ -327,13 +354,19 @@ contribution_points_pending =
 申诉流程：
 
 1. 贡献者提交申诉。
-2. 系统将相关质量事件、probe run、请求摘要、积分流水打包成复核上下文。
+2. 系统将相关质量事件、模型真实性抽检任务、请求摘要、积分流水打包成复核上下文。
 3. 风控/运营人工复核。
 4. 复核通过：恢复质量分、释放冻结积分、记录误判原因。
 5. 复核失败：维持处罚，提高后续抽检率。
 6. 所有操作落 `channel_quality_events`。
 
 ## 建议数据模型
+
+### 与现有 `ChannelProbe` 的区别
+
+现有 `ChannelProbe` / `channel_probes` 用于渠道性能采样和趋势图，例如 total/success request count、tokens/sec、TTFT 等运行指标。本文新增的 `model_authenticity_probe_cases` 与 `model_authenticity_probe_runs` 只用于模型真实性/质量抽检，例如能力题、声明一致性、反缓存和判别结果。
+
+两者都可以关联 `channels.id`，但不可共用表、字段语义或业务处理流程；性能探针不应被解释为模型真实性证据，模型真实性探针也不应污染渠道性能趋势统计。
 
 ### `contributed_channels`
 
@@ -347,7 +380,7 @@ contribution_points_pending =
 | `contributor_project_id` | 可选，贡献者所在项目。 |
 | `declared_provider` | 用户声明 provider。 |
 | `declared_models` | 用户声明可提供模型列表。 |
-| `share_status` | `pending_verification` / `active` / `watch` / `suspended` / `blocked` / `withdrawn`。 |
+| `share_status` | `pending_verification` / `verification_timeout` / `active` / `watch` / `suspended` / `blocked` / `withdrawn`。 |
 | `quality_score` | 0-100。 |
 | `quality_status` | `unverified` / `verified` / `degraded` / `blocked`。 |
 | `daily_token_limit` | 用户设置或平台限制的日 token 上限。 |
@@ -358,7 +391,7 @@ contribution_points_pending =
 | `penalty_active_until` | 惩罚生效截止时间。 |
 | `created_at` / `updated_at` | 时间戳。 |
 
-### `model_probe_cases`
+### `model_authenticity_probe_cases`
 
 私有探针题库。
 
@@ -377,7 +410,7 @@ contribution_points_pending =
 | `is_active` | 是否启用。 |
 | `version` | 版本。 |
 
-### `model_probe_runs`
+### `model_authenticity_probe_runs`
 
 每一次抽检任务。
 
@@ -413,7 +446,7 @@ contribution_points_pending =
 | `score_before` | 变更前分数。 |
 | `score_after` | 变更后分数。 |
 | `points_delta` | 影响积分。 |
-| `related_probe_run_id` | 关联抽检。 |
+| `related_authenticity_probe_run_id` | 关联抽检。 |
 | `related_request_id` | 关联请求。 |
 | `reason_code` | 原因编码。 |
 | `reason_summary` | 展示给贡献者的摘要。 |
@@ -439,14 +472,18 @@ contribution_points_pending =
 
 - `user_id`
 - `direction`: `credit` / `debit`
-- `scene`: `contribution_pending` / `release` / `consume` / `freeze` / `unfreeze` / `penalty` / `adjustment` / `expire`
+- `scene`: `contribution_pending` / `release` / `consume` / `point_redeem` / `freeze` / `unfreeze` / `penalty` / `adjustment` / `expire`
 - `points`
 - `balance_before`
 - `balance_after`
 - `idempotency_key`
 - `related_channel_id`
 - `related_request_id`
-- `related_probe_run_id`
+- `related_authenticity_probe_run_id`
+- `related_wallet_ledger_entry_id`
+- `related_relay_key_id`
+- `related_project_id`
+- `conversion_rate_snapshot`
 - `settlement_status`
 - `remark`
 
@@ -456,31 +493,33 @@ contribution_points_pending =
 
 1. 贡献者进入“贡献 API”页面。
 2. 填写 provider、兼容 base URL、API Key、可贡献模型、每日额度、最大并发。
-3. 平台加密保存凭证，创建 `channels` 与 `contributed_channels`。
-4. `share_status` 初始为 `pending_verification`。
-5. 系统触发入驻验证。
-6. 验证通过后进入 `active` 或 `watch`。
-7. 验证失败则保持 `pending_verification` 或转入 `blocked`，并展示可解释失败原因。
+3. 平台加密保存凭证，创建 `channels` 与 `contributed_channels`，并生成入驻验证幂等键。
+4. `share_status` 初始为 `pending_verification`，提交请求不阻塞等待完整探针完成。
+5. 系统异步投递入驻验证后台任务，前端通过轮询、刷新或订阅展示验证进度。
+6. 后台任务在超时窗口内执行验证，例如 5 分钟内完成 3-5 个轻量探针并写入抽检结果。
+7. 验证通过后进入 `active` 或 `watch`；验证失败或超时则展示可解释原因，必要时转为 `verification_timeout`，且不进入路由候选池。
 
 ### 流程 2：入驻验证
 
-1. 校验凭证是否可用。
-2. 调用模型列表或最小请求检查声明模型。
-3. 执行 3-5 个轻量探针。
-4. 检查 usage、错误码、延迟和格式。
-5. 生成 `model_probe_runs`。
-6. 计算初始 `quality_score`。
-7. 写入 `channel_quality_events`。
+1. 后台任务按入驻验证幂等键加载 `pending_verification` 渠道；重复投递只复用或更新同一任务状态。
+2. 校验凭证是否可用。
+3. 对试点内选定 provider / base_url 执行严格校验，包括模型列表、声明模型、usage、错误码和格式；其他 OpenAI-compatible 兼容层仅做基础可用性和响应格式校验。
+4. 执行 3-5 个轻量探针。
+5. 检查 usage、错误码、延迟和格式。
+6. 生成 `model_authenticity_probe_runs`。
+7. 计算初始 `quality_score`。
+8. 写入 `channel_quality_events`，记录失败原因；超过 5 分钟未完成时转为可解释失败或 `verification_timeout`。
 
 ### 流程 3：真实流量命中贡献渠道
 
 1. 消费方通过平台 Sub-Key 发起请求。
-2. 路由层加载候选渠道。
+2. 路由层加载候选渠道，排除 `pending_verification`、`verification_timeout`、`blocked` 等不可用贡献渠道。
 3. 候选过滤除了状态、quota、模型过滤外，还检查 `quality_status`。
-4. 命中贡献渠道后写入 `request_executions`。
+4. 命中贡献渠道后写入 `request_executions`，记录消费方 user/project、`relay_key_id` 和命中 `channel_id`。
 5. 请求成功后写入 `usage_logs`。
-6. 积分结算任务根据 token 和质量倍率生成 `pending_points`。
+6. 积分结算任务根据 token、质量倍率和同主体消费规则生成 `pending_points`；同 user/project 或明显关联主体默认不奖励或降低奖励。
 7. 释放窗口结束后转入 `available_points`。
+8. 若消费方使用积分抵扣 token，先写 `user_point_ledger_entries` 扣减流水，再关联 Relay 钱包侧流水，并保留兑换率和项目/Sub-Key 快照。
 
 ### 流程 4：随机抽检
 
@@ -489,7 +528,7 @@ contribution_points_pending =
 3. 注入 nonce，生成 probe request。
 4. 调用贡献渠道。
 5. 用程序化校验、对照模型或 judge 模型评分。
-6. 写 `model_probe_runs`。
+6. 写 `model_authenticity_probe_runs`。
 7. 触发质量分更新和必要的奖惩事件。
 
 ### 流程 5：劣质 API 处理
@@ -508,7 +547,7 @@ contribution_points_pending =
 - 3-10 个可信种子用户。
 - 每个用户最多贡献 1-3 个 API Key。
 - 每个 API Key 每日贡献上限 50k-200k token。
-- 仅支持 1-2 个 provider 或 OpenAI-compatible 协议。
+- 仅支持明确选定的 1-2 个 provider / base_url 或 OpenAI-compatible 协议试点对象，其他兼容层只做基础可用性和格式校验。
 - 禁止生产核心业务直接依赖试点容量。
 
 ### 成功指标
@@ -560,7 +599,7 @@ contribution_points_pending =
 
 ## 后续落地任务
 
-1. 设计 `contributed_channels`、`model_probe_cases`、`model_probe_runs`、`channel_quality_events`、`user_point_accounts`、`user_point_ledger_entries`。
+1. 设计 `contributed_channels`、`model_authenticity_probe_cases`、`model_authenticity_probe_runs`、`channel_quality_events`、`user_point_accounts`、`user_point_ledger_entries`。
 2. 实现贡献 API 入驻验证任务。
 3. 实现随机抽检 scheduler。
 4. 实现质量分计算与路由降权。
