@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { routeConfigs, type RouteConfig, type RouteGroup, type ScopeLevel } from '@/config/route-permission';
 import { useAuthStore } from '@/stores/authStore';
 import { useSelectedProjectId } from '@/stores/projectStore';
@@ -12,7 +12,7 @@ export function useRoutePermissions() {
 
   // Use data from me query if available, otherwise fall back to auth store
   const user = meData || authUser;
-  const systemScopes = user?.scopes || [];
+  const systemScopes = useMemo(() => user?.scopes || [], [user?.scopes]);
   const isOwner = user?.isOwner || false;
 
   // Get project-level scopes for the selected project
@@ -24,9 +24,13 @@ export function useRoutePermissions() {
     return project?.scopes || [];
   }, [selectedProjectId, user?.projects]);
 
-  // 检查路由权限（根据 scopeLevel 决定检查哪个级别的权限）
-  const hasRouteAccess = (routeConfig: RouteConfig, groupScopeLevel?: ScopeLevel): boolean => {
-    if (!routeConfig.requiredScopes || routeConfig.requiredScopes.length === 0) {
+  const hasAllScopes = useCallback(
+    (scopes: string[], requiredScopes: string[]) => scopes.includes('*') || requiredScopes.every((scope) => scopes.includes(scope)),
+    []
+  );
+
+  const canAccessScopes = useCallback((requiredScopes: string[] = [], scopeLevel: ScopeLevel = 'any'): boolean => {
+    if (requiredScopes.length === 0) {
       return true;
     }
 
@@ -35,37 +39,28 @@ export function useRoutePermissions() {
       return true;
     }
 
-    // 确定要检查的权限级别（路由配置优先，否则使用组配置，默认为 'any'）
-    const scopeLevel = routeConfig.scopeLevel || groupScopeLevel || 'any';
-
-    // 根据 scopeLevel 决定检查哪些 scopes
-    let scopesToCheck: string[] = [];
-
     if (scopeLevel === 'system') {
-      // 只检查系统级权限
-      scopesToCheck = systemScopes;
-    } else if (scopeLevel === 'project') {
-      // 只检查项目级权限
-      scopesToCheck = projectScopes;
-    } else {
-      // 检查系统级和项目级权限
-      scopesToCheck = [...systemScopes, ...projectScopes];
+      return hasAllScopes(systemScopes, requiredScopes);
     }
 
-    // 检查通配符权限
-    if (scopesToCheck.includes('*')) {
-      return true;
+    if (scopeLevel === 'project') {
+      return hasAllScopes(projectScopes, requiredScopes);
     }
 
-    // 检查是否拥有所需的任一权限
-    return routeConfig.requiredScopes.some((scope) => scopesToCheck.includes(scope));
-  };
+    // Project REST 后端允许“全量系统权限”或“全量项目权限”，不能跨级别拼接 scope。
+    return hasAllScopes(systemScopes, requiredScopes) || hasAllScopes(projectScopes, requiredScopes);
+  }, [hasAllScopes, isOwner, projectScopes, systemScopes]);
+
+  // 检查路由权限（根据 scopeLevel 决定检查哪个级别的权限）
+  const hasRouteAccess = useCallback((routeConfig: RouteConfig, groupScopeLevel?: ScopeLevel): boolean => {
+    const scopeLevel = routeConfig.scopeLevel || groupScopeLevel || 'any';
+    return canAccessScopes(routeConfig.requiredScopes, scopeLevel);
+  }, [canAccessScopes]);
 
   // 检查路由组权限
-  const hasGroupAccess = (group: RouteGroup): boolean => {
-    return group.routes.some((route) => hasRouteAccess(route, group.scopeLevel));
-  };
-
+  const hasGroupAccess = useCallback((group: RouteGroup): boolean => {
+    return group.routes.some((route) => hasRouteAccess(route, group.scopeLevel) || route.children?.some((child) => hasRouteAccess(child, group.scopeLevel)));
+  }, [hasRouteAccess]);
   // 检查单个路由权限
   const checkRouteAccess = useMemo(() => {
     return (path: string): { hasAccess: boolean; mode?: 'hidden' | 'disabled' } => {
@@ -80,14 +75,14 @@ export function useRoutePermissions() {
         mode: routeConfig.mode,
       };
     };
-  }, [systemScopes, projectScopes, isOwner]);
+  }, [hasRouteAccess]);
 
   // 检查路由组权限
   const checkGroupAccess = useMemo(() => {
     return (group: RouteGroup): boolean => {
       return hasGroupAccess(group);
     };
-  }, [systemScopes, projectScopes, isOwner]);
+  }, [hasGroupAccess]);
 
   // 过滤导航项
   const filterNavItems = useMemo(() => {
@@ -143,8 +138,11 @@ export function useRoutePermissions() {
   }, [checkGroupAccess, filterNavItems]);
 
   return {
+    systemScopes,
+    projectScopes,
     userScopes: [...systemScopes, ...projectScopes],
     isOwner,
+    canAccessScopes,
     checkRouteAccess,
     checkGroupAccess,
     filterNavItems,
@@ -159,11 +157,11 @@ function getRouteConfigByPathWithGroup(path: string): {
 } {
   for (const group of routeConfigs) {
     for (const route of group.routes) {
-      if (route.path === path) {
+      if (routePathMatches(route.path, path)) {
         return { routeConfig: route, groupScopeLevel: group.scopeLevel };
       }
       if (route.children) {
-        const childConfig = route.children.find((child) => child.path === path);
+        const childConfig = route.children.find((child) => routePathMatches(child.path, path));
         if (childConfig) {
           return { routeConfig: childConfig, groupScopeLevel: group.scopeLevel };
         }
@@ -171,4 +169,13 @@ function getRouteConfigByPathWithGroup(path: string): {
     }
   }
   return {};
+}
+
+function routePathMatches(pattern: string, path: string): boolean {
+  if (pattern === path) return true;
+  const patternParts = pattern.split('/');
+  const pathParts = path.split('/');
+  if (patternParts.length !== pathParts.length) return false;
+
+  return patternParts.every((part, index) => part.startsWith('$') || part === pathParts[index]);
 }

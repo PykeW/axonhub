@@ -48,8 +48,19 @@ export const routeConfigs: RouteGroup[] = [
       },
       {
         path: '/relay-subkeys',
-        requiredScopes: ['read_channels'],
+        requiredScopes: ['read_channels', 'read_api_keys', 'read_requests'],
         mode: 'hidden',
+        children: [
+          { path: '/relay-subkeys/products', requiredScopes: ['read_channels'], mode: 'hidden' },
+          { path: '/relay-subkeys/products/create', requiredScopes: ['write_channels'], mode: 'hidden' },
+          { path: '/relay-subkeys/products/$productId', requiredScopes: ['read_channels'], mode: 'hidden' },
+          { path: '/relay-subkeys/keys', requiredScopes: ['read_api_keys'], mode: 'hidden' },
+          { path: '/relay-subkeys/keys/create', requiredScopes: ['write_api_keys'], mode: 'hidden' },
+          { path: '/relay-subkeys/keys/$keyId', requiredScopes: ['read_api_keys'], mode: 'hidden' },
+          { path: '/relay-subkeys/keys/$keyId/billing', requiredScopes: ['read_api_keys'], mode: 'hidden' },
+          { path: '/relay-subkeys/requests', requiredScopes: ['read_requests'], mode: 'hidden' },
+          { path: '/relay-subkeys/channel-pool-health', requiredScopes: ['read_channels'], mode: 'hidden' },
+        ],
       },
       {
         path: '/models',
@@ -88,8 +99,16 @@ export const routeConfigs: RouteGroup[] = [
       },
       {
         path: '/project/relay-subkeys',
-        requiredScopes: ['read_api_keys'],
+        requiredScopes: ['read_api_keys', 'read_requests'],
         mode: 'hidden',
+        children: [
+          { path: '/project/relay-subkeys/products', requiredScopes: ['read_api_keys', 'read_requests'], mode: 'hidden' },
+          { path: '/project/relay-subkeys/keys', requiredScopes: ['read_api_keys', 'read_requests'], mode: 'hidden' },
+          { path: '/project/relay-subkeys/keys/$keyId', requiredScopes: ['read_api_keys', 'read_requests'], mode: 'hidden' },
+          { path: '/project/relay-subkeys/usage', requiredScopes: ['read_api_keys', 'read_requests'], mode: 'hidden' },
+          { path: '/project/relay-subkeys/get-started', requiredScopes: ['read_api_keys', 'read_requests'], mode: 'hidden' },
+          { path: '/project/relay-subkeys/verify', requiredScopes: ['read_api_keys', 'read_requests'], mode: 'hidden' },
+        ],
       },
       {
         path: '/project/prompts',
@@ -182,8 +201,8 @@ export function hasRouteAccess(userScopes: string[], routeConfig: RouteConfig): 
     return true;
   }
 
-  // 检查用户是否拥有所需的任一权限
-  return routeConfig.requiredScopes.some((scope) => userScopes.includes(scope));
+  // 路由配置和后端中间件保持一致：列出的 scope 需要全部满足。
+  return routeConfig.requiredScopes.every((scope) => userScopes.includes(scope));
 }
 
 // 检查用户是否有访问路由组的权限

@@ -102,7 +102,7 @@ export function useRoles(
 
 export function useRole(id: string) {
   const { handleError } = useErrorHandler();
-  const { t } = useTranslation();
+  const { t: _t } = useTranslation();
 
   return useQuery({
     queryKey: ['role', id],
@@ -126,7 +126,7 @@ export function useRole(id: string) {
 export function useCreateRole() {
   const queryClient = useQueryClient();
   const { handleError } = useErrorHandler();
-  const { t } = useTranslation();
+  const { t: _t } = useTranslation();
 
   return useMutation({
     mutationFn: async (input: CreateRoleInput) => {
@@ -134,7 +134,7 @@ export function useCreateRole() {
         const data = await graphqlRequest<{ createRole: Role }>(CREATE_ROLE_MUTATION, { input });
         return roleSchema.parse(data.createRole);
       } catch (error) {
-        handleError(error, { context: t('roles.dialogs.create.title') });
+        handleError(error, { context: _t('roles.dialogs.create.title') });
         throw error;
       }
     },
@@ -148,7 +148,7 @@ export function useCreateRole() {
 export function useUpdateRole() {
   const queryClient = useQueryClient();
   const { handleError } = useErrorHandler();
-  const { t } = useTranslation();
+  const { t: _t } = useTranslation();
 
   return useMutation({
     mutationFn: async ({ id, input }: { id: string; input: UpdateRoleInput }) => {
@@ -156,7 +156,7 @@ export function useUpdateRole() {
         const data = await graphqlRequest<{ updateRole: Role }>(UPDATE_ROLE_MUTATION, { id, input });
         return roleSchema.parse(data.updateRole);
       } catch (error) {
-        handleError(error, { context: t('roles.dialogs.edit.title') });
+        handleError(error, { context: _t('roles.dialogs.edit.title') });
         throw error;
       }
     },
