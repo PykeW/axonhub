@@ -412,7 +412,7 @@ export function ChannelsOverrideDialog({ open, onOpenChange, currentRow }: Props
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [templateSearchOpen, setTemplateSearchOpen] = useState(false);
   const [templateSearchValue, setTemplateSearchValue] = useState('');
-  const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
+  const [, setIsApplyingTemplate] = useState(false);
   const debouncedTemplateSearchValue = useDebounce(templateSearchValue, 300);
 
   const { data: templatesData } = useChannelOverrideTemplates(

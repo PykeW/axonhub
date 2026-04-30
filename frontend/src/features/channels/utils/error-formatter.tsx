@@ -3,7 +3,7 @@
  * and cleaning up the message.
  */
 export function formatErrorMessage(error: string): {
-
+  message: string;
   requestIDs: string[];
 } {
   if (!error) return { message: '', requestIDs: [] };

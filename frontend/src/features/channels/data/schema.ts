@@ -484,8 +484,6 @@ export const updateChannelInputSchema = z
   .superRefine((data, ctx) => {
     const effectiveType = data.type;
     const apiKey = data.credentials?.apiKey?.trim();
-    const hasApiKey = Boolean(apiKey);
-
     // For OAuth validation on updates: validate if type is OAuth, or if credentials.apiKey is provided
     // (which indicates OAuth credentials are being set)
     const isOAuthType =
@@ -502,7 +500,7 @@ export const updateChannelInputSchema = z
     if (isOAuthType || derivedType === 'github_copilot' || isCopilotKey) {
       if (isCopilotKey && !derivedType) {
         try {
-          const parsed = JSON.parse(apiKey);
+          const parsed = JSON.parse(apiKey ?? '');
           if (!parsed.access_token) {
             ctx.addIssue({
               code: 'custom',
