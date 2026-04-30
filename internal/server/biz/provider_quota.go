@@ -331,7 +331,10 @@ func (svc *ProviderQuotaService) saveQuotaStatus(
 		log.Error(ctx, "Failed to save quota status",
 			log.Int("channel_id", channelID),
 			log.Cause(err))
+		return
 	}
+
+	svc.touchChannelQuotaUpdated(ctx, channelID, now)
 }
 
 func (svc *ProviderQuotaService) saveQuotaError(
@@ -357,6 +360,8 @@ func (svc *ProviderQuotaService) saveQuotaError(
 		})
 
 		err := svc.db.ProviderQuotaStatus.UpdateOne(existing).
+			SetStatus(providerquotastatus.StatusUnknown).
+			SetReady(false).
 			SetQuotaData(merged).
 			SetNextCheckAt(nextCheck).
 			Exec(ctx)
@@ -364,8 +369,10 @@ func (svc *ProviderQuotaService) saveQuotaError(
 			log.Error(ctx, "Failed to save quota error",
 				log.Int("channel_id", ch.ID),
 				log.Cause(err))
+			return
 		}
 
+		svc.touchChannelQuotaUpdated(ctx, ch.ID, now)
 		return
 	}
 
@@ -382,6 +389,17 @@ func (svc *ProviderQuotaService) saveQuotaError(
 	if err != nil {
 		log.Error(ctx, "Failed to save quota error",
 			log.Int("channel_id", ch.ID),
+			log.Cause(err))
+		return
+	}
+
+	svc.touchChannelQuotaUpdated(ctx, ch.ID, now)
+}
+
+func (svc *ProviderQuotaService) touchChannelQuotaUpdated(ctx context.Context, channelID int, now time.Time) {
+	if err := svc.db.Channel.UpdateOneID(channelID).SetUpdatedAt(now).Exec(ctx); err != nil {
+		log.Warn(ctx, "Failed to touch channel after quota status update",
+			log.Int("channel_id", channelID),
 			log.Cause(err))
 	}
 }

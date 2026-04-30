@@ -13,6 +13,7 @@ import (
 
 	"github.com/looplj/axonhub/internal/ent"
 	"github.com/looplj/axonhub/internal/ent/channel"
+	"github.com/looplj/axonhub/internal/ent/providerquotastatus"
 	"github.com/looplj/axonhub/internal/ent/schema/schematype"
 	"github.com/looplj/axonhub/internal/log"
 	"github.com/looplj/axonhub/internal/objects"
@@ -203,7 +204,14 @@ func (svc *ChannelService) reloadEnabledChannels(ctx context.Context, current []
 	}
 
 	entities, err := svc.entFromContext(ctx).Channel.Query().
-		Where(channel.StatusEQ(channel.StatusEnabled)).
+		Where(
+			channel.StatusEQ(channel.StatusEnabled),
+			channel.Or(
+				channel.Not(channel.HasProviderQuotaStatus()),
+				channel.HasProviderQuotaStatusWith(providerquotastatus.ReadyEQ(true)),
+			),
+		).
+		WithProviderQuotaStatus().
 		Order(ent.Desc(channel.FieldOrderingWeight)).
 		All(ctx)
 	if err != nil {
