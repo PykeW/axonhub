@@ -520,7 +520,7 @@ export function ProjectRelaySubkeysKeyDetailPage({ keyId }: ProjectKeyDetailProp
             <MetricCard label='Key status' value={key.status} hint='Persisted state controls whether runtime accepts requests.' />
             <MetricCard label='Balance' value={wallet ? formatCurrency(wallet.availableAmount, wallet.currency) : '-'} hint='Low balance can block otherwise valid setup.' />
             <MetricCard label='Today requests' value={formatNumber(key.usage.todayRequests)} hint={`${formatNumber(key.usage.todayTokens)} tokens today`} />
-            <MetricCard label='Monthly cost' value={formatCurrency(key.usage.monthlyCost)} hint={`Limit ${formatCurrency(key.limits.monthlyCostLimit)}`} />
+            <MetricCard label='Monthly cost' value={formatCurrency(key.usage.monthlyCost)} hint={`Soft preflight guard ${formatCurrency(key.limits.monthlyCostLimit)}`} />
           </div>
           <Tabs defaultValue='credential'>
             <TabsList>
@@ -561,8 +561,8 @@ export function ProjectRelaySubkeysKeyDetailPage({ keyId }: ProjectKeyDetailProp
               <div className='grid gap-4 md:grid-cols-4'>
                 <MetricCard label='Daily requests' value={formatNumber(key.limits.dailyRequestLimit)} hint='Request cap before quota errors.' />
                 <MetricCard label='Daily tokens' value={formatNumber(key.limits.dailyTokenLimit)} hint='Token cap before quota errors.' />
-                <MetricCard label='Monthly cost' value={formatCurrency(key.limits.monthlyCostLimit)} hint='Cost cap for the key wallet.' />
-                <MetricCard label='Concurrency' value={formatNumber(key.limits.concurrencyLimit)} hint='Maximum in-flight relay calls.' />
+                <MetricCard label='Monthly cost' value={formatCurrency(key.limits.monthlyCostLimit)} hint='Soft preflight guard; not a settlement hard cap.' />
+                <MetricCard label='Concurrency' value={formatNumber(key.limits.concurrencyLimit)} hint='Preview value; positive limits are not enforced in MVP.' />
               </div>
             </TabsContent>
             <TabsContent value='requests'>

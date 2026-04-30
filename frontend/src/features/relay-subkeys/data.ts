@@ -508,7 +508,7 @@ export const mockRelayKeys: RelayKey[] = [
     name: 'Codex lab preview',
     maskedKey: 'ahub_sk_test_M2n...7ra',
     status: 'suspended',
-    derivedStates: ['concurrency_blocked'],
+    derivedStates: ['upstream_pool_degraded'],
     balanceMode: 'quota_only',
     createdAt: iso('18', '09:05'),
     baseUrl: 'https://axonhub.example.com/v1',

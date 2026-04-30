@@ -949,14 +949,14 @@ export function RelayKeyDetailPage({ keyId }: DetailPageProps) {
         <TabsContent value='limits'>
           <Card>
             <CardHeader>
-              <CardTitle>Hard limits</CardTitle>
-              <CardDescription>Adjustments invalidate the detail query and keep limit controls separated from lifecycle state.</CardDescription>
+              <CardTitle>Usage guards</CardTitle>
+              <CardDescription>Daily limits are enforced; monthly cost is a soft preflight guard and concurrency is an MVP preview.</CardDescription>
             </CardHeader>
             <CardContent className='grid gap-4 md:grid-cols-4'>
               <MetricCard label='Daily requests' value={formatNumber(key.limits.dailyRequestLimit)} hint='Hard cap before quota_reached.' />
               <MetricCard label='Daily tokens' value={formatNumber(key.limits.dailyTokenLimit)} hint='Token guard for shared pool use.' />
-              <MetricCard label='Monthly cost' value={formatCurrency(key.limits.monthlyCostLimit)} hint='Cost cap before exhausted.' />
-              <MetricCard label='Concurrency' value={formatNumber(key.limits.concurrencyLimit)} hint='Blocks excess in-flight calls.' />
+              <MetricCard label='Monthly cost' value={formatCurrency(key.limits.monthlyCostLimit)} hint='Soft preflight guard; not a settlement hard cap.' />
+              <MetricCard label='Concurrency' value={formatNumber(key.limits.concurrencyLimit)} hint='Preview value; positive limits are not enforced in MVP.' />
               {canWriteApiKeys ? (
                 <div className='md:col-span-4'>
                   <Button

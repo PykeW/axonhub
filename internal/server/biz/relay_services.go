@@ -236,14 +236,15 @@ func (s *RelayAccessService) CheckRelayAccess(_ context.Context, relay *RelayAut
 	if relay.Quota.DailyTokenLimit != nil && relay.DailyUsage.TotalTokens >= *relay.Quota.DailyTokenLimit {
 		return denyRelayAccess(http.StatusForbidden, "relay_daily_token_quota_exceeded", "relay key daily token quota exceeded"), nil
 	}
+	// MVP: monthly cost is a summary-based preflight guard, not a settlement hard cap.
+	// Post-MVP hard caps need reservation or settlement-path locking.
 	if relay.Quota.MonthlyCostLimit != nil && relay.MonthlyUsage.TotalCharge.GreaterThanOrEqual(*relay.Quota.MonthlyCostLimit) {
 		return denyRelayAccess(http.StatusForbidden, "relay_monthly_cost_quota_exceeded", "relay key monthly cost quota exceeded"), nil
 	}
 	if relay.Quota.ConcurrencyLimit != nil && *relay.Quota.ConcurrencyLimit <= 0 {
 		return denyRelayAccess(http.StatusForbidden, "relay_concurrency_quota_exceeded", "relay key concurrency quota exceeded"), nil
 	}
-	// MVP note: positive concurrency limits require request-scoped inflight tracking.
-	// They are loaded for contracts/UI but are not enforced until that tracker is wired.
+	// MVP: positive concurrency is contract/UI data until an inflight tracker is wired.
 
 	return allowRelayAccess(), nil
 }
