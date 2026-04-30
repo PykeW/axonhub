@@ -36,6 +36,7 @@ export function RequestDetailContent({ requestId, projectId, previewRequest, isP
   const [showResponseChunks, setShowResponseChunks] = useState(false);
   const [showExecutionChunks, setShowExecutionChunks] = useState(false);
   const [selectedExecutionChunks, setSelectedExecutionChunks] = useState<any[]>([]);
+  const [showCurlPreview, setShowCurlPreview] = useState(false);
 
   const [curlCommand, setCurlCommand] = useState('');
   const [isDownloadingVideo, setIsDownloadingVideo] = useState(false);

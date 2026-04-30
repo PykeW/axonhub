@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { ArrowLeft, FileText } from 'lucide-react';
@@ -187,7 +187,7 @@ export default function RequestDetailPage() {
 
     const controller = new AbortController();
     let isDisposed = false;
-    let reconnectTimer: ReturnType<typeof window.setTimeout> | null = null;
+    let reconnectTimer: number | null = null;
     let reconnectAttempt = 0;
 
     previewCompletedRef.current = false;
@@ -210,7 +210,7 @@ export default function RequestDetailPage() {
       if (isDisposed || controller.signal.aborted) {
         return;
       }
-      if (requestData.status !== 'processing' || !requestData.stream || previewCompletedRef.current) {
+      if (requestData?.status !== 'processing' || !requestData?.stream || previewCompletedRef.current) {
         return;
       }
       if (reconnectTimer !== null) {
@@ -233,7 +233,7 @@ export default function RequestDetailPage() {
         const response = await fetch(`/admin/requests/${encodeURIComponent(requestIdNumber)}/preview`, {
           headers: {
             Authorization: `Bearer ${token}`,
-            'X-Project-ID': selectedProjectId,
+            'X-Project-ID': selectedProjectId ?? '',
           },
           signal: controller.signal,
         });
@@ -313,7 +313,7 @@ export default function RequestDetailPage() {
           return;
         }
 
-        if (requestData.status === 'processing' && requestData.stream) {
+        if (requestData?.status === 'processing' && requestData?.stream) {
           setIsPreviewStreaming(false);
           scheduleReconnect();
         } else {

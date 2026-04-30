@@ -43,7 +43,7 @@ export function DataTableToolbar<TData>({
   onApiKeyFilterChange: _onApiKeyFilterChange,
   sourceFilter: _sourceFilter,
   onSourceFilterChange: _onSourceFilterChange,
-
+  autoRefresh,
   onAutoRefreshChange,
 }: DataTableToolbarProps<TData>) {
   const { t } = useTranslation();
