@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, type TooltipProps } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Loader2 } from 'lucide-react';
 import { formatNumber } from '@/utils/format-number';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -81,19 +81,7 @@ export function RequestsByAPIKeyChart({ timePeriod }: RequestsByAPIKeyChartProps
     secondaryValue: formatCurrency(item.cost, 4),
   }));
 
-  type CombinedTooltipProps = TooltipProps<number, string> & {
-    payload?: Array<{
-      name?: string;
-      value?: number;
-      payload?: {
-        name: string;
-        requests: number;
-        cost: number;
-      };
-    }>;
-  };
-
-  const tooltipContent = (props: CombinedTooltipProps) => {
+  const tooltipContent = (props: any) => {
     const payload = props.payload;
     if (!props.active || !payload?.length) return null;
 

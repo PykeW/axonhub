@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { UseQueryResult } from '@tanstack/react-query';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell, type TooltipProps } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2 } from 'lucide-react';
@@ -34,7 +34,7 @@ function HorizontalBarChart({ data, total, height = 280, noDataLabel }: Horizont
     );
   }
 
-  const tooltipContent = (props: TooltipProps<number, string>) => {
+  const tooltipContent = (props: any) => {
     const { active, payload } = props;
     if (!active || !payload?.length) return null;
 
