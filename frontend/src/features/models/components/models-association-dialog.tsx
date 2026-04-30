@@ -267,7 +267,7 @@ export function ModelsAssociationDialog() {
   }, [availableModels]);
 
   const form = useForm<AssociationFormData>({
-    resolver: zodResolver(associationFormSchema),
+    resolver: zodResolver(associationFormSchema) as any,
     defaultValues: {
       associations: [],
     },
@@ -347,7 +347,7 @@ export function ModelsAssociationDialog() {
               return {
                 type: 'channel_model' as const,
                 disabled: assoc.disabled ?? false,
-                when: buildAssociationWhen(assoc.whenEnabled, assoc.whenCondition),
+                when: buildAssociationWhen(assoc.whenEnabled, assoc.whenCondition) ?? undefined,
                 channelModel: {
                   channelId: assoc.channelId!,
                   modelId: assoc.modelId!,
@@ -357,7 +357,7 @@ export function ModelsAssociationDialog() {
               return {
                 type: 'channel_regex' as const,
                 disabled: assoc.disabled ?? false,
-                when: buildAssociationWhen(assoc.whenEnabled, assoc.whenCondition),
+                when: buildAssociationWhen(assoc.whenEnabled, assoc.whenCondition) ?? undefined,
                 channelRegex: {
                   channelId: assoc.channelId!,
                   pattern: assoc.pattern!,
@@ -367,7 +367,7 @@ export function ModelsAssociationDialog() {
               return {
                 type: 'regex' as const,
                 disabled: assoc.disabled ?? false,
-                when: buildAssociationWhen(assoc.whenEnabled, assoc.whenCondition),
+                when: buildAssociationWhen(assoc.whenEnabled, assoc.whenCondition) ?? undefined,
                 regex: {
                   pattern: assoc.pattern!,
                   exclude,
@@ -377,7 +377,7 @@ export function ModelsAssociationDialog() {
               return {
                 type: 'model' as const,
                 disabled: assoc.disabled ?? false,
-                when: buildAssociationWhen(assoc.whenEnabled, assoc.whenCondition),
+                when: buildAssociationWhen(assoc.whenEnabled, assoc.whenCondition) ?? undefined,
                 modelId: {
                   modelId: assoc.modelId!,
                   exclude,
@@ -387,7 +387,7 @@ export function ModelsAssociationDialog() {
               return {
                 type: 'channel_tags_model' as const,
                 disabled: assoc.disabled ?? false,
-                when: buildAssociationWhen(assoc.whenEnabled, assoc.whenCondition),
+                when: buildAssociationWhen(assoc.whenEnabled, assoc.whenCondition) ?? undefined,
                 channelTagsModel: {
                   channelTags: assoc.channelTags!,
                   modelId: assoc.modelId!,
@@ -397,7 +397,7 @@ export function ModelsAssociationDialog() {
               return {
                 type: 'channel_tags_regex' as const,
                 disabled: assoc.disabled ?? false,
-                when: buildAssociationWhen(assoc.whenEnabled, assoc.whenCondition),
+                when: buildAssociationWhen(assoc.whenEnabled, assoc.whenCondition) ?? undefined,
                 channelTagsRegex: {
                   channelTags: assoc.channelTags!,
                   pattern: assoc.pattern!,
@@ -447,7 +447,7 @@ export function ModelsAssociationDialog() {
             excludeChannelTags: exclude?.channelTags || [],
           };
         }),
-      });
+      } as any);
     }
   }, [isOpen, currentRow, form]);
 
@@ -580,7 +580,7 @@ export function ModelsAssociationDialog() {
             channelTagsRegex: null,
           };
         }
-      });
+      }) as any;
 
       await updateModel.mutateAsync({
         id: currentRow.id,
@@ -648,7 +648,7 @@ export function ModelsAssociationDialog() {
             {/* Scrollable Rules Section */}
             <div className='flex-1 overflow-y-auto py-4'>
               <Form {...form}>
-                <form id='association-form' onSubmit={form.handleSubmit(onSubmit)} className='space-y-3'>
+                <form id='association-form' onSubmit={form.handleSubmit(onSubmit as any)} className='space-y-3'>
                   {fields.length === 0 && (
                     <p className='text-muted-foreground py-8 text-center text-sm'>{t('models.dialogs.association.noRules')}</p>
                   )}
@@ -674,7 +674,7 @@ export function ModelsAssociationDialog() {
                       <AssociationRow
                         key={field.id}
                         index={index}
-                        form={form}
+                        form={form as any}
                         channelOptions={channelOptions}
                         allModelOptions={allModelOptions}
                         allTags={allTags}
@@ -748,7 +748,7 @@ function readPromptTokensCondition(
   return {
     enabled: Boolean(when.enabled),
     condition: {
-      groups: normalizeWhenCondition(condition, 0, MAX_WHEN_CONDITION_DEPTH)?.conditions || [],
+      groups: normalizeWhenCondition(condition as any, 0, MAX_WHEN_CONDITION_DEPTH)?.conditions || [],
     },
   };
 }

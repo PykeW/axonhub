@@ -267,7 +267,7 @@ export function ModelsActionDialog() {
                   <FormField
                     control={form.control}
                     name='developer'
-                    render={({ field }) => (
+                    render={({ field: _field }) => (
                       <FormItem>
                         <FormLabel>{t('models.fields.developer')}</FormLabel>
                         <FormControl>
@@ -290,7 +290,7 @@ export function ModelsActionDialog() {
                   <FormField
                     control={form.control}
                     name='modelID'
-                    render={({ field }) => (
+                    render={({ field: _field }) => (
                       <FormItem>
                         <FormLabel>{t('models.fields.modelId')}</FormLabel>
                         <FormControl>

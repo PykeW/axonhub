@@ -295,7 +295,7 @@ export function ModelsBatchCreateDialog() {
           },
         ],
       },
-    }));
+    })) as any;
 
     try {
       await bulkCreateModels.mutateAsync(inputs);

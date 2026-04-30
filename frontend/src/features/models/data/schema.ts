@@ -90,14 +90,25 @@ export const channelTagsRegexAssociationSchema = z.object({
 });
 export type ChannelTagsRegexAssociation = z.infer<typeof channelTagsRegexAssociationSchema>;
 
-export const filterConditionSchema = z.object({
-  type: z.enum(['condition', 'group']).default('condition'),
-  logic: z.string().optional(),
-  conditions: z.array(z.lazy(() => filterConditionSchema)).optional().default([]),
-  field: z.string().optional(),
-  operator: z.string().optional(),
-  value: z.any().optional(),
-});
+type FilterConditionInput = {
+  type?: 'condition' | 'group';
+  logic?: string;
+  conditions?: FilterConditionInput[];
+  field?: string;
+  operator?: string;
+  value?: any;
+};
+
+export const filterConditionSchema: z.ZodType<FilterConditionInput> = z.lazy(() =>
+  z.object({
+    type: z.enum(['condition', 'group']).default('condition'),
+    logic: z.string().optional(),
+    conditions: z.array(filterConditionSchema).optional().default([]),
+    field: z.string().optional(),
+    operator: z.string().optional(),
+    value: z.any().optional(),
+  })
+);
 export type FilterCondition = z.infer<typeof filterConditionSchema>;
 
 export const modelAssociationWhenSchema = z.object({
