@@ -1,162 +1,139 @@
-# Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion
-
-
-# Ignore all
-*
-
-# Unignore all with extensions
-!*.*
-!Makefile
-!LICENSE
-!VERSION
-
-
-# Unignore all dirs
-!*/
-
-### Above combination will ignore all files without extension ###
-
-*.iml
-
-## Directory-based project format:
-.idea/
-# if you remove the above rule, at least ignore the following:
-
-# User-specific stuff:
-# .idea/workspace.xml
-# .idea/tasks.xml
-# .idea/dictionaries
-
-# Sensitive or high-churn files:
-# .idea/dataSources.ids
-# .idea/dataSources.xml
-# .idea/sqlDataSources.xml
-# .idea/dynamic.xml
-# .idea/uiDesigner.xml
-
-# Gradle:
-# .idea/gradle.xml
-# .idea/libraries
-
-# Mongo Explorer plugin:
-# .idea/mongoSettings.xml
-
-## File-based project format:
-*.ipr
-*.iws
-
-## Plugin-specific files:
-
-# IntelliJ
-/out/
-*target*
-
-# mpeltonen/sbt-idea plugin
-.idea_modules/
-
-# JIRA plugin
-atlassian-ide-plugin.xml
-
-# Crashlytics plugin (for Android Studio and IntelliJ)
-com_crashlytics_export_strings.xml
-crashlytics.properties
-crashlytics-build.properties
-
-# MAC
+# OS and editor files
 .DS_Store
-
-# custom
-tmp/
-*_server
-*_cmd
-*.log
-
-.fuse_hidden*
-*.csv
-*.sqlite
-*.db
-*-journal
-
-*.code-workspace
-
-# Added by Task Master AI
-# Logs
-logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-dev-debug.log
-# Dependency directories
-node_modules/
-# Lock files - project uses pnpm
-package-lock.json
-bun.lock
-# Environment variables
-.env
-# Editor directories and files
-.idea
-.vscode
+Thumbs.db
+*.swp
+*.swo
+*.sw?
+*~
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
-# OS specific
+*.code-workspace
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
 
-# Task files
-# tasks.json
-# tasks/ 
-
-.kiro
-openspec
-.cursor
-.vercel
-.tanstack
-.trae/tasks
-.trae/summary
-.trae/documents
-playwright-report/
-test-results
-.claude
-.qoder
-.codebuddy
-dumps
-.builds
-.pnpm-store
-.serena
-.claude
-.gomodcache
-.gocache
-
-config.yml
-internal/server/static/dist
-*.b64
-coverage.out
-*.test
-*.backup
-
-# E2E testing artifacts
-scripts/e2e/.e2e-backend.pid
-scripts/e2e/axonhub-e2e.db
-scripts/e2e/e2e-backend.log
-scripts/e2e/axonhub-e2e
-scripts/e2e/.e2e-backend-db-type
-scripts/migration/migration-test/
-# Migration testing artifacts
-scripts/migration/migration-test/
-tools
-
-mise.toml
-locales_backup
-.sisyphus
-
-# Chunkhound local database
+# Local AI/CLI workspace state
+.snow/
+.kiro/
+.cursor/
+.claude/
+.qoder/
+.codebuddy/
 .chunkhound/
 .superset/
-.snow/
-config.schema.json
+.sisyphus/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+dev-debug.log
+
+# Environment and local runtime config
+.env
+.env.local
+.env.*.local
+config.yml
+config.yaml
+config.local.yml
+config.local.yaml
+
+# Runtime databases, dumps, and SQLite sidecar files
+/axonhub.db
+*.db
+*.sqlite
+*.sqlite3
 *.db-shm
 *.db-wal
-*.agent/summary
-.factory
-.snow
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite3-shm
+*.sqlite3-wal
+*-journal
+dumps/
+
+# Go build, test, cache, and profiling artifacts
+/axonhub
+/axonhub.exe
+*_server
+*_cmd
+*.test
+coverage.out
+*.coverprofile
+*.prof
+*.pprof
+cpu.out
+mem.out
+/tmp/
+/.gomodcache/
+/.gocache/
+/tools/
+
+# Generated schema and release output
+/config.schema.json
+/.builds/
+/dist/
+/build/
+/bin/
+/out/
+
+# Node/Vite frontend artifacts
+node_modules/
+/frontend/node_modules/
+/frontend/dist
+/frontend/**/dist
+dist-ssr/
+/frontend/dist-ssr/
+.vite/
+/frontend/.vite/
+.eslintcache
+*.tsbuildinfo
+.pnpm-store/
+.vercel/
+.tanstack/
+
+# Frontend-local patterns merged from frontend/.gitignore
+/frontend/logs/
+/frontend/*.local
+/frontend/**/*.local
+/frontend/.vscode/*
+!/frontend/.vscode/extensions.json
+
+# Test artifacts
+coverage/
+playwright-report/
+blob-report/
+test-results/
+
+# Load-balance integration test artifacts merged from integration_test/openai/chat/load_balance/.gitignore
+/integration_test/openai/chat/load_balance/coverage.html
+/integration_test/openai/chat/load_balance/**/coverage.html
+/integration_test/openai/chat/load_balance/*.exe
+/integration_test/openai/chat/load_balance/**/*.exe
+/integration_test/openai/chat/load_balance/*.tmp
+/integration_test/openai/chat/load_balance/**/*.tmp
+/integration_test/openai/chat/load_balance/.vscode/
+/integration_test/openai/chat/load_balance/**/.vscode/
+/integration_test/openai/chat/load_balance/.idea/
+/integration_test/openai/chat/load_balance/**/.idea/
+
+# AxonHub E2E and migration artifacts
+/scripts/e2e/axonhub-e2e
+/scripts/e2e/axonhub-e2e.exe
+/scripts/e2e/axonhub-e2e.db*
+/scripts/e2e/.e2e-backend.pid
+/scripts/e2e/.e2e-backend-db-type
+/scripts/e2e/e2e-backend.log
+/scripts/migration/migration-test/
+
+# Misc local/generated files
+*.b64
+*.backup
+locales_backup/
