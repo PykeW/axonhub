@@ -14,16 +14,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 const colorSchemes = ['blue', 'green', 'purple', 'orange', 'red', 'black', 'cream'] as const;
 
 const appearanceFormSchema = z.object({
-  theme: z.enum(['light', 'dark'], {
-    required_error: 'Please select a theme.',
-  }),
-  colorScheme: z.enum(colorSchemes, {
-    required_error: 'Please select a color scheme.',
-  }),
-  font: z.enum(fonts, {
-    invalid_type_error: 'Select a font',
-    required_error: 'Please select a font.',
-  }),
+  theme: z.enum(['light', 'dark']),
+  colorScheme: z.enum(colorSchemes),
+  font: z.enum(fonts),
 });
 
 type AppearanceFormValues = z.infer<typeof appearanceFormSchema>;
@@ -35,12 +28,12 @@ export function AppearanceForm() {
   // This can come from your database or API.
   const defaultValues: Partial<AppearanceFormValues> = {
     theme: theme as 'light' | 'dark',
-    colorScheme,
+    colorScheme: colorScheme as AppearanceFormValues['colorScheme'],
     font,
   };
 
   const form = useForm<AppearanceFormValues>({
-    resolver: zodResolver(appearanceFormSchema),
+    resolver: zodResolver(appearanceFormSchema) as any,
     defaultValues,
   });
 

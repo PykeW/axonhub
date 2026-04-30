@@ -58,7 +58,7 @@ export function RulesActionDialog() {
   const formSchema = useMemo(() => createFormSchema(t), [t]);
 
   const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues,
   });
 
@@ -160,9 +160,9 @@ export function RulesActionDialog() {
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+          <form onSubmit={form.handleSubmit(onSubmit as any)} className='space-y-4'>
             <FormField
-              control={form.control}
+              control={form.control as any}
               name='name'
               render={({ field }) => (
                 <FormItem>
@@ -176,7 +176,7 @@ export function RulesActionDialog() {
             />
 
             <FormField
-              control={form.control}
+              control={form.control as any}
               name='description'
               render={({ field }) => (
                 <FormItem>
@@ -190,7 +190,7 @@ export function RulesActionDialog() {
             />
 
             <FormField
-              control={form.control}
+              control={form.control as any}
               name='pattern'
               render={({ field }) => (
                 <FormItem>
@@ -205,7 +205,7 @@ export function RulesActionDialog() {
 
             <div className='grid gap-4 md:grid-cols-2'>
               <FormField
-                control={form.control}
+                control={form.control as any}
                 name='action'
                 render={({ field }) => (
                   <FormItem>
@@ -227,7 +227,7 @@ export function RulesActionDialog() {
               />
 
               <FormField
-                control={form.control}
+                control={form.control as any}
                 name='replacement'
                 render={({ field }) => (
                   <FormItem>
@@ -242,7 +242,7 @@ export function RulesActionDialog() {
             </div>
 
             <FormField
-              control={form.control}
+              control={form.control as any}
               name='scopes'
               render={() => (
                 <FormItem>
@@ -251,7 +251,7 @@ export function RulesActionDialog() {
                     {scopeOptions.map((scope) => (
                       <FormField
                         key={scope}
-                        control={form.control}
+                        control={form.control as any}
                         name='scopes'
                         render={({ field }) => (
                           <FormItem className='flex items-center gap-2 rounded-md border px-3 py-2'>
@@ -261,7 +261,7 @@ export function RulesActionDialog() {
                                 onCheckedChange={(checked) => {
                                   const next = checked
                                     ? [...field.value, scope]
-                                    : field.value.filter((value) => value !== scope);
+                                    : field.value.filter((value: string) => value !== scope);
                                   field.onChange(next);
                                 }}
                               />
