@@ -15,6 +15,7 @@ export type RelaySettlementStatus = 'not_started' | 'charged' | 'delayed' | 'fai
 
 export interface RelayProductChannel {
   id: string;
+  productId?: string;
   channelId: string;
   channelName: string;
   provider: RelayProviderType;
@@ -70,6 +71,7 @@ export interface RelayKeyUsageSnapshot {
 export interface RelayKey {
   id: string;
   apiKeyId: string;
+  plaintextKey?: string;
   projectId: string;
   projectName: string;
   productId: string;
@@ -195,6 +197,16 @@ export interface BindRelayChannelInput {
   allowFallback: boolean;
 }
 
+export interface UpdateRelayChannelBindingInput {
+  id: string;
+  productId?: string;
+  priority?: number;
+  weight?: number;
+  status?: RelayChannelBindingStatus;
+  modelFilter?: string[];
+  allowFallback?: boolean;
+}
+
 export interface CreateRelayKeyInput {
   projectId: string;
   productId: string;
@@ -256,6 +268,22 @@ function unwrapEntityResponse<T>(response: unknown, keys: string[]): T | undefin
   }
 
   return Object.keys(response).length > 0 ? (response as T) : undefined;
+}
+
+function relayContractError(resource: string, expected: string) {
+  return new Error(`Relay REST contract error: ${resource} response missing ${expected}`);
+}
+
+function requireArrayResponse<T>(response: unknown, keys: string[], resource: string): T[] {
+  const value = unwrapArrayResponse<T>(response, keys);
+  if (value) return value;
+  throw relayContractError(resource, `array field (${[...keys, 'data'].join(' | ')})`);
+}
+
+function requireEntityResponse<T>(response: unknown, keys: string[], resource: string): T {
+  const value = unwrapEntityResponse<T>(response, keys);
+  if (value !== undefined && value !== null) return value;
+  throw relayContractError(resource, `entity field (${[...keys, 'data'].join(' | ')})`);
 }
 
 async function relayApiRequest<T>(endpoint: string, options: RelayApiRequestOptions = {}): Promise<T> {
@@ -721,24 +749,18 @@ function getWalletByKeyId(keyId: string | undefined) {
 
 function filterKeysByProject(projectId: string | null | undefined) {
   if (!projectId) return mockRelayKeys;
-  const projectKeys = mockRelayKeys.filter((key) => key.projectId === projectId);
-  return projectKeys.length > 0 ? projectKeys : mockRelayKeys.filter((key) => key.projectId === 'project-alpha');
+  return mockRelayKeys.filter((key) => key.projectId === projectId);
 }
 
 async function withMockFallback<T>(apiCall: () => Promise<T>, fallback: T): Promise<T> {
   if (!relayApiEnabled()) return fallback;
-
-  try {
-    return await apiCall();
-  } catch (_error) {
-    return fallback;
-  }
+  return apiCall();
 }
 
 async function listRelayProducts(): Promise<RelayProduct[]> {
   return withMockFallback(async () => {
     const response = await relayApiRequest<unknown>('/products');
-    return unwrapArrayResponse<RelayProduct>(response, ['products', 'relayProducts']) ?? mockRelayProducts;
+    return requireArrayResponse<RelayProduct>(response, ['products', 'relayProducts'], 'products');
   }, mockRelayProducts);
 }
 
@@ -746,14 +768,14 @@ async function getRelayProductDetail(productId: string): Promise<RelayProduct | 
   const fallback = getProductById(productId);
   return withMockFallback(async () => {
     const response = await relayApiRequest<unknown>(`/products/${encodedPath(productId)}`);
-    return unwrapEntityResponse<RelayProduct>(response, ['product', 'relayProduct']) ?? fallback;
+    return requireEntityResponse<RelayProduct>(response, ['product', 'relayProduct'], 'product');
   }, fallback);
 }
 
 async function listRelayKeys(): Promise<RelayKey[]> {
   return withMockFallback(async () => {
     const response = await relayApiRequest<unknown>('/keys');
-    return unwrapArrayResponse<RelayKey>(response, ['keys', 'relayKeys']) ?? mockRelayKeys;
+    return requireArrayResponse<RelayKey>(response, ['keys', 'relayKeys'], 'keys');
   }, mockRelayKeys);
 }
 
@@ -761,7 +783,7 @@ async function getRelayKeyDetail(keyId: string): Promise<RelayKey | undefined> {
   const fallback = getKeyById(keyId);
   return withMockFallback(async () => {
     const response = await relayApiRequest<unknown>(`/keys/${encodedPath(keyId)}`);
-    return unwrapEntityResponse<RelayKey>(response, ['key', 'relayKey']) ?? fallback;
+    return requireEntityResponse<RelayKey>(response, ['key', 'relayKey'], 'key');
   }, fallback);
 }
 
@@ -769,7 +791,7 @@ async function getRelayWallet(keyId: string): Promise<RelayWallet | undefined> {
   const fallback = getWalletByKeyId(keyId);
   return withMockFallback(async () => {
     const response = await relayApiRequest<unknown>(`/keys/${encodedPath(keyId)}/wallet`);
-    return unwrapEntityResponse<RelayWallet>(response, ['wallet', 'relayWallet']) ?? fallback;
+    return requireEntityResponse<RelayWallet>(response, ['wallet', 'relayWallet'], 'wallet');
   }, fallback);
 }
 
@@ -777,14 +799,14 @@ async function listRelayLedgerEntries(keyId: string): Promise<RelayWalletLedgerE
   const fallback = mockRelayLedgerEntries.filter((entry) => entry.relayKeyId === keyId);
   return withMockFallback(async () => {
     const response = await relayApiRequest<unknown>(`/keys/${encodedPath(keyId)}/ledger`);
-    return unwrapArrayResponse<RelayWalletLedgerEntry>(response, ['ledgerEntries', 'relayWalletLedgerEntries']) ?? fallback;
+    return requireArrayResponse<RelayWalletLedgerEntry>(response, ['ledgerEntries', 'relayWalletLedgerEntries'], 'ledger entries');
   }, fallback);
 }
 
 async function listRelayRequestTraces(): Promise<RelayRequestTrace[]> {
   return withMockFallback(async () => {
     const response = await relayApiRequest<unknown>('/requests');
-    return unwrapArrayResponse<RelayRequestTrace>(response, ['requests', 'relayRequestTraces']) ?? mockRelayRequestTraces;
+    return requireArrayResponse<RelayRequestTrace>(response, ['requests', 'relayRequestTraces'], 'requests');
   }, mockRelayRequestTraces);
 }
 
@@ -802,7 +824,7 @@ async function listRelayChannelPoolHealth(): Promise<RelayChannelPoolHealth[]> {
 
   return withMockFallback(async () => {
     const response = await relayApiRequest<unknown>('/channel-pool-health');
-    return unwrapArrayResponse<RelayChannelPoolHealth>(response, ['channelPoolHealth', 'poolHealth', 'relayChannelPoolHealth']) ?? fallback;
+    return requireArrayResponse<RelayChannelPoolHealth>(response, ['channelPoolHealth', 'poolHealth', 'relayChannelPoolHealth'], 'channel pool health');
   }, fallback);
 }
 
@@ -812,7 +834,7 @@ function buildProjectRelayOverview(projectId: string | null | undefined): Projec
   const keyIds = new Set(keys.map((key) => key.id));
 
   return {
-    products: mockRelayProducts.filter((product) => product.status === 'active' || productIds.has(product.id)),
+    products: mockRelayProducts.filter((product) => (projectId ? productIds.has(product.id) : product.status === 'active' || productIds.has(product.id))),
     keys,
     wallets: mockRelayWallets.filter((wallet) => keyIds.has(wallet.relayKeyId)),
     recentRequests: mockRelayRequestTraces.filter((trace) => keys.some((key) => key.name === trace.keyName)).slice(0, 5),
@@ -823,11 +845,14 @@ function buildProjectRelayOverview(projectId: string | null | undefined): Projec
 async function getProjectRelayOverview(projectId: string | null | undefined): Promise<ProjectRelayOverview> {
   const fallback = buildProjectRelayOverview(projectId);
   const effectiveProjectId = projectId;
-  if (!effectiveProjectId) return fallback;
+  if (!effectiveProjectId) {
+    if (relayApiEnabled()) throw new Error('Relay project REST requires a selected project ID');
+    return fallback;
+  }
 
   return withMockFallback(async () => {
     const response = await relayProjectApiRequest<unknown>(effectiveProjectId, '/overview');
-    return unwrapEntityResponse<ProjectRelayOverview>(response, ['overview', 'projectRelayOverview']) ?? fallback;
+    return requireEntityResponse<ProjectRelayOverview>(response, ['overview', 'projectRelayOverview'], 'project overview');
   }, fallback);
 }
 
@@ -845,11 +870,14 @@ function buildProjectRelayUsage(projectId: string | null | undefined): ProjectRe
 async function getProjectRelayUsage(projectId: string | null | undefined): Promise<ProjectRelayUsage> {
   const fallback = buildProjectRelayUsage(projectId);
   const effectiveProjectId = projectId;
-  if (!effectiveProjectId) return fallback;
+  if (!effectiveProjectId) {
+    if (relayApiEnabled()) throw new Error('Relay project REST requires a selected project ID');
+    return fallback;
+  }
 
   return withMockFallback(async () => {
     const response = await relayProjectApiRequest<unknown>(effectiveProjectId, '/usage');
-    return unwrapEntityResponse<ProjectRelayUsage>(response, ['usage', 'projectRelayUsage']) ?? fallback;
+    return requireEntityResponse<ProjectRelayUsage>(response, ['usage', 'projectRelayUsage'], 'project usage');
   }, fallback);
 }
 
@@ -907,7 +935,11 @@ export function useRelayChannelPoolHealthQuery() {
 export function useProjectRelayOverviewQuery(projectId?: string | null) {
   const selectedProjectId = useSelectedProjectId();
   const effectiveProjectId = projectId ?? selectedProjectId;
-  return useQuery({ queryKey: relayQueryKeys.projectOverview(effectiveProjectId), queryFn: () => getProjectRelayOverview(effectiveProjectId), staleTime: 60_000 });
+  return useQuery({
+    queryKey: relayQueryKeys.projectOverview(effectiveProjectId),
+    queryFn: () => getProjectRelayOverview(effectiveProjectId),
+    staleTime: 60_000,
+  });
 }
 
 export function useProjectRelayProductsQuery(projectId?: string | null) {
@@ -933,7 +965,11 @@ export function useProjectRelayKeysQuery(projectId?: string | null) {
 export function useProjectRelayUsageQuery(projectId?: string | null) {
   const selectedProjectId = useSelectedProjectId();
   const effectiveProjectId = projectId ?? selectedProjectId;
-  return useQuery({ queryKey: relayQueryKeys.projectUsage(effectiveProjectId), queryFn: () => getProjectRelayUsage(effectiveProjectId), staleTime: 60_000 });
+  return useQuery({
+    queryKey: relayQueryKeys.projectUsage(effectiveProjectId),
+    queryFn: () => getProjectRelayUsage(effectiveProjectId),
+    staleTime: 60_000,
+  });
 }
 
 export function useCreateRelayProductMutation() {
@@ -957,7 +993,7 @@ export function useCreateRelayProductMutation() {
       };
       return withMockFallback(async () => {
         const response = await relayApiRequest<unknown>('/products', { method: 'POST', body: input });
-        return unwrapEntityResponse<RelayProduct>(response, ['product', 'relayProduct']) ?? fallback;
+        return requireEntityResponse<RelayProduct>(response, ['product', 'relayProduct'], 'created product');
       }, fallback);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: relayQueryKeys.products }),
@@ -971,7 +1007,7 @@ export function useUpdateRelayProductMutation() {
       const fallback: RelayProduct = { ...(getProductById(id) ?? mockRelayProducts[0]), ...input, updatedAt: new Date().toISOString() };
       return withMockFallback(async () => {
         const response = await relayApiRequest<unknown>(`/products/${encodedPath(id)}`, { method: 'PATCH', body: input });
-        return unwrapEntityResponse<RelayProduct>(response, ['product', 'relayProduct']) ?? fallback;
+        return requireEntityResponse<RelayProduct>(response, ['product', 'relayProduct'], 'updated product');
       }, fallback);
     },
     onSuccess: (_data, variables) => {
@@ -981,12 +1017,26 @@ export function useUpdateRelayProductMutation() {
   });
 }
 
+function resolveBindingProductId(binding: RelayProductChannel | undefined, productId: string | undefined) {
+  return productId ?? binding?.productId;
+}
+
+function invalidateRelayProductChannelQueries(queryClient: ReturnType<typeof useQueryClient>, productId: string | undefined) {
+  if (productId) {
+    queryClient.invalidateQueries({ queryKey: relayQueryKeys.product(productId) });
+    queryClient.invalidateQueries({ queryKey: relayQueryKeys.channelPool(productId) });
+  }
+  queryClient.invalidateQueries({ queryKey: relayQueryKeys.products });
+  queryClient.invalidateQueries({ queryKey: relayQueryKeys.poolHealth });
+}
+
 export function useBindRelayChannelMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: BindRelayChannelInput) => {
       const fallback: RelayProductChannel = {
         id: `bind-preview-${Date.now()}`,
+        productId: input.productId,
         channelId: input.channelId,
         channelName: `Channel ${input.channelId}`,
         provider: 'openai_compatible',
@@ -1003,10 +1053,38 @@ export function useBindRelayChannelMutation() {
       };
       return withMockFallback(async () => {
         const response = await relayApiRequest<unknown>('/product-channels', { method: 'POST', body: input });
-        return unwrapEntityResponse<RelayProductChannel>(response, ['channel', 'binding', 'productChannel', 'relayProductChannel']) ?? fallback;
+        return requireEntityResponse<RelayProductChannel>(response, ['channel', 'binding', 'productChannel', 'relayProductChannel'], 'created product channel');
       }, fallback);
     },
-    onSuccess: (_data, variables) => queryClient.invalidateQueries({ queryKey: relayQueryKeys.product(variables.productId) }),
+    onSuccess: (_data, variables) => invalidateRelayProductChannelQueries(queryClient, variables.productId),
+  });
+}
+
+export function useUpdateRelayChannelBindingMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, productId, ...input }: UpdateRelayChannelBindingInput) => {
+      const fallbackProduct = productId ? getProductById(productId) : undefined;
+      const fallback = fallbackProduct?.channelPool.find((channel) => channel.id === id);
+      return withMockFallback(async () => {
+        const response = await relayApiRequest<unknown>(`/product-channels/${encodedPath(id)}`, { method: 'PATCH', body: input });
+        return requireEntityResponse<RelayProductChannel>(response, ['channel', 'binding', 'productChannel', 'relayProductChannel'], 'updated product channel');
+      }, fallback);
+    },
+    onSuccess: (data, variables) => invalidateRelayProductChannelQueries(queryClient, resolveBindingProductId(data, variables.productId)),
+  });
+}
+
+export function useDeleteRelayChannelBindingMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, productId }: { id: string; productId?: string }) => {
+      return withMockFallback(async () => {
+        await relayApiRequest<unknown>(`/product-channels/${encodedPath(id)}`, { method: 'DELETE' });
+        return { id, productId };
+      }, { id, productId });
+    },
+    onSuccess: (_data, variables) => invalidateRelayProductChannelQueries(queryClient, variables.productId),
   });
 }
 
@@ -1032,10 +1110,14 @@ export function useCreateRelayKeyMutation() {
       };
       return withMockFallback(async () => {
         const response = await relayApiRequest<unknown>('/keys', { method: 'POST', body: input });
-        return unwrapEntityResponse<RelayKey>(response, ['key', 'relayKey']) ?? fallback;
+        return requireEntityResponse<RelayKey>(response, ['key', 'relayKey'], 'created key');
       }, fallback);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: relayQueryKeys.keys }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: relayQueryKeys.keys });
+      queryClient.invalidateQueries({ queryKey: relayQueryKeys.projectOverview(variables.projectId) });
+      queryClient.invalidateQueries({ queryKey: relayQueryKeys.projectKeys(variables.projectId) });
+    },
   });
 }
 
@@ -1058,7 +1140,7 @@ function useRelayKeyStatusMutation(status: RelayKeyStatus) {
       const fallback: RelayKey = { ...(getKeyById(id) ?? mockRelayKeys[0]), status };
       return withMockFallback(async () => {
         const response = await relayApiRequest<unknown>(`/keys/${encodedPath(id)}/status`, { method: 'PATCH', body: { status, note } });
-        return unwrapEntityResponse<RelayKey>(response, ['key', 'relayKey']) ?? fallback;
+        return requireEntityResponse<RelayKey>(response, ['key', 'relayKey'], 'updated key status');
       }, fallback);
     },
     onSuccess: (_data, variables) => {
@@ -1085,7 +1167,7 @@ export function useRechargeRelayWalletMutation() {
       };
       return withMockFallback(async () => {
         const response = await relayApiRequest<unknown>('/wallets/recharge', { method: 'POST', body: input });
-        return unwrapEntityResponse<RelayWalletLedgerEntry>(response, ['ledgerEntry', 'relayWalletLedgerEntry']) ?? fallback;
+        return requireEntityResponse<RelayWalletLedgerEntry>(response, ['ledgerEntry', 'relayWalletLedgerEntry'], 'wallet recharge ledger entry');
       }, fallback);
     },
     onSuccess: (_data, variables) => {
@@ -1102,7 +1184,7 @@ export function useAdjustRelayKeyLimitMutation() {
       const fallback: RelayKey = { ...(getKeyById(id) ?? mockRelayKeys[0]), limits };
       return withMockFallback(async () => {
         const response = await relayApiRequest<unknown>(`/keys/${encodedPath(id)}/limits`, { method: 'PATCH', body: { limits } });
-        return unwrapEntityResponse<RelayKey>(response, ['key', 'relayKey']) ?? fallback;
+        return requireEntityResponse<RelayKey>(response, ['key', 'relayKey'], 'updated key limits');
       }, fallback);
     },
     onSuccess: (_data, variables) => queryClient.invalidateQueries({ queryKey: relayQueryKeys.key(variables.id) }),

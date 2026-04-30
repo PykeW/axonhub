@@ -2,6 +2,7 @@ import { type FormEvent, type ReactNode, useMemo, useState } from 'react';
 import { Outlet } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { Header } from '@/components/layout/header';
+import { useRoutePermissions } from '@/hooks/useRoutePermissions';
 import { Main } from '@/components/layout/main';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +28,7 @@ import {
   useAdjustRelayKeyLimitMutation,
   useArchiveRelayKeyMutation,
   useBindRelayChannelMutation,
+  useDeleteRelayChannelBindingMutation,
   useCreateRelayKeyMutation,
   useCreateRelayProductMutation,
   useRechargeRelayWalletMutation,
@@ -41,6 +43,7 @@ import {
   useRelayWalletQuery,
   useResumeRelayKeyMutation,
   useSuspendRelayKeyMutation,
+  useUpdateRelayChannelBindingMutation,
   useUpdateRelayProductMutation,
 } from './data';
 
@@ -579,6 +582,10 @@ export function RelayProductDetailPage({ productId }: DetailPageProps) {
   const keysQuery = useRelayKeysQuery();
   const updateMutation = useUpdateRelayProductMutation();
   const bindMutation = useBindRelayChannelMutation();
+  const updateBindingMutation = useUpdateRelayChannelBindingMutation();
+  const deleteBindingMutation = useDeleteRelayChannelBindingMutation();
+  const { canAccessScopes } = useRoutePermissions();
+  const canWriteChannels = canAccessScopes(['write_channels'], 'system');
 
   if (productQuery.isLoading || channelQuery.isLoading || keysQuery.isLoading) return <LoadingCards />;
   if (productQuery.error || channelQuery.error || keysQuery.error) return <ErrorState error={productQuery.error ?? channelQuery.error ?? keysQuery.error} />;
@@ -595,25 +602,27 @@ export function RelayProductDetailPage({ productId }: DetailPageProps) {
         title={product.name}
         description={`${product.code} uses ${product.billingMode} billing and ${product.defaultTimeoutMs / 1000}s timeout.`}
         actions={
-          <>
-            <Button variant='outline' onClick={() => updateMutation.mutate({ id: product.id, input: { status: product.status === 'active' ? 'draft' : 'active' } })}>
-              {product.status === 'active' ? 'Return to draft' : 'Activate product'}
-            </Button>
-            <Button
-              onClick={() =>
-                bindMutation.mutate({
-                  productId: product.id,
-                  channelId: 'preview-channel',
-                  priority: channels.length + 1,
-                  weight: 10,
-                  modelFilter: product.allowedModels.slice(0, 1),
-                  allowFallback: true,
-                })
-              }
-            >
-              Bind preview channel
-            </Button>
-          </>
+          canWriteChannels ? (
+            <>
+              <Button variant='outline' onClick={() => updateMutation.mutate({ id: product.id, input: { status: product.status === 'active' ? 'draft' : 'active' } })}>
+                {product.status === 'active' ? 'Return to draft' : 'Activate product'}
+              </Button>
+              <Button
+                onClick={() =>
+                  bindMutation.mutate({
+                    productId: product.id,
+                    channelId: 'preview-channel',
+                    priority: channels.length + 1,
+                    weight: 10,
+                    modelFilter: product.allowedModels.slice(0, 1),
+                    allowFallback: true,
+                  })
+                }
+              >
+                Bind preview channel
+              </Button>
+            </>
+          ) : undefined
         }
       />
       <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
@@ -639,6 +648,7 @@ export function RelayProductDetailPage({ productId }: DetailPageProps) {
                   <TableHead>Health</TableHead>
                   <TableHead>Quota</TableHead>
                   <TableHead>Models</TableHead>
+                  {canWriteChannels ? <TableHead className='text-right'>Actions</TableHead> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -658,6 +668,32 @@ export function RelayProductDetailPage({ productId }: DetailPageProps) {
                       <div className='mt-1 text-xs text-muted-foreground'>{channel.quotaRemainingPercent}% remaining</div>
                     </TableCell>
                     <TableCell className='whitespace-normal text-xs'>{channel.modelFilter.join(', ')}</TableCell>
+                    {canWriteChannels ? (
+                      <TableCell className='space-x-2 text-right'>
+                        <Button
+                          variant='outline'
+                          size='sm'
+                          disabled={updateBindingMutation.isPending}
+                          onClick={() =>
+                            updateBindingMutation.mutate({
+                              id: channel.id,
+                              productId: product.id,
+                              status: channel.status === 'active' ? 'paused' : 'active',
+                            })
+                          }
+                        >
+                          {channel.status === 'active' ? 'Pause' : 'Resume'}
+                        </Button>
+                        <Button
+                          variant='destructive'
+                          size='sm'
+                          disabled={deleteBindingMutation.isPending}
+                          onClick={() => deleteBindingMutation.mutate({ id: channel.id, productId: product.id })}
+                        >
+                          Remove
+                        </Button>
+                      </TableCell>
+                    ) : null}
                   </TableRow>
                 ))}
               </TableBody>
@@ -748,6 +784,7 @@ export function RelayKeyCreatePage() {
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setCreatedKey(null);
     mutation.mutate(
       {
         projectId,
@@ -760,6 +797,8 @@ export function RelayKeyCreatePage() {
       { onSuccess: setCreatedKey }
     );
   };
+
+  const oneTimeCredential = createdKey?.plaintextKey;
 
   return (
     <div className='space-y-6'>
@@ -793,9 +832,16 @@ export function RelayKeyCreatePage() {
       </Card>
       {createdKey ? (
         <Alert>
-          <AlertTitle>One-time plaintext credential placeholder</AlertTitle>
-          <AlertDescription>
-            Store the real key immediately after backend creation. This frontend fallback only returns masked preview {createdKey.maskedKey}.
+          <AlertTitle>{oneTimeCredential ? 'One-time plaintext credential' : 'Relay sub-key created'}</AlertTitle>
+          <AlertDescription className='space-y-2'>
+            {oneTimeCredential ? (
+              <>
+                <p>Copy and store this value now. It will not be shown again in lists or detail pages.</p>
+                <div className='rounded-lg border bg-muted/40 p-3 font-mono text-sm text-foreground'>{oneTimeCredential}</div>
+              </>
+            ) : (
+              <p>Plaintext was not returned by this response. Use the masked identifier {createdKey.maskedKey} for tracking and re-issue if the secret was not captured.</p>
+            )}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -812,6 +858,8 @@ export function RelayKeyDetailPage({ keyId }: DetailPageProps) {
   const resumeMutation = useResumeRelayKeyMutation();
   const archiveMutation = useArchiveRelayKeyMutation();
   const limitMutation = useAdjustRelayKeyLimitMutation();
+  const { canAccessScopes } = useRoutePermissions();
+  const canWriteApiKeys = canAccessScopes(['write_api_keys'], 'system');
 
   if (keyQuery.isLoading || walletQuery.isLoading || ledgerQuery.isLoading || requestsQuery.isLoading) return <LoadingCards />;
   if (keyQuery.error || walletQuery.error || ledgerQuery.error || requestsQuery.error) {
@@ -835,15 +883,19 @@ export function RelayKeyDetailPage({ keyId }: DetailPageProps) {
             <Button variant='outline' asChild>
               <a href={`/relay-subkeys/keys/${key.id}/billing`}>Open wallet</a>
             </Button>
-            <Button variant='secondary' onClick={() => suspendMutation.mutate({ id: key.id, note: 'Operator pause from MVP UI' })} disabled={key.status === 'suspended'}>
-              Suspend
-            </Button>
-            <Button variant='outline' onClick={() => resumeMutation.mutate({ id: key.id })} disabled={key.status === 'active'}>
-              Resume
-            </Button>
-            <Button variant='destructive' onClick={() => archiveMutation.mutate({ id: key.id, note: 'Archive from MVP UI' })} disabled={key.status === 'archived'}>
-              Archive
-            </Button>
+            {canWriteApiKeys ? (
+              <>
+                <Button variant='secondary' onClick={() => suspendMutation.mutate({ id: key.id, note: 'Operator pause from MVP UI' })} disabled={key.status === 'suspended'}>
+                  Suspend
+                </Button>
+                <Button variant='outline' onClick={() => resumeMutation.mutate({ id: key.id })} disabled={key.status === 'active'}>
+                  Resume
+                </Button>
+                <Button variant='destructive' onClick={() => archiveMutation.mutate({ id: key.id, note: 'Archive from MVP UI' })} disabled={key.status === 'archived'}>
+                  Archive
+                </Button>
+              </>
+            ) : null}
           </>
         }
       />
@@ -905,19 +957,21 @@ export function RelayKeyDetailPage({ keyId }: DetailPageProps) {
               <MetricCard label='Daily tokens' value={formatNumber(key.limits.dailyTokenLimit)} hint='Token guard for shared pool use.' />
               <MetricCard label='Monthly cost' value={formatCurrency(key.limits.monthlyCostLimit)} hint='Cost cap before exhausted.' />
               <MetricCard label='Concurrency' value={formatNumber(key.limits.concurrencyLimit)} hint='Blocks excess in-flight calls.' />
-              <div className='md:col-span-4'>
-                <Button
-                  variant='outline'
-                  onClick={() =>
-                    limitMutation.mutate({
-                      id: key.id,
-                      limits: { ...key.limits, concurrencyLimit: key.limits.concurrencyLimit + 1 },
-                    })
-                  }
-                >
-                  Increase preview concurrency
-                </Button>
-              </div>
+              {canWriteApiKeys ? (
+                <div className='md:col-span-4'>
+                  <Button
+                    variant='outline'
+                    onClick={() =>
+                      limitMutation.mutate({
+                        id: key.id,
+                        limits: { ...key.limits, concurrencyLimit: key.limits.concurrencyLimit + 1 },
+                      })
+                    }
+                  >
+                    Increase preview concurrency
+                  </Button>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         </TabsContent>
@@ -936,6 +990,8 @@ function RelayWalletAndLedger({
   ledger: ReturnType<typeof useRelayLedgerEntriesQuery>['data'];
 }) {
   const rechargeMutation = useRechargeRelayWalletMutation();
+  const { canAccessScopes } = useRoutePermissions();
+  const canWriteApiKeys = canAccessScopes(['write_api_keys'], 'system');
 
   return (
     <div className='space-y-6'>
@@ -945,17 +1001,19 @@ function RelayWalletAndLedger({
         <MetricCard label='Recharged' value={wallet ? formatCurrency(wallet.totalRecharged, wallet.currency) : '-'} hint='Manual top-ups and refunds.' />
         <MetricCard label='Spent' value={wallet ? formatCurrency(wallet.totalSpent, wallet.currency) : '-'} hint='Usage settlement ledger total.' />
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Operator adjustment</CardTitle>
-          <CardDescription>Recharge uses mutation glue with mock fallback until backend endpoints land.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button onClick={() => rechargeMutation.mutate({ relayKeyId: keyId, amount: 100, note: 'MVP preview recharge' })} disabled={rechargeMutation.isPending}>
-            {rechargeMutation.isPending ? 'Posting...' : 'Post $100 preview recharge'}
-          </Button>
-        </CardContent>
-      </Card>
+      {canWriteApiKeys ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Operator adjustment</CardTitle>
+            <CardDescription>Recharge uses mutation glue with mock fallback until backend endpoints land.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => rechargeMutation.mutate({ relayKeyId: keyId, amount: 100, note: 'MVP preview recharge' })} disabled={rechargeMutation.isPending}>
+              {rechargeMutation.isPending ? 'Posting...' : 'Post $100 preview recharge'}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
       <TableFrame title='Ledger entries' description='Recharge, usage settlement, refunds, and adjustments must remain explainable.'>
         <Table>
           <TableHeader>

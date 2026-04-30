@@ -6,7 +6,7 @@ import { ProjectRelaySubkeysGetStartedPage } from '@/features/project-relay-subk
 function ProtectedProjectRelaySubkeysGetStarted() {
   return (
     <ProjectGuard>
-      <RouteGuard requiredScopes={['read_api_keys']}>
+      <RouteGuard requiredScopes={['read_api_keys', 'read_requests']}>
         <ProjectRelaySubkeysGetStartedPage />
       </RouteGuard>
     </ProjectGuard>

@@ -6,7 +6,7 @@ import { ProjectRelaySubkeysProductsPage } from '@/features/project-relay-subkey
 function ProtectedProjectRelaySubkeysProducts() {
   return (
     <ProjectGuard>
-      <RouteGuard requiredScopes={['read_api_keys', 'read_channels']}>
+      <RouteGuard requiredScopes={['read_api_keys', 'read_requests']}>
         <ProjectRelaySubkeysProductsPage />
       </RouteGuard>
     </ProjectGuard>

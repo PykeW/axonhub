@@ -27,9 +27,6 @@ import {
   useProjectRelayOverviewQuery,
   useProjectRelayProductsQuery,
   useProjectRelayUsageQuery,
-  useRelayKeyDetailQuery,
-  useRelayRequestTraceQuery,
-  useRelayWalletQuery,
 } from '../relay-subkeys/data';
 
 interface ProjectKeyDetailProps {
@@ -497,17 +494,15 @@ export function ProjectRelaySubkeysKeysPage() {
 
 export function ProjectRelaySubkeysKeyDetailPage({ keyId }: ProjectKeyDetailProps) {
   const keysQuery = useProjectRelayKeysQuery();
-  const detailQuery = useRelayKeyDetailQuery(keyId);
-  const requestQuery = useRelayRequestTraceQuery();
-  const walletQuery = useRelayWalletQuery(keyId);
-  const key = detailQuery.data ?? keysQuery.data?.find((candidate) => candidate.id === keyId) ?? keysQuery.data?.[0];
-  const requests = (requestQuery.data ?? []).filter((request) => request.keyName === key?.name);
-  const wallet = walletQuery.data;
+  const usageQuery = useProjectRelayUsageQuery();
+  const key = keyId ? keysQuery.data?.find((candidate) => candidate.id === keyId) : undefined;
+  const requests = (usageQuery.data?.recentRequests ?? []).filter((request) => request.keyName === key?.name);
+  const wallet = usageQuery.data?.wallets.find((candidate) => candidate.relayKeyId === key?.id);
 
   return (
     <ProjectShell title='Sub-Key Detail' description='View safe credential metadata, setup values, and project-scoped troubleshooting evidence.'>
-      {(keysQuery.isLoading || detailQuery.isLoading || requestQuery.isLoading || walletQuery.isLoading) && !key ? <LoadingCards /> : null}
-      {keysQuery.error || detailQuery.error || requestQuery.error || walletQuery.error ? <ErrorState error={keysQuery.error ?? detailQuery.error ?? requestQuery.error ?? walletQuery.error} /> : null}
+      {(keysQuery.isLoading || usageQuery.isLoading) && !key ? <LoadingCards /> : null}
+      {keysQuery.error || usageQuery.error ? <ErrorState error={keysQuery.error ?? usageQuery.error} /> : null}
       {!key ? <EmptyState title='Sub-key not found' description='The requested key is unavailable for the selected project.' /> : null}
       {key ? (
         <div className='space-y-6'>
