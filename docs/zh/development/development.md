@@ -139,6 +139,11 @@ bash ./scripts/e2e/e2e-test.sh
 - [自托管 Relay + Sub-key 共享容量 MVP：后端与数据设计](./relay-subkey-mvp-backend-design.md)
 - [自托管 Relay + Sub-Key 共享容量 MVP：QA 与测试清单](./relay-subkey-mvp-qa-checklist.md)
 
+围绕后续“用户贡献 API 换积分”的小范围实验，可参考：
+
+- [用户贡献 API：模型真实性验证、随机抽检与积分奖惩设计](./user-contributed-api-quality-plan.md)
+- [用户贡献 API 质量治理：QA 与小范围试点验收清单](./user-contributed-api-quality-qa-checklist.md)
+
 ## 代码质量
 
 ### 运行 Go Linter

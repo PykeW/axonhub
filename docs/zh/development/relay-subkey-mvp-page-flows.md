@@ -206,6 +206,12 @@ AxonHub 已经具备 API 网关、渠道路由、请求审计与 API Key 鉴权�
 - 上游 provider 凭证市场或卖家中心。
 - 复杂审批流、客服工单系统、对账导出中心。
 - 细粒度代理商层级与分润结算页。
+- 贡献者中心、贡献 API 入驻、模型真实性抽检、积分收益和处罚申诉页面。
+
+上述用户贡献 API 能力属于后续实验方向，页面和流程设计见：
+
+- [用户贡献 API：模型真实性验证、随机抽检与积分奖惩设计](./user-contributed-api-quality-plan.md)
+- [用户贡献 API 质量治理：QA 与小范围试点验收清单](./user-contributed-api-quality-qa-checklist.md)
 
 ## 实施优先级建议
 

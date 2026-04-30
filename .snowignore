@@ -1,3 +1,39 @@
-
+# Keep Snow workspace metadata that may be useful between sessions.
 !.snow/plan
 !.snow/notebook
+
+# Environment and local runtime configuration
+.env
+.env.*
+!.env.example
+config.yml
+config.yaml
+config.local.yml
+config.local.yaml
+
+# Frontend environment files
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Common local secrets and credentials
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.secret
+*.token
+*credentials*.json
+*secret*.json
+
+# Runtime data and generated local outputs
+logs/
+*.log
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+frontend/dist/
+frontend/node_modules/

@@ -29,18 +29,18 @@ AxonHub 当前已经具备自托管 Relay MVP 所需的基础骨架：
 
 ## 复用现有表
 
-| 表 | 在 MVP 中的角色 | 处理方式 |
-| --- | --- | --- |
-| `projects` | 买方租户隔离、管理台作用域 | 保持不变，继续作为项目级隔离主键 |
-| `users` | 管理员 / 运营人员账号 | 保持不变 |
-| `api_keys` | 对外发放给终端用户的鉴权凭证 | 保持不变，通过新表 `relay_keys.api_key_id` 绑定业务属性 |
-| `channels` | 上游 provider 账号 / sub-key / OAuth 渠道 | 保持不变，继续承载真实上游凭证 |
-| `provider_quota_status` | 上游额度轮询状态 | 保持不变，作为路由过滤条件之一 |
-| `requests` | 下游请求主记录 | 保持不变，作为消费与审计锚点 |
-| `request_executions` | 实际命中的上游渠道与执行结果 | 保持不变，作为路由结果事实表 |
-| `usage_logs` | 实际 token / upstream cost 事实表 | 保持不变，继续记录上游成本 |
-| `channel_model_prices` / `channel_model_price_versions` | 上游成本基准 | 保持不变，用于计算 upstream cost |
-| `system` | Relay 开关、默认策略 | 可新增系统配置项，但不新增独立系统表 |
+| 表                                                      | 在 MVP 中的角色                           | 处理方式                                                |
+| ------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------- |
+| `projects`                                              | 买方租户隔离、管理台作用域                | 保持不变，继续作为项目级隔离主键                        |
+| `users`                                                 | 管理员 / 运营人员账号                     | 保持不变                                                |
+| `api_keys`                                              | 对外发放给终端用户的鉴权凭证              | 保持不变，通过新表 `relay_keys.api_key_id` 绑定业务属性 |
+| `channels`                                              | 上游 provider 账号 / sub-key / OAuth 渠道 | 保持不变，继续承载真实上游凭证                          |
+| `provider_quota_status`                                 | 上游额度轮询状态                          | 保持不变，作为路由过滤条件之一                          |
+| `requests`                                              | 下游请求主记录                            | 保持不变，作为消费与审计锚点                            |
+| `request_executions`                                    | 实际命中的上游渠道与执行结果              | 保持不变，作为路由结果事实表                            |
+| `usage_logs`                                            | 实际 token / upstream cost 事实表         | 保持不变，继续记录上游成本                              |
+| `channel_model_prices` / `channel_model_price_versions` | 上游成本基准                              | 保持不变，用于计算 upstream cost                        |
+| `system`                                                | Relay 开关、默认策略                      | 可新增系统配置项，但不新增独立系统表                    |
 
 ### 为什么不上来就新增“上游账号表”
 
@@ -279,28 +279,28 @@ MVP 推荐把“上游成本”和“下游销售金额”分开放：
 
 ### 复用模块
 
-| 模块 | 继续承担的职责 |
-| --- | --- |
-| `APIKeyService` | 生成 / 查询 / 缓存对外鉴权 Key |
-| `ChannelService` | 渠道缓存、健康度、fallback、模型能力判断 |
-| `RequestService` | 创建 `requests` / `request_executions` |
-| `UsageLogService` | 记录真实 token 与 upstream cost |
-| `QuotaService` | 保留现有 API Key quota 能力，可作为 Relay 限额实现参考 |
-| `ProviderQuotaService` | 继续轮询上游 provider 配额状态 |
-| `ProjectService` | 买方项目管理与隔离 |
+| 模块                   | 继续承担的职责                                         |
+| ---------------------- | ------------------------------------------------------ |
+| `APIKeyService`        | 生成 / 查询 / 缓存对外鉴权 Key                         |
+| `ChannelService`       | 渠道缓存、健康度、fallback、模型能力判断               |
+| `RequestService`       | 创建 `requests` / `request_executions`                 |
+| `UsageLogService`      | 记录真实 token 与 upstream cost                        |
+| `QuotaService`         | 保留现有 API Key quota 能力，可作为 Relay 限额实现参考 |
+| `ProviderQuotaService` | 继续轮询上游 provider 配额状态                         |
+| `ProjectService`       | 买方项目管理与隔离                                     |
 
 ### 新增业务模块
 
-| 模块 | 建议文件 | 职责 | 关键依赖 |
-| --- | --- | --- | --- |
-| 产品目录服务 | `internal/server/biz/relay_catalog.go` | 产品 CRUD、产品与渠道池绑定 | `relay_products`、`relay_product_channels`、`ChannelService` |
-| Relay Key 服务 | `internal/server/biz/relay_key.go` | Sub-Key 开通、停用、过期、绑定现有 `api_keys` | `relay_keys`、`APIKeyService` |
-| 钱包服务 | `internal/server/biz/relay_wallet.go` | 充值、冻结、余额校验、乐观锁更新 | `relay_wallets`、`relay_wallet_ledger_entries` |
-| 访问守卫 | `internal/server/biz/relay_access.go` | 请求入口校验 Sub-Key 状态、配额与余额 | `relay_keys`、`relay_wallets`、`relay_daily_usage_summaries` |
-| 路由服务 | `internal/server/biz/relay_router.go` | 根据产品池筛选候选渠道并委托 `ChannelService` 选择 | `relay_product_channels`、`channels`、`provider_quota_status` |
-| 结算服务 | `internal/server/biz/relay_settlement.go` | 根据 `usage_logs` 扣费、退款、写账本 | `UsageLogService`、`relay_wallets`、`relay_wallet_ledger_entries` |
-| 汇总服务 | `internal/server/biz/relay_usage_summary.go` | 增量 upsert 日聚合，支撑 dashboard 与硬限额 | `relay_daily_usage_summaries`、`usage_logs` |
-| 管理编排服务 | `internal/server/biz/relay_admin.go` | 把产品、Key、钱包、汇总组合成后台视图 | 上述全部 Relay 模块 |
+| 模块           | 建议文件                                     | 职责                                               | 关键依赖                                                          |
+| -------------- | -------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------- |
+| 产品目录服务   | `internal/server/biz/relay_catalog.go`       | 产品 CRUD、产品与渠道池绑定                        | `relay_products`、`relay_product_channels`、`ChannelService`      |
+| Relay Key 服务 | `internal/server/biz/relay_key.go`           | Sub-Key 开通、停用、过期、绑定现有 `api_keys`      | `relay_keys`、`APIKeyService`                                     |
+| 钱包服务       | `internal/server/biz/relay_wallet.go`        | 充值、冻结、余额校验、乐观锁更新                   | `relay_wallets`、`relay_wallet_ledger_entries`                    |
+| 访问守卫       | `internal/server/biz/relay_access.go`        | 请求入口校验 Sub-Key 状态、配额与余额              | `relay_keys`、`relay_wallets`、`relay_daily_usage_summaries`      |
+| 路由服务       | `internal/server/biz/relay_router.go`        | 根据产品池筛选候选渠道并委托 `ChannelService` 选择 | `relay_product_channels`、`channels`、`provider_quota_status`     |
+| 结算服务       | `internal/server/biz/relay_settlement.go`    | 根据 `usage_logs` 扣费、退款、写账本               | `UsageLogService`、`relay_wallets`、`relay_wallet_ledger_entries` |
+| 汇总服务       | `internal/server/biz/relay_usage_summary.go` | 增量 upsert 日聚合，支撑 dashboard 与硬限额        | `relay_daily_usage_summaries`、`usage_logs`                       |
+| 管理编排服务   | `internal/server/biz/relay_admin.go`         | 把产品、Key、钱包、汇总组合成后台视图              | 上述全部 Relay 模块                                               |
 
 ### GraphQL / API 分层建议
 
@@ -378,6 +378,17 @@ MVP 推荐把“上游成本”和“下游销售金额”分开放：
 - 多区域容量池与跨机房调度
 - 面向终端的精细化账单导出与税务字段
 - 请求级预授权 / 部分退款复杂策略
+- 用户贡献 API / 多供给方共享容量市场
+- 模型真实性验证、随机抽检、质量评分与积分奖惩
+
+## 后续实验：用户贡献 API 与质量治理
+
+如果要把 AxonHub 扩展为“用户共享自己的 API 换取平台积分，再用积分兑换或抵扣 token 使用”的共享容量平台，需要在本 MVP 之外补充贡献者账户、贡献渠道、模型探针、随机抽检、质量事件和用户积分账本。
+
+该方向的正式设计与小范围试点验收清单见：
+
+- [用户贡献 API：模型真实性验证、随机抽检与积分奖惩设计](./user-contributed-api-quality-plan.md)
+- [用户贡献 API 质量治理：QA 与小范围试点验收清单](./user-contributed-api-quality-qa-checklist.md)
 
 ## 结论
 
