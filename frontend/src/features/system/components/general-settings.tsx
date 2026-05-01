@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { AutoCompleteSelect } from '@/components/auto-complete-select';
-import { useSystemContext } from '../context/system-context';
+import { useSystemContext } from '../context/use-system-context';
 import { currencyCodes } from '../data/currencies';
 import {
   useGeneralSettings,

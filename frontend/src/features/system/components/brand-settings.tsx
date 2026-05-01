@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useSystemContext } from '../context/system-context';
+import { useSystemContext } from '../context/use-system-context';
 import { useBrandSettings, useUpdateBrandSettings } from '../data/system';
 
 export function BrandSettings() {

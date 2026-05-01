@@ -1,24 +1,10 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
-
-interface SystemContextType {
-  isLoading: boolean;
-  setIsLoading: (loading: boolean) => void;
-}
-
-const SystemContext = createContext<SystemContextType | undefined>(undefined);
-
-export function useSystemContext() {
-  const context = useContext(SystemContext);
-  if (!context) {
-    throw new Error('useSystemContext must be used within a SystemProvider');
-  }
-  return context;
-}
+import { useState, type ReactNode } from 'react';
+import { SystemContext, type SystemContextType } from './system-context-state';
 
 interface SystemProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export default function SystemProvider({ children }: SystemProviderProps) {

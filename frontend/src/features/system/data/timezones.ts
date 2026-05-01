@@ -16,7 +16,7 @@ const utcTimezone = {
 };
 
 const ALL_VALID_TIMEZONES = tzGetTimeZones();
-// @ts-ignore
+// @ts-expect-error - UTC fallback matches the fields consumed by timezone options.
 ALL_VALID_TIMEZONES.push(utcTimezone);
 
 export const getTimeZones = () => {

@@ -19,7 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { useSystemContext } from '../context/system-context';
+import { useSystemContext } from '../context/use-system-context';
 import {
   useStoragePolicy,
   useUpdateStoragePolicy,

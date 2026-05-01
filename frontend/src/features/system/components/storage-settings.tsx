@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDataStorages } from '@/features/data-storages/data/data-storages';
-import { useSystemContext } from '../context/system-context';
+import { useSystemContext } from '../context/use-system-context';
 import { useDefaultDataStorageID, useUpdateDefaultDataStorage } from '../data/system';
 import { StoragePolicySettings } from './storage-policy-settings';
 import { VideoStorageSettings } from './video-storage-settings';
