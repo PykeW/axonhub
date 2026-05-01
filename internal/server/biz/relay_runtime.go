@@ -24,12 +24,13 @@ type RelayRuntimeService struct {
 	resolver   RelayAuthResolver
 	access     RelayAccessChecker
 	settlement RelaySettlementRecorder
+	inflight   *RelayInflightTracker
 }
 
 type RelayRuntimeOption func(*RelayRuntimeService)
 
 func NewRelayRuntimeService() *RelayRuntimeService {
-	return &RelayRuntimeService{}
+	return &RelayRuntimeService{inflight: NewRelayInflightTracker()}
 }
 
 func (s *RelayRuntimeService) SetResolver(resolver RelayAuthResolver) {
@@ -47,6 +48,12 @@ func (s *RelayRuntimeService) SetAccessChecker(access RelayAccessChecker) {
 func (s *RelayRuntimeService) SetSettlementRecorder(settlement RelaySettlementRecorder) {
 	if s != nil {
 		s.settlement = settlement
+	}
+}
+
+func (s *RelayRuntimeService) SetInflightTracker(inflight *RelayInflightTracker) {
+	if s != nil {
+		s.inflight = inflight
 	}
 }
 
@@ -81,6 +88,7 @@ type RelayAuthContext struct {
 	MonthlyUsage  RelayUsageSnapshot
 	ChannelPool   RelayChannelPool
 	Metadata      map[string]any
+	inflight      *relayInflightLease
 }
 
 type RelayKeyStatus string
@@ -263,6 +271,31 @@ func (s *RelayRuntimeService) ResolveAndCheckAccess(ctx context.Context, apiKey 
 		}
 	}
 
+	return s.applyInflightLimit(relay, decision)
+}
+
+func (s *RelayRuntimeService) applyInflightLimit(relay *RelayAuthContext, decision *RelayAccessDecision) (*RelayAuthContext, *RelayAccessDecision, error) {
+	if s == nil || relay == nil || decision == nil || !decision.Allowed {
+		return relay, decision, nil
+	}
+	if relay.Quota.ConcurrencyLimit == nil {
+		return relay, decision, nil
+	}
+	if *relay.Quota.ConcurrencyLimit <= 0 {
+		return relay, denyRelayAccess(http.StatusForbidden, "relay_concurrency_quota_exceeded", "relay key concurrency quota exceeded"), nil
+	}
+	if relay.RelayKeyID <= 0 {
+		return relay, decision, nil
+	}
+	if s.inflight == nil {
+		return relay, decision, nil
+	}
+
+	release, ok := s.inflight.Begin(relay.RelayKeyID, *relay.Quota.ConcurrencyLimit)
+	if !ok {
+		return relay, denyRelayAccess(http.StatusForbidden, "relay_concurrency_quota_exceeded", "relay key concurrency quota exceeded"), nil
+	}
+	relay.setInflightRelease(release)
 	return relay, decision, nil
 }
 
@@ -304,7 +337,6 @@ func (s *RelayRuntimeService) defaultAccessDecision(relay *RelayAuthContext, now
 	if relay.Quota.ConcurrencyLimit != nil && *relay.Quota.ConcurrencyLimit <= 0 {
 		return denyRelayAccess(http.StatusForbidden, "relay_concurrency_quota_exceeded", "relay key concurrency quota exceeded")
 	}
-	// MVP: positive concurrency is contract/UI data until an inflight tracker is wired.
 	return allowRelayAccess()
 }
 
@@ -371,6 +403,18 @@ func (c *RelayAuthContext) PoolEntry(channelID int) (RelayChannelPoolEntry, bool
 
 func (c *RelayAuthContext) HasRoutingConstraints() bool {
 	return c != nil && len(c.AllowedChannelIDs()) > 0
+}
+
+func (c *RelayAuthContext) setInflightRelease(release func()) {
+	if c != nil {
+		c.inflight = newRelayInflightLease(release)
+	}
+}
+
+func (c *RelayAuthContext) ReleaseInflight() {
+	if c != nil && c.inflight != nil {
+		c.inflight.Release()
+	}
 }
 
 // AuthenticateRelayAPIKey is the post-API-key-auth Relay hook.

@@ -244,7 +244,7 @@ func (s *RelayAccessService) CheckRelayAccess(_ context.Context, relay *RelayAut
 	if relay.Quota.ConcurrencyLimit != nil && *relay.Quota.ConcurrencyLimit <= 0 {
 		return denyRelayAccess(http.StatusForbidden, "relay_concurrency_quota_exceeded", "relay key concurrency quota exceeded"), nil
 	}
-	// MVP: positive concurrency is contract/UI data until an inflight tracker is wired.
+	// Positive concurrency is enforced by RelayRuntimeService's request-scoped inflight tracker.
 
 	return allowRelayAccess(), nil
 }
