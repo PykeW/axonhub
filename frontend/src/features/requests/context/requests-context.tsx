@@ -1,34 +1,8 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { Request, RequestExecution } from '../data/schema';
-
-interface RequestsContextType {
-  // Dialog states
-  detailDialogOpen: boolean;
-  setDetailDialogOpen: (open: boolean) => void;
-
-  // Execution detail dialog states
-  executionDetailOpen: boolean;
-  setExecutionDetailOpen: (open: boolean) => void;
-
-  // Executions drawer states
-  executionsDrawerOpen: boolean;
-  setExecutionsDrawerOpen: (open: boolean) => void;
-
-  // Current selected items
-  currentRequest: Request | null;
-  setCurrentRequest: (request: Request | null) => void;
-
-  currentExecution: RequestExecution | null;
-  setCurrentExecution: (execution: RequestExecution | null) => void;
-
-  // Table selection
-  selectedRequests: string[];
-  setSelectedRequests: (ids: string[]) => void;
-}
-
-const RequestsContext = createContext<RequestsContextType | undefined>(undefined);
+import { useState, type ReactNode } from 'react';
+import type { Request, RequestExecution } from '../data/schema';
+import { RequestsContext, type RequestsContextType } from './requests-context-state';
 
 interface RequestsProviderProps {
   children: ReactNode;
@@ -60,13 +34,4 @@ export default function RequestsProvider({ children }: RequestsProviderProps) {
   return <RequestsContext.Provider value={value}>{children}</RequestsContext.Provider>;
 }
 
-// Also export as named export for convenience
 export { RequestsProvider };
-
-export function useRequestsContext() {
-  const context = useContext(RequestsContext);
-  if (context === undefined) {
-    throw new Error('useRequestsContext must be used within a RequestsProvider');
-  }
-  return context;
-}

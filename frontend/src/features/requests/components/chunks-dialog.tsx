@@ -33,7 +33,7 @@ export function ChunksDialog({ open, onOpenChange, chunks, title, isLive }: Chun
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      void err;
     }
   };
 
@@ -49,7 +49,7 @@ export function ChunksDialog({ open, onOpenChange, chunks, title, isLive }: Chun
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Failed to download:', err);
+      void err;
     }
   };
 

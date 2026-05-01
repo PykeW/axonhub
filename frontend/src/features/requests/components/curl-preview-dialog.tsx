@@ -23,7 +23,7 @@ export function CurlPreviewDialog({ open, onOpenChange, curlCommand, title }: Cu
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      void err;
     }
   }, [curlCommand]);
 
@@ -41,7 +41,7 @@ export function CurlPreviewDialog({ open, onOpenChange, curlCommand, title }: Cu
       setNonStreamCopied(true);
       setTimeout(() => setNonStreamCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy non-stream curl:', err);
+      void err;
     }
   }, [curlCommand]);
 

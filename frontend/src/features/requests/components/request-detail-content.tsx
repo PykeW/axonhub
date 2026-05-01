@@ -147,7 +147,7 @@ export function RequestDetailContent({ requestId, projectId, previewRequest, isP
       }
 
       const contentDisposition = resp.headers.get('Content-Disposition') || '';
-      const filenameMatch = contentDisposition.match(/filename=\"?([^\";]+)\"?/i);
+      const filenameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
       const filename = filenameMatch?.[1] || `video-${requestIdNumber}.mp4`;
 
       const blob = await resp.blob();
