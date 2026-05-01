@@ -52,7 +52,7 @@ AxonHub 已经具备 API 网关、渠道路由、请求审计与 API Key 鉴权�
 | ------------------------ | -------------------------------------------------------------------------- | ----------------------------------- |
 | `expired`                | `expires_at < now()`                                                       | 告知 Key 已过期，需要续期或重发     |
 | `low_balance`            | `relay_wallets.available_amount` 低于阈值                                  | 在列表和详情页提前预警              |
-| `quota_reached`          | 日级 usage summary 达到硬限额，或月度聚合触发 preflight guard              | 标记为什么进入 `exhausted`          |
+| `quota_reached`          | 日级 usage summary 达到硬限额，或月度 preflight / settlement hard cap 触发 | 标记为什么进入 `exhausted`          |
 | `concurrency_blocked`    | Post-MVP inflight tracker 判定当前并发超过 `concurrency_limit`；MVP 不出现 | tracker 上线后为并发拒绝提供解释    |
 | `upstream_pool_degraded` | 关联产品的候选渠道不足或全部 unhealthy                                     | 提示是共享池问题，而不是单 Key 问题 |
 
@@ -149,22 +149,22 @@ AxonHub 已经具备 API 网关、渠道路由、请求审计与 API Key 鉴权�
 
 1. 客户端携带 AxonHub Sub-Key 访问兼容接口。
 2. 鉴权中间件先校验 `api_keys`，随后加载 `relay_keys` 与 `relay_wallets`。
-3. 如果 Key 状态正常，余额、日限额与月度 preflight guard 通过，则根据 `product_id` 加载渠道池。
+3. 如果 Key 状态正常，余额、日限额与入口月度 preflight guard 通过，则根据 `product_id` 加载渠道池。
 4. 路由层过滤不可用渠道，选出最终命中的 `channel_id`，并写入 `requests` 与 `request_executions`。
-5. 上游响应成功后，结算层依据 `usage_logs` 生成账务流水并更新钱包快照。
+5. 上游响应成功后，结算层依据 `usage_logs` 执行月度 hard cap 检查；通过后生成账务流水并更新钱包快照。
 6. 项目侧详情页与运营侧请求页都能看到这次调用，包括模型、token、成本和命中渠道。
 
 实现要点：页面显示的“请求成功”和“扣费成功”要拆成两个状态位，避免上游成功但结算延迟时让用户误解为未记录。
 
 ### 流程 5：余额不足或限额 guard 触发耗尽
 
-1. 请求进入后，系统检测到 `available_amount <= 0`，或日限额已达上限，或月度成本 preflight guard 判定已超限。
+1. 请求进入或结算时，系统检测到 `available_amount <= 0`、日限额已达上限，或月度成本 preflight / settlement hard cap 判定已超限。
 2. 后端把 Key 标记为 `exhausted`，并返回可解释错误信息。
 3. Key 列表页显示 `exhausted`，同时带上 `low_balance` 或 `quota_reached` badge。
 4. 项目管理员在详情页看到失败原因和最近一次触发时间。
 5. 运营在账务页完成充值或调整限额后，Key 恢复为 `active`。
 
-实现要点：`exhausted` 应是可恢复状态，不要与 `suspended` 共用文案；页面操作按钮也要区分“充值恢复”和“人工解封”。月度成本在 MVP 中是 soft/preflight guard，正向并发值仅用于展示与后续 tracker 预留，页面限额文案应避免承诺 settlement hard cap 或当前已阻塞超额 in-flight。
+实现要点：`exhausted` 应是可恢复状态，不要与 `suspended` 共用文案；页面操作按钮也要区分“充值恢复”和“人工解封”。月度成本现在由入口 preflight guard 与 settlement hard cap 共同约束；页面必须区分“请求已成功但结算因 cap 拒绝”的状态。正向并发值仍仅用于展示与后续 tracker 预留，页面限额文案不得承诺当前已阻塞超额 in-flight。
 
 ### 流程 6：运营主动暂停或归档 Key
 

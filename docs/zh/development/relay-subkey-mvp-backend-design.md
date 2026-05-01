@@ -16,7 +16,7 @@ AxonHub 当前已经具备自托管 Relay MVP 所需的基础骨架：
 1. 仅支持自托管 Relay 场景，不引入去中心化撮合或多卖家市场。
 2. 运营侧手动配置产品、上游渠道、Sub-Key、充值与冻结操作。
 3. 下游继续走 AxonHub 现有 OpenAI / Anthropic / Codex 兼容入口，不新增协议层分支。
-4. 计费先支持“预付余额 + 日级硬配额 + 月度成本 preflight guard”模型；支付网关、发票、代理分润留到后续阶段。
+4. 计费先支持“预付余额 + 日级硬配额 + 月度成本 preflight guard + settlement hard cap”模型；支付网关、发票、代理分润留到后续阶段。
 5. 共享容量通过“一个产品绑定多个上游渠道”实现，而不是把某个上游 API Key 直接暴露给终端用户。
 
 ## 设计原则
@@ -25,7 +25,7 @@ AxonHub 当前已经具备自托管 Relay MVP 所需的基础骨架：
 - **认证与业务解耦**：对外鉴权继续使用 `api_keys`，Relay 业务能力放到独立表，避免污染现有通用 Key 语义。
 - **账务不可变**：余额变更全部落到不可变流水表，禁止直接覆盖消费结果。
 - **路由基于池而不是单 Key**：Sub-Key 绑定产品，产品绑定共享上游渠道池，路由时再做健康度与额度过滤。
-- **同步链路只做轻量校验**：请求入口只查状态、余额、日级硬限额与月度 preflight guard；复杂统计和报表走异步汇总表。
+- **同步链路分层限额**：请求入口只查状态、余额、日级硬限额与月度 preflight guard；月度成本 hard cap 在 settlement 事务内通过同 Key 串行化/原子检查兜底，复杂统计和报表走异步汇总表。
 
 ## 复用现有表
 
@@ -144,7 +144,7 @@ MVP 建议新增 6 张表，全部放在 `internal/ent/schema/` 下，由 Ent �
 
 - `api_keys` 继续负责协议层鉴权；
 - `relay_keys` 负责余额、限额、产品绑定、风控状态；
-- `monthly_cost_limit` 在 MVP 中是请求前 soft/preflight guard，基于 `relay_daily_usage_summaries` 的月度聚合判断；它可以降低明显超限请求，但不能在并发下保证绝对不超支；
+- `monthly_cost_limit` 在 P1 选项 1 中同时承担请求前 preflight guard 与 settlement hard cap：入口基于 `relay_daily_usage_summaries` 月度聚合快速拒绝，结算事务内以锁后的月度聚合 + 本次 charge 原子判断为准；
 - 正向 `concurrency_limit` 在 MVP 中只作为配置、展示和后续 tracker 预留；`<= 0` 可表达拒绝/停用语义，真正超额 in-flight 阻塞留给 Post-MVP Begin/Release tracker；
 - 这样可以避免让 `api_keys.profiles` 同时承担鉴权、模型映射、商业计费三套职责。
 
@@ -242,7 +242,7 @@ MVP 建议新增 6 张表，全部放在 `internal/ent/schema/` 下，由 Ent �
 
 1. 现有中间件继续通过 `api_keys` 完成 `X-API-Key` / Bearer Key 鉴权。
 2. 在鉴权成功后追加加载 `relay_keys` 与 `relay_wallets`。
-3. 如果 `relay_keys.status != active`、已过期、余额不足、日级硬配额已满，或月度成本 preflight guard 已判定超限，则直接拒绝请求。
+3. 如果 `relay_keys.status != active`、已过期、余额不足、日级硬配额已满，或月度成本 preflight guard 已判定超限，则直接拒绝请求；未被 preflight 拦截的请求仍需在结算阶段执行 monthly hard cap。
 
 ### 2. 路由阶段
 
@@ -265,14 +265,17 @@ MVP 建议新增 6 张表，全部放在 `internal/ent/schema/` 下，由 Ent �
 ### 4. 结算阶段
 
 1. `UsageLogService.CreateUsageLogFromRequest` 写入 `usage_logs`，得到真实 token 与 upstream cost。
-2. `RelaySettlementService` 用 `usage_log_id` 生成幂等扣费流水。
-3. 扣费成功后更新 `relay_wallets` 快照，并 upsert `relay_daily_usage_summaries`。
-4. 如果请求失败且没有 `usage_logs`，默认不扣费；后续再补“异常执行人工对账”流程。
+2. `RelaySettlementService` 先用 `usage_log_id` 做幂等判断；已结算的同一 `usage_log_id` 直接成功 no-op。
+3. 设置 `monthly_cost_limit` 时，结算事务内先按 `relay_key_id` 加锁并读取当月 `relay_daily_usage_summaries` 聚合：`current_monthly + charge == limit` 允许，`>` 拒绝且不得写 ledger、daily summary、wallet debit 或 `last_used_at`。
+4. hard cap 通过后，`prepaid` 更新 `relay_wallets` 快照，`quota_only` 跳过钱包扣减；随后写扣费流水并 upsert `relay_daily_usage_summaries`。
+5. 如果请求失败且没有 `usage_logs`，默认不扣费；后续再补“异常执行人工对账”流程。
 
 ### 5. MVP 限额语义
 
-- `monthly_cost_limit` 在 MVP 阶段不是严格财务 hard cap，而是请求进入前基于 `relay_daily_usage_summaries` 月度聚合做 soft/preflight 判断。它可以拦截已经明显超限的请求，但请求执行与 `RelaySettlementService.SettleUsage` 结算事务之间存在时间差，并发请求可能在结算前同时通过。
-- 真正的 hard monthly cap 需要 Post-MVP 的请求预授权/额度保留，或在 settlement 事务内通过串行锁/原子检查完成扣费前校验。如果上游调用已经完成，settlement 再拒绝会引入“用户已得到响应但无法扣费”的体验和对账风险。
+- `monthly_cost_limit` 在请求入口仍是基于 `relay_daily_usage_summaries` 月度聚合的 preflight guard，用于快速拦截已经明显超限的请求。
+- `monthly_cost_limit` 的最终 hard cap 在 `RelaySettlementService.SettleUsage` 事务内完成：Postgres/MySQL 对 `relay_keys` 执行 `SELECT ... FOR UPDATE`，SQLite 用事务内 no-op `UPDATE relay_keys SET updated_at = updated_at WHERE id = ?` 获得同 Key 串行化效果，再读取当月聚合并判断 `current_monthly + charge`。
+- hard cap 边界：正向 charge 下 `current_monthly + charge == limit` 允许；`>` 拒绝。已成功结算的同一 `usage_log_id` 因幂等检查先于 cap 检查而继续 success/no-op；首次被 cap 拒绝的结算不写幂等标记，数据不变时重试仍拒绝。
+- 如果上游调用已经完成，settlement 再拒绝会引入“用户已得到响应但无法扣费”的体验和对账风险；页面和运维告警必须把请求成功与结算成功拆开展示。
 - 正向 `concurrency_limit` 在 MVP 中暂不强制，只用于配置、展示和未来 tracker 预留；`<= 0` 可以表达拒绝/停用语义。真正的超额 in-flight 阻塞需要 Post-MVP 的 Begin/Release tracker 覆盖完整请求生命周期。
 
 ### 6. 为什么不直接在 `usage_logs` 里加“销售金额”字段
@@ -299,16 +302,16 @@ MVP 推荐把“上游成本”和“下游销售金额”分开放：
 
 ### 新增业务模块
 
-| 模块           | 建议文件                                     | 职责                                                             | 关键依赖                                                          |
-| -------------- | -------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------- |
-| 产品目录服务   | `internal/server/biz/relay_catalog.go`       | 产品 CRUD、产品与渠道池绑定                                      | `relay_products`、`relay_product_channels`、`ChannelService`      |
-| Relay Key 服务 | `internal/server/biz/relay_key.go`           | Sub-Key 开通、停用、过期、绑定现有 `api_keys`                    | `relay_keys`、`APIKeyService`                                     |
-| 钱包服务       | `internal/server/biz/relay_wallet.go`        | 充值、冻结、余额校验、乐观锁更新                                 | `relay_wallets`、`relay_wallet_ledger_entries`                    |
-| 访问守卫       | `internal/server/biz/relay_access.go`        | 请求入口校验 Sub-Key 状态、余额、日限额与月度 preflight guard    | `relay_keys`、`relay_wallets`、`relay_daily_usage_summaries`      |
-| 路由服务       | `internal/server/biz/relay_router.go`        | 根据产品池筛选候选渠道并委托 `ChannelService` 选择               | `relay_product_channels`、`channels`、`provider_quota_status`     |
-| 结算服务       | `internal/server/biz/relay_settlement.go`    | 根据 `usage_logs` 扣费、退款、写账本                             | `UsageLogService`、`relay_wallets`、`relay_wallet_ledger_entries` |
-| 汇总服务       | `internal/server/biz/relay_usage_summary.go` | 增量 upsert 日聚合，支撑 dashboard、日限额和月度 preflight guard | `relay_daily_usage_summaries`、`usage_logs`                       |
-| 管理编排服务   | `internal/server/biz/relay_admin.go`         | 把产品、Key、钱包、汇总组合成后台视图                            | 上述全部 Relay 模块                                               |
+| 模块           | 建议文件                                     | 职责                                                                   | 关键依赖                                                          |
+| -------------- | -------------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| 产品目录服务   | `internal/server/biz/relay_catalog.go`       | 产品 CRUD、产品与渠道池绑定                                            | `relay_products`、`relay_product_channels`、`ChannelService`      |
+| Relay Key 服务 | `internal/server/biz/relay_key.go`           | Sub-Key 开通、停用、过期、绑定现有 `api_keys`                          | `relay_keys`、`APIKeyService`                                     |
+| 钱包服务       | `internal/server/biz/relay_wallet.go`        | 充值、冻结、余额校验、乐观锁更新                                       | `relay_wallets`、`relay_wallet_ledger_entries`                    |
+| 访问守卫       | `internal/server/biz/relay_access.go`        | 请求入口校验 Sub-Key 状态、余额、日限额与月度 preflight guard          | `relay_keys`、`relay_wallets`、`relay_daily_usage_summaries`      |
+| 路由服务       | `internal/server/biz/relay_router.go`        | 根据产品池筛选候选渠道并委托 `ChannelService` 选择                     | `relay_product_channels`、`channels`、`provider_quota_status`     |
+| 结算服务       | `internal/server/biz/relay_settlement.go`    | 根据 `usage_logs` 执行月度 hard cap、扣费、退款、写账本                | `UsageLogService`、`relay_wallets`、`relay_wallet_ledger_entries` |
+| 汇总服务       | `internal/server/biz/relay_usage_summary.go` | 增量 upsert 日聚合，支撑 dashboard、日限额、月度 preflight 与 hard cap | `relay_daily_usage_summaries`、`usage_logs`                       |
+| 管理编排服务   | `internal/server/biz/relay_admin.go`         | 把产品、Key、钱包、汇总组合成后台视图                                  | 上述全部 Relay 模块                                               |
 
 ### GraphQL / API 分层建议
 
@@ -366,8 +369,9 @@ MVP 推荐把“上游成本”和“下游销售金额”分开放：
 ### 阶段 3：结算闭环
 
 1. `usage_logs` 成功写入后触发账本扣费。
-2. 用 `idempotency_key` 保证重试不重复扣费。
-3. 同步更新钱包快照，异步更新日汇总。
+2. 用 `idempotency_key` 保证重试不重复扣费，已结算重试必须早于月度 hard cap 拒绝判定返回 no-op。
+3. 设置 `monthly_cost_limit` 时在 settlement 事务内按 Relay Key 加锁，原子判断月度聚合 + 本次 charge 不超过上限。
+4. 通过 cap 后同步更新钱包快照并 upsert 日汇总；`quota_only` 跳过钱包扣减但仍执行 cap。
 
 ### 阶段 4：运营台能力
 
@@ -386,7 +390,6 @@ MVP 推荐把“上游成本”和“下游销售金额”分开放：
 - 多区域容量池与跨机房调度
 - 面向终端的精细化账单导出与税务字段
 - 请求级预授权 / 额度保留 / 部分退款复杂策略
-- hard monthly cap 所需的 settlement 串行锁或原子检查
 - 正向并发限额所需的 inflight Begin/Release tracker
 - 用户贡献 API / 多供给方共享容量市场
 - 模型真实性验证、随机抽检、质量评分与积分奖惩
