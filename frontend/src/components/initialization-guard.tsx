@@ -20,7 +20,6 @@ export function InitializationGuard({ children }: InitializationGuardProps) {
       const currentPath = window.location.pathname;
       if (currentPath !== '/initialization') {
         setIsNavigating(true);
-        //@ts-ignore
         router.navigate({ to: '/initialization' }).finally(() => {
           setIsNavigating(false);
         });

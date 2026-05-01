@@ -22,7 +22,7 @@ export function AppHeader() {
   const { isMobile } = useSidebar();
   const displayName = brandSettings?.brandName || 'AxonHub';
 
-  const refreshMutation = useMutation({
+  const { mutate: refreshProviderQuotas } = useMutation({
     mutationFn: async () => {
       return checkProviderQuotas();
     },
@@ -37,10 +37,10 @@ export function AppHeader() {
 
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
-    refreshMutation.mutate(undefined, {
+    refreshProviderQuotas(undefined, {
       onSettled: () => setIsRefreshing(false),
     });
-  }, [refreshMutation]);
+  }, [refreshProviderQuotas]);
 
   return (
     <header className='bg-background/95 supports-[backdrop-filter]:bg-background/60 fixed top-0 z-50 w-full backdrop-blur'>
