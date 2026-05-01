@@ -227,3 +227,154 @@ func TestRelayAuthErrorPreservesDecisionDiagnostics(t *testing.T) {
 	require.Contains(t, relayErr.Error(), "relay_balance_exhausted")
 	require.True(t, errors.Is(relayErr, ErrRelayInsufficientBalance))
 }
+
+func TestRelayRuntimeService_ConcurrencyLimitAllowsLimitAndRejectsOverflow(t *testing.T) {
+	svc := newRelayRuntimeConcurrencyTestService(map[int]RelayAuthContext{
+		1: newRelayRuntimeConcurrencyRelay(101, 2),
+	})
+
+	first := requireRelayRuntimeAllowed(t, svc, 1)
+	second := requireRelayRuntimeAllowed(t, svc, 1)
+	requireRelayRuntimeConcurrencyDenied(t, svc, 1)
+
+	requireRelayInflightRelease(t, first)()
+	requireRelayInflightRelease(t, second)()
+}
+
+func TestRelayRuntimeService_ConcurrencyLimitReleaseAfterCompletionAllowsNext(t *testing.T) {
+	svc := newRelayRuntimeConcurrencyTestService(map[int]RelayAuthContext{
+		1: newRelayRuntimeConcurrencyRelay(102, 1),
+	})
+
+	first := requireRelayRuntimeAllowed(t, svc, 1)
+	requireRelayRuntimeConcurrencyDenied(t, svc, 1)
+
+	release := requireRelayInflightRelease(t, first)
+	release()
+	release()
+
+	second := requireRelayRuntimeAllowed(t, svc, 1)
+	requireRelayRuntimeConcurrencyDenied(t, svc, 1)
+	requireRelayInflightRelease(t, second)()
+}
+
+func TestRelayRuntimeService_ConcurrencyLimitReleaseAfterCancelPathAllowsNext(t *testing.T) {
+	svc := newRelayRuntimeConcurrencyTestService(map[int]RelayAuthContext{
+		1: newRelayRuntimeConcurrencyRelay(103, 1),
+	})
+
+	runCanceledRequest := func() error {
+		relay := requireRelayRuntimeAllowed(t, svc, 1)
+		defer requireRelayInflightRelease(t, relay)()
+		return context.Canceled
+	}
+
+	require.ErrorIs(t, runCanceledRequest(), context.Canceled)
+
+	next := requireRelayRuntimeAllowed(t, svc, 1)
+	requireRelayRuntimeConcurrencyDenied(t, svc, 1)
+	requireRelayInflightRelease(t, next)()
+}
+
+func TestRelayRuntimeService_ConcurrencyLimitNonPositiveRejectsWithoutAcquiringSlot(t *testing.T) {
+	relays := map[int]RelayAuthContext{
+		1: newRelayRuntimeConcurrencyRelay(104, 0),
+	}
+	svc := newRelayRuntimeConcurrencyTestService(relays)
+
+	requireRelayRuntimeConcurrencyDenied(t, svc, 1)
+
+	relays[1] = newRelayRuntimeConcurrencyRelay(104, 1)
+	first := requireRelayRuntimeAllowed(t, svc, 1)
+	requireRelayRuntimeConcurrencyDenied(t, svc, 1)
+	requireRelayInflightRelease(t, first)()
+}
+
+func TestRelayRuntimeService_ConcurrencyLimitSeparateRelayKeysDoNotShareCounters(t *testing.T) {
+	svc := newRelayRuntimeConcurrencyTestService(map[int]RelayAuthContext{
+		1: newRelayRuntimeConcurrencyRelay(105, 1),
+		2: newRelayRuntimeConcurrencyRelay(205, 1),
+	})
+
+	firstKey := requireRelayRuntimeAllowed(t, svc, 1)
+	secondKey := requireRelayRuntimeAllowed(t, svc, 2)
+	requireRelayRuntimeConcurrencyDenied(t, svc, 1)
+	requireRelayRuntimeConcurrencyDenied(t, svc, 2)
+
+	requireRelayInflightRelease(t, firstKey)()
+	firstKeyAgain := requireRelayRuntimeAllowed(t, svc, 1)
+	requireRelayRuntimeConcurrencyDenied(t, svc, 2)
+
+	requireRelayInflightRelease(t, firstKeyAgain)()
+	requireRelayInflightRelease(t, secondKey)()
+}
+
+func TestRelayRuntimeService_ConcurrencyLimitSequentialRequestsUnderLimitPass(t *testing.T) {
+	svc := newRelayRuntimeConcurrencyTestService(map[int]RelayAuthContext{
+		1: newRelayRuntimeConcurrencyRelay(106, 1),
+	})
+
+	for i := 0; i < 5; i++ {
+		relay := requireRelayRuntimeAllowed(t, svc, 1)
+		requireRelayInflightRelease(t, relay)()
+	}
+}
+
+type relayInflightReleaser interface {
+	ReleaseInflight()
+}
+
+func newRelayRuntimeConcurrencyTestService(relays map[int]RelayAuthContext) *RelayRuntimeService {
+	svc := NewRelayRuntimeService()
+	svc.SetResolver(relayRuntimeResolverFunc(func(ctx context.Context, apiKey *ent.APIKey) (*RelayAuthContext, error) {
+		if apiKey == nil {
+			return nil, nil
+		}
+		relay, ok := relays[apiKey.ID]
+		if !ok {
+			return nil, nil
+		}
+		return &relay, nil
+	}))
+	svc.SetAccessChecker(NewRelayAccessService(RelayAccessServiceParams{}))
+	return svc
+}
+
+func newRelayRuntimeConcurrencyRelay(relayKeyID int, limit int64) RelayAuthContext {
+	return RelayAuthContext{
+		RelayKeyID: relayKeyID,
+		Status:     RelayKeyStatusActive,
+		Quota: RelayKeyQuotaSnapshot{
+			ConcurrencyLimit: &limit,
+		},
+	}
+}
+
+func requireRelayRuntimeAllowed(t *testing.T, svc *RelayRuntimeService, apiKeyID int) *RelayAuthContext {
+	t.Helper()
+	relay, decision, err := svc.ResolveAndCheckAccess(context.Background(), &ent.APIKey{ID: apiKeyID, ProjectID: 7000 + apiKeyID})
+	require.NoError(t, err)
+	require.NotNil(t, relay)
+	require.NotNil(t, decision)
+	require.True(t, decision.Allowed, "expected relay request to be allowed, got decision %#v", decision)
+	return relay
+}
+
+func requireRelayRuntimeConcurrencyDenied(t *testing.T, svc *RelayRuntimeService, apiKeyID int) {
+	t.Helper()
+	relay, decision, err := svc.ResolveAndCheckAccess(context.Background(), &ent.APIKey{ID: apiKeyID, ProjectID: 7000 + apiKeyID})
+	require.NoError(t, err)
+	require.NotNil(t, relay)
+	require.NotNil(t, decision)
+	require.False(t, decision.Allowed, "expected relay request to be denied by ConcurrencyLimit")
+	require.Equal(t, "relay_concurrency_quota_exceeded", decision.Code)
+	require.ErrorIs(t, decision.ErrorOrNil(), ErrRelayQuotaExceeded)
+}
+
+func requireRelayInflightRelease(t *testing.T, relay *RelayAuthContext) func() {
+	t.Helper()
+	require.NotNil(t, relay)
+	releaser, ok := any(relay).(relayInflightReleaser)
+	require.True(t, ok, "allowed positive ConcurrencyLimit relay context should expose ReleaseInflight")
+	return releaser.ReleaseInflight
+}
