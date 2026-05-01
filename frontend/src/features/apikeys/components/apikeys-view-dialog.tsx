@@ -6,9 +6,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { MaskedCodeBlock, MaskedCodeBlockCopyButton, highlightMaskedCode } from '@/components/ai-elements/masked-code-block';
+import { MaskedCodeBlock, MaskedCodeBlockCopyButton } from '@/components/ai-elements/masked-code-block';
+import { highlightMaskedCode } from '@/components/ai-elements/masked-code-block-highlight';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useApiKeysContext } from '../context/apikeys-context';
+import { useApiKeysContext } from '../context/use-apikeys-context';
 
 function CopyBaseUrlButton({ baseUrl }: { baseUrl: string }) {
   const { t } = useTranslation();
@@ -216,7 +217,7 @@ response = client.models.generate_content(
 print(response.text)`
       }
     };
-  }, [selectedApiKey?.key, apiKey, maskedApiKey]);
+  }, [selectedApiKey?.key, apiKey, maskedApiKey, currentOrigin]);
 
   useEffect(() => {
     if (!selectedApiKey?.key || Object.keys(codeExamples).length === 0) return;

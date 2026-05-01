@@ -19,7 +19,7 @@ import { TagsAutocompleteInput } from '@/components/ui/tags-autocomplete-input';
 import { AutoComplete } from '@/components/auto-complete';
 import { useAllChannelSummarys } from '@/features/channels/data/channels';
 import { useSelectedProjectId } from '@/stores/projectStore';
-import { useApiKeysContext } from '../context/apikeys-context';
+import { useApiKeysContext } from '../context/use-apikeys-context';
 import { useApiKeyQuotaUsages } from '../data/apikeys';
 import { updateApiKeyProfilesInputSchemaFactory, type ApiKeyProfile, type ApiKeyProfileQuotaUsage, type UpdateApiKeyProfilesInput } from '../data/schema';
 
@@ -78,7 +78,7 @@ export function ApiKeyProfilesDialog({ open, onOpenChange, onSubmit, loading = f
   const { selectedApiKey } = useApiKeysContext();
   const selectedProjectId = useSelectedProjectId();
   const { data: availableModels, mutateAsync: fetchModels } = useQueryModels();
-  // ÓÃÓÚ½â¾ö Dialog ÄÚ Popover ÎÞ·¨¹ö¶¯µÄÎÊÌâ
+  // ï¿½ï¿½ï¿½Ú½ï¿½ï¿½ Dialog ï¿½ï¿½ Popover ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
   const [dialogContent, setDialogContent] = useState<HTMLDivElement | null>(null);
   const locale = i18n.language === 'zh' ? zhCN : enUS;
   const apiKeyId = selectedApiKey?.id ?? '';
@@ -145,7 +145,8 @@ export function ApiKeyProfilesDialog({ open, onOpenChange, onSubmit, loading = f
   });
 
   // Watch profile names to update activeProfile dropdown options
-  const watchedProfiles = form.watch('profiles') || [];
+  const watchedProfileValues = form.watch('profiles');
+  const watchedProfiles = useMemo(() => watchedProfileValues ?? [], [watchedProfileValues]);
   const profileNames = watchedProfiles.map((profile) => profile.name || '');
 
   useEffect(() => {
@@ -402,9 +403,9 @@ interface ProfileCardProps {
   locale: Locale;
   quotaUsageByProfileName: Map<string, ApiKeyProfileQuotaUsage>;
   defaultExpanded?: boolean;
-  /** Popover Portal ÈÝÆ÷ÔªËØ£¬½â¾ö Dialog ÄÚÎÞ·¨¹ö¶¯µÄÎÊÌâ */
+  /** Popover Portal ï¿½ï¿½ï¿½ï¿½Ôªï¿½Ø£ï¿½ï¿½ï¿½ï¿½ Dialog ï¿½ï¿½ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
   portalContainer?: HTMLElement | null;
-  /** µ±Ç°Ñ¡ÖÐµÄ project ID */
+  /** ï¿½ï¿½Ç°Ñ¡ï¿½Ðµï¿½ project ID */
   selectedProjectId?: string | null;
 }
 
@@ -427,7 +428,7 @@ function ProfileCard({
 
   const debouncedProfileName = useDebounce(localProfileName, 500);
 
-  // ´ÓËùÓÐÇþµÀÖÐÌáÈ¡Î¨Ò»±êÇ©
+  // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¡Î¨Ò»ï¿½ï¿½Ç©
   const allTags = useMemo(() => {
     const tagsSet = new Set<string>();
     channelsData?.edges?.forEach((edge) => {
@@ -448,7 +449,8 @@ function ProfileCard({
   });
 
   // Watch all profiles to check for duplicates
-  const allProfiles = form.watch('profiles') || [];
+  const watchedProfileValues = form.watch('profiles');
+  const allProfiles = useMemo(() => watchedProfileValues ?? [], [watchedProfileValues]);
   const profileName = form.watch(`profiles.${profileIndex}.name`);
   const channelTagsMatchMode = form.watch(`profiles.${profileIndex}.channelTagsMatchMode`);
   const isExcludeMode = channelTagsMatchMode === 'none';
@@ -773,19 +775,19 @@ function ProfileCard({
                       <div>
                         <div className='text-muted-foreground text-xs'>{t('apikeys.profiles.quotaRequests')}</div>
                         <div className='text-sm'>
-                          {quotaUsage.usage.requestCount}/{currentQuota?.requests ?? '¡Þ'}
+                          {quotaUsage.usage.requestCount}/{currentQuota?.requests ?? 'ï¿½ï¿½'}
                         </div>
                       </div>
                       <div>
                         <div className='text-muted-foreground text-xs'>{t('apikeys.profiles.quotaTotalTokens')}</div>
                         <div className='text-sm'>
-                          {quotaUsage.usage.totalTokens}/{currentQuota?.totalTokens ?? '¡Þ'}
+                          {quotaUsage.usage.totalTokens}/{currentQuota?.totalTokens ?? 'ï¿½ï¿½'}
                         </div>
                       </div>
                       <div>
                         <div className='text-muted-foreground text-xs'>{t('apikeys.profiles.quotaCost')}</div>
                         <div className='text-sm'>
-                          {(quotaUsage.usage.totalCost ?? 0).toLocaleString(undefined, { maximumFractionDigits: 6 })}/{currentQuota?.cost ?? '¡Þ'}
+                          {(quotaUsage.usage.totalCost ?? 0).toLocaleString(undefined, { maximumFractionDigits: 6 })}/{currentQuota?.cost ?? 'ï¿½ï¿½'}
                         </div>
                       </div>
                     </div>
@@ -1002,7 +1004,7 @@ interface MappingRowProps {
   onRemove: () => void;
   availableModels: string[];
   t: (key: string) => string;
-  /** Popover Portal ÈÝÆ÷ÔªËØ£¬½â¾ö Dialog ÄÚÎÞ·¨¹ö¶¯µÄÎÊÌâ */
+  /** Popover Portal ï¿½ï¿½ï¿½ï¿½Ôªï¿½Ø£ï¿½ï¿½ï¿½ï¿½ Dialog ï¿½ï¿½ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
   portalContainer?: HTMLElement | null;
 }
 
@@ -1060,7 +1062,7 @@ function MappingRow({ profileIndex, mappingIndex, form, onRemove, availableModel
           </FormItem>
         )}
       />
-      <span className='text-muted-foreground flex h-10 items-center'>¡ú</span>
+      <span className='text-muted-foreground flex h-10 items-center'>ï¿½ï¿½</span>
       <FormField
         control={form.control}
         name={toFieldName}

@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useApiKeysContext } from '../context/apikeys-context';
+import { useApiKeysContext } from '../context/use-apikeys-context';
 import { useCreateApiKey } from '../data/apikeys';
 import { CreateApiKeyInput, createApiKeyInputSchema } from '../data/schema';
 import { ScopesSelect } from '@/components/scopes-select';
@@ -42,7 +42,7 @@ export function ApiKeysCreateDialog() {
       // Open view dialog with the created API key
       setSelectedApiKey(result.createAPIKey);
       openDialog('view', result.createAPIKey);
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by the mutation
     } finally {
       setIsSubmitting(false);

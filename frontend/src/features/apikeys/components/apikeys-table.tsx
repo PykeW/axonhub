@@ -19,7 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { ServerSidePagination } from '@/components/server-side-pagination';
 import type { DateTimeRangeValue } from '@/utils/date-range';
-import { useApiKeysContext } from '../context/apikeys-context';
+import { useApiKeysContext } from '../context/use-apikeys-context';
 import { ApiKey, ApiKeyConnection } from '../data/schema';
 import { DataTableToolbar } from './data-table-toolbar';
 
@@ -149,7 +149,7 @@ export function ApiKeysTable({
     getRowId: (row) => row.id,
   });
 
-  const filteredSelectedRows = useMemo(() => table.getFilteredSelectedRowModel().rows, [table, rowSelection, data]);
+  const filteredSelectedRows = useMemo(() => table.getFilteredSelectedRowModel().rows, [table]);
 
   const selectedCount = filteredSelectedRows.length;
 

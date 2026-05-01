@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useApiKeysContext } from '../context/apikeys-context';
+import { useApiKeysContext } from '../context/use-apikeys-context';
 import { useUpdateApiKey } from '../data/apikeys';
 import { UpdateApiKeyInput, updateApiKeyInputSchemaFactory } from '../data/schema';
 import { ScopesSelect } from '@/components/scopes-select';
@@ -56,7 +56,8 @@ export function ApiKeysEditDialog() {
       });
 
       closeDialog('edit');
-    } catch (error) {
+    } catch (_error) {
+      // Mutation errors are surfaced by the caller.
     } finally {
       setIsSubmitting(false);
     }

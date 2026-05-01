@@ -1,4 +1,4 @@
-import { useApiKeysContext } from '../context/apikeys-context';
+import { useApiKeysContext } from '../context/use-apikeys-context';
 import { useApiKey, useUpdateApiKeyProfiles } from '../data/apikeys';
 import { type UpdateApiKeyProfilesInput } from '../data/schema';
 import { ApiKeysArchiveDialog } from './apikeys-archive-dialog';

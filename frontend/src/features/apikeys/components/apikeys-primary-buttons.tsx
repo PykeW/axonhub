@@ -1,7 +1,7 @@
 import { IconPlus } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { useApiKeysContext } from '../context/apikeys-context';
+import { useApiKeysContext } from '../context/use-apikeys-context';
 
 export function ApiKeysPrimaryButtons() {
   const { t } = useTranslation();
