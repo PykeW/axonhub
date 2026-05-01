@@ -11,9 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
-import { Route as AuthenticatedPermissionRouteImport } from './routes/_authenticated/permission'
-import { Route as AuthenticatedShareRouteImport } from './routes/_authenticated/share'
 import { Route as AuthenticatedUseRouteImport } from './routes/_authenticated/use'
+import { Route as AuthenticatedShareRouteImport } from './routes/_authenticated/share'
+import { Route as AuthenticatedPermissionRouteImport } from './routes/_authenticated/permission'
 import { Route as errors503RouteImport } from './routes/(errors)/503'
 import { Route as errors500RouteImport } from './routes/(errors)/500'
 import { Route as errors404RouteImport } from './routes/(errors)/404'
@@ -81,9 +81,9 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedPermissionRoute = AuthenticatedPermissionRouteImport.update({
-  id: '/permission',
-  path: '/permission',
+const AuthenticatedUseRoute = AuthenticatedUseRouteImport.update({
+  id: '/use',
+  path: '/use',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedShareRoute = AuthenticatedShareRouteImport.update({
@@ -91,9 +91,9 @@ const AuthenticatedShareRoute = AuthenticatedShareRouteImport.update({
   path: '/share',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedUseRoute = AuthenticatedUseRouteImport.update({
-  id: '/use',
-  path: '/use',
+const AuthenticatedPermissionRoute = AuthenticatedPermissionRouteImport.update({
+  id: '/permission',
+  path: '/permission',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const errors503Route = errors503RouteImport.update({
@@ -836,11 +836,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/permission': {
-      id: '/_authenticated/permission'
-      path: '/permission'
-      fullPath: '/permission'
-      preLoaderRoute: typeof AuthenticatedPermissionRouteImport
+    '/_authenticated/use': {
+      id: '/_authenticated/use'
+      path: '/use'
+      fullPath: '/use'
+      preLoaderRoute: typeof AuthenticatedUseRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/share': {
@@ -850,11 +850,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedShareRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/use': {
-      id: '/_authenticated/use'
-      path: '/use'
-      fullPath: '/use'
-      preLoaderRoute: typeof AuthenticatedUseRouteImport
+    '/_authenticated/permission': {
+      id: '/_authenticated/permission'
+      path: '/permission'
+      fullPath: '/permission'
+      preLoaderRoute: typeof AuthenticatedPermissionRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/(errors)/503': {
