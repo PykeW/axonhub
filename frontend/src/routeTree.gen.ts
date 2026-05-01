@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedPermissionRouteImport } from './routes/_authenticated/permission'
+import { Route as AuthenticatedShareRouteImport } from './routes/_authenticated/share'
+import { Route as AuthenticatedUseRouteImport } from './routes/_authenticated/use'
 import { Route as errors503RouteImport } from './routes/(errors)/503'
 import { Route as errors500RouteImport } from './routes/(errors)/500'
 import { Route as errors404RouteImport } from './routes/(errors)/404'
@@ -82,6 +84,16 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
 const AuthenticatedPermissionRoute = AuthenticatedPermissionRouteImport.update({
   id: '/permission',
   path: '/permission',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedShareRoute = AuthenticatedShareRouteImport.update({
+  id: '/share',
+  path: '/share',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedUseRoute = AuthenticatedUseRouteImport.update({
+  id: '/use',
+  path: '/use',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const errors503Route = errors503RouteImport.update({
@@ -429,6 +441,8 @@ export interface FileRoutesByFullPath {
   '/500': typeof errors500Route
   '/503': typeof errors503Route
   '/permission': typeof AuthenticatedPermissionRoute
+  '/share': typeof AuthenticatedShareRoute
+  '/use': typeof AuthenticatedUseRoute
   '/requests/$requestId': typeof AuthenticatedRequestsRequestIdRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
   '/settings/display': typeof AuthenticatedSettingsDisplayRoute
@@ -487,6 +501,8 @@ export interface FileRoutesByTo {
   '/500': typeof errors500Route
   '/503': typeof errors503Route
   '/permission': typeof AuthenticatedPermissionRoute
+  '/share': typeof AuthenticatedShareRoute
+  '/use': typeof AuthenticatedUseRoute
   '/': typeof AuthenticatedIndexRoute
   '/requests/$requestId': typeof AuthenticatedRequestsRequestIdRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
@@ -550,6 +566,8 @@ export interface FileRoutesById {
   '/(errors)/500': typeof errors500Route
   '/(errors)/503': typeof errors503Route
   '/_authenticated/permission': typeof AuthenticatedPermissionRoute
+  '/_authenticated/share': typeof AuthenticatedShareRoute
+  '/_authenticated/use': typeof AuthenticatedUseRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/requests/$requestId': typeof AuthenticatedRequestsRequestIdRoute
   '/_authenticated/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
@@ -614,6 +632,8 @@ export interface FileRouteTypes {
     | '/500'
     | '/503'
     | '/permission'
+    | '/share'
+    | '/use'
     | '/requests/$requestId'
     | '/settings/appearance'
     | '/settings/display'
@@ -672,6 +692,8 @@ export interface FileRouteTypes {
     | '/500'
     | '/503'
     | '/permission'
+    | '/share'
+    | '/use'
     | '/'
     | '/requests/$requestId'
     | '/settings/appearance'
@@ -734,6 +756,8 @@ export interface FileRouteTypes {
     | '/(errors)/500'
     | '/(errors)/503'
     | '/_authenticated/permission'
+    | '/_authenticated/share'
+    | '/_authenticated/use'
     | '/_authenticated/'
     | '/_authenticated/requests/$requestId'
     | '/_authenticated/settings/appearance'
@@ -817,6 +841,20 @@ declare module '@tanstack/react-router' {
       path: '/permission'
       fullPath: '/permission'
       preLoaderRoute: typeof AuthenticatedPermissionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/share': {
+      id: '/_authenticated/share'
+      path: '/share'
+      fullPath: '/share'
+      preLoaderRoute: typeof AuthenticatedShareRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/use': {
+      id: '/_authenticated/use'
+      path: '/use'
+      fullPath: '/use'
+      preLoaderRoute: typeof AuthenticatedUseRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/(errors)/503': {
@@ -1301,6 +1339,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRelaySubkeysRouteRoute: typeof AuthenticatedRelaySubkeysRouteRouteWithChildren
   AuthenticatedSettingsRouteRoute: typeof AuthenticatedSettingsRouteRouteWithChildren
   AuthenticatedPermissionRoute: typeof AuthenticatedPermissionRoute
+  AuthenticatedShareRoute: typeof AuthenticatedShareRoute
+  AuthenticatedUseRoute: typeof AuthenticatedUseRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedRequestsRequestIdRoute: typeof AuthenticatedRequestsRequestIdRoute
   AuthenticatedApiKeysIndexRoute: typeof AuthenticatedApiKeysIndexRoute
@@ -1340,6 +1380,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedRelaySubkeysRouteRouteWithChildren,
   AuthenticatedSettingsRouteRoute: AuthenticatedSettingsRouteRouteWithChildren,
   AuthenticatedPermissionRoute: AuthenticatedPermissionRoute,
+  AuthenticatedShareRoute: AuthenticatedShareRoute,
+  AuthenticatedUseRoute: AuthenticatedUseRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedRequestsRequestIdRoute: AuthenticatedRequestsRequestIdRoute,
   AuthenticatedApiKeysIndexRoute: AuthenticatedApiKeysIndexRoute,
