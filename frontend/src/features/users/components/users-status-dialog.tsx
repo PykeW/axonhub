@@ -27,7 +27,7 @@ export function UsersStatusDialog({ open, onOpenChange, currentRow }: Props) {
         status: newStatus,
       });
       onOpenChange(false);
-    } catch (error) {
+    } catch (_error) {
       toast.error(t('common.errors.somethingWentWrong'));
     }
   };
