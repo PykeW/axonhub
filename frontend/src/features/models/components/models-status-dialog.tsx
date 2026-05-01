@@ -32,7 +32,8 @@ export function ModelsStatusDialog({ open, onOpenChange, currentRow }: ModelsSta
         input: { status: newStatus },
       });
       onOpenChange(false);
-    } catch (error) {
+    } catch (_error) {
+      // Mutation errors are surfaced by the caller.
     }
   };
 
