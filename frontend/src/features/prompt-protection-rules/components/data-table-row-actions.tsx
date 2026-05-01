@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { PermissionGuard } from '@/components/permission-guard';
-import { usePromptProtectionRules } from '../context/rules-context';
+import { usePromptProtectionRules } from '../context/use-prompt-protection-rules';
 import { PromptProtectionRule } from '../data/schema';
 
 interface DataTableRowActionsProps {

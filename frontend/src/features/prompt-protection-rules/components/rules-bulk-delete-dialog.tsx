@@ -10,7 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { usePromptProtectionRules } from '../context/rules-context';
+import { usePromptProtectionRules } from '../context/use-prompt-protection-rules';
 import { useBulkDeletePromptProtectionRules } from '../data/rules';
 
 export function RulesBulkDeleteDialog() {

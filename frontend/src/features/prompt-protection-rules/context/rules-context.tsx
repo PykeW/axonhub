@@ -1,22 +1,8 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { PromptProtectionRule } from '../data/schema';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import type { PromptProtectionRule } from '../data/schema';
+import { RulesContext, type DialogType } from './rules-context-state';
 
-type DialogType = 'create' | 'edit' | 'delete' | 'bulkEnable' | 'bulkDisable' | 'bulkDelete' | null;
-
-interface RulesContextType {
-  open: DialogType;
-  setOpen: (open: DialogType) => void;
-  currentRow: PromptProtectionRule | null;
-  setCurrentRow: (row: PromptProtectionRule | null) => void;
-  selectedRules: PromptProtectionRule[];
-  setSelectedRules: (rules: PromptProtectionRule[]) => void;
-  resetRowSelection: (() => void) | null;
-  setResetRowSelection: (fn: (() => void) | null) => void;
-}
-
-const RulesContext = createContext<RulesContextType | undefined>(undefined);
-
-export function PromptProtectionRulesProvider({ children }: { children: React.ReactNode }) {
+export function PromptProtectionRulesProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState<DialogType>(null);
   const [currentRow, setCurrentRow] = useState<PromptProtectionRule | null>(null);
   const [selectedRules, setSelectedRules] = useState<PromptProtectionRule[]>([]);
@@ -44,15 +30,6 @@ export function PromptProtectionRulesProvider({ children }: { children: React.Re
   );
 
   return <RulesContext.Provider value={value}>{children}</RulesContext.Provider>;
-}
-
-export function usePromptProtectionRules() {
-  const context = useContext(RulesContext);
-  if (!context) {
-    throw new Error('usePromptProtectionRules must be used within PromptProtectionRulesProvider');
-  }
-
-  return context;
 }
 
 export default PromptProtectionRulesProvider;

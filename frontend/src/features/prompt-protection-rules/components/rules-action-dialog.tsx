@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { usePromptProtectionRules } from '../context/rules-context';
+import { usePromptProtectionRules } from '../context/use-prompt-protection-rules';
 import { useCreatePromptProtectionRule, useUpdatePromptProtectionRule } from '../data/rules';
 
 const defaultValues = {
@@ -103,7 +103,7 @@ export function RulesActionDialog() {
         const hasMatch = regex.test(testText);
         return { result: hasMatch ? t('promptProtectionRules.actions.reject') : testText, hasMatch, error: null };
       }
-    } catch (err) {
+    } catch (_err) {
       return { result: '', hasMatch: false, error: t('promptProtectionRules.test.invalidPattern') };
     }
   }, [testText, pattern, replacement, action, t]);

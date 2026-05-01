@@ -10,7 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { usePromptProtectionRules } from '../context/rules-context';
+import { usePromptProtectionRules } from '../context/use-prompt-protection-rules';
 import { useBulkDisablePromptProtectionRules } from '../data/rules';
 
 export function RulesBulkDisableDialog() {

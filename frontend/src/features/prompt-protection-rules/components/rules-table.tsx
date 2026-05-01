@@ -21,7 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { ServerSidePagination } from '@/components/server-side-pagination';
 import { PermissionGuard } from '@/components/permission-guard';
-import { usePromptProtectionRules } from '../context/rules-context';
+import { usePromptProtectionRules } from '../context/use-prompt-protection-rules';
 import { PromptProtectionRule, PromptProtectionRuleConnection } from '../data/schema';
 
 interface RulesTableProps {
@@ -105,7 +105,7 @@ export function RulesTable({
     manualFiltering: true,
   });
 
-  const filteredSelectedRows = useMemo(() => table.getFilteredSelectedRowModel().rows, [data, rowSelection, table]);
+  const filteredSelectedRows = useMemo(() => table.getFilteredSelectedRowModel().rows, [table]);
   const selectedCount = filteredSelectedRows.length;
 
   useEffect(() => {
