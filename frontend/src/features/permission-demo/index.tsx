@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { IconShield, IconEyeOff, IconLock, IconLockOpen, IconRefresh } from '@tabler/icons-react';
 import { routeConfigs } from '@/config/route-permission';
 import { useAuthStore } from '@/stores/authStore';
@@ -20,6 +20,8 @@ export default function PermissionDemo() {
   const [demoScopes, setDemoScopes] = useState<string[]>([]);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [originalUser, setOriginalUser] = useState<any>(null);
+  const initialUserRef = useRef(user);
+  const hasInitializedRef = useRef(false);
 
   // 所有可用的scopes
   const allScopes = [
@@ -41,6 +43,11 @@ export default function PermissionDemo() {
 
   // 初始化演示模式
   useEffect(() => {
+    if (hasInitializedRef.current) {
+      return;
+    }
+    hasInitializedRef.current = true;
+
     const savedDemoUser = localStorage.getItem(DEMO_USER_KEY);
     const savedOriginalUser = localStorage.getItem(DEMO_ORIGINAL_USER_KEY);
 
@@ -52,14 +59,14 @@ export default function PermissionDemo() {
         setDemoScopes(demoUser.scopes || []);
         setIsDemoMode(true);
         setUser(demoUser);
-      } catch (error) {
+      } catch (_error) {
         localStorage.removeItem(DEMO_USER_KEY);
         localStorage.removeItem(DEMO_ORIGINAL_USER_KEY);
       }
-    } else if (user) {
-      setDemoScopes(user.scopes || []);
+    } else if (initialUserRef.current) {
+      setDemoScopes(initialUserRef.current.scopes || []);
     }
-  }, []);
+  }, [setUser]);
 
   // 进入演示模式
   const enterDemoMode = () => {

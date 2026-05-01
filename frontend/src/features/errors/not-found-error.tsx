@@ -32,74 +32,74 @@ export default function NotFoundError() {
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const suggestedPages: SuggestedPage[] = [
-    {
-      title: 'Dashboard',
-      description: 'Overview of your AxonHub instance',
-      path: '/',
-      icon: <IconHome className='h-5 w-5' />,
-      keywords: ['dashboard', 'home', 'overview', 'main'],
-    },
-    {
-      title: 'Channels',
-      description: 'Manage AI model channels and configurations',
-      path: '/channels',
-      icon: <IconMessages className='h-5 w-5' />,
-      keywords: ['channels', 'models', 'ai', 'configuration', 'chat'],
-    },
-    {
-      title: 'Requests',
-      description: 'Monitor API requests and usage analytics',
-      path: '/requests',
-      icon: <IconChartBar className='h-5 w-5' />,
-      keywords: ['requests', 'api', 'analytics', 'monitoring', 'usage'],
-    },
-    {
-      title: 'Users',
-      description: 'User management and permissions',
-      path: '/users',
-      icon: <IconUsers className='h-5 w-5' />,
-      keywords: ['users', 'people', 'accounts', 'management'],
-    },
-    {
-      title: 'API Keys',
-      description: 'Generate and manage API authentication keys',
-      path: '/api-keys',
-      icon: <IconKey className='h-5 w-5' />,
-      keywords: ['api', 'keys', 'authentication', 'tokens', 'access'],
-    },
-    {
-      title: 'Roles',
-      description: 'Configure user roles and permissions',
-      path: '/roles',
-      icon: <IconShield className='h-5 w-5' />,
-      keywords: ['roles', 'permissions', 'access', 'security', 'rbac'],
-    },
-    {
-      title: 'Playground',
-      description: 'Test and experiment with AI models',
-      path: '/playground',
-      icon: <IconPlayerPlay className='h-5 w-5' />,
-      keywords: ['playground', 'test', 'experiment', 'try', 'demo'],
-    },
-    {
-      title: 'Settings',
-      description: 'System configuration and preferences',
-      path: '/settings',
-      icon: <IconSettings className='h-5 w-5' />,
-      keywords: ['settings', 'configuration', 'preferences', 'system'],
-    },
-    {
-      title: 'Help Center',
-      description: 'Documentation and support resources',
-      path: '/help-center',
-      icon: <IconHelpCircle className='h-5 w-5' />,
-      keywords: ['help', 'documentation', 'support', 'guide', 'docs'],
-    },
-  ];
-
   // Smart suggestions based on current URL and search query
   const smartSuggestions = useMemo(() => {
+    const suggestedPages: SuggestedPage[] = [
+      {
+        title: 'Dashboard',
+        description: 'Overview of your AxonHub instance',
+        path: '/',
+        icon: <IconHome className='h-5 w-5' />,
+        keywords: ['dashboard', 'home', 'overview', 'main'],
+      },
+      {
+        title: 'Channels',
+        description: 'Manage AI model channels and configurations',
+        path: '/channels',
+        icon: <IconMessages className='h-5 w-5' />,
+        keywords: ['channels', 'models', 'ai', 'configuration', 'chat'],
+      },
+      {
+        title: 'Requests',
+        description: 'Monitor API requests and usage analytics',
+        path: '/requests',
+        icon: <IconChartBar className='h-5 w-5' />,
+        keywords: ['requests', 'api', 'analytics', 'monitoring', 'usage'],
+      },
+      {
+        title: 'Users',
+        description: 'User management and permissions',
+        path: '/users',
+        icon: <IconUsers className='h-5 w-5' />,
+        keywords: ['users', 'people', 'accounts', 'management'],
+      },
+      {
+        title: 'API Keys',
+        description: 'Generate and manage API authentication keys',
+        path: '/api-keys',
+        icon: <IconKey className='h-5 w-5' />,
+        keywords: ['api', 'keys', 'authentication', 'tokens', 'access'],
+      },
+      {
+        title: 'Roles',
+        description: 'Configure user roles and permissions',
+        path: '/roles',
+        icon: <IconShield className='h-5 w-5' />,
+        keywords: ['roles', 'permissions', 'access', 'security', 'rbac'],
+      },
+      {
+        title: 'Playground',
+        description: 'Test and experiment with AI models',
+        path: '/playground',
+        icon: <IconPlayerPlay className='h-5 w-5' />,
+        keywords: ['playground', 'test', 'experiment', 'try', 'demo'],
+      },
+      {
+        title: 'Settings',
+        description: 'System configuration and preferences',
+        path: '/settings',
+        icon: <IconSettings className='h-5 w-5' />,
+        keywords: ['settings', 'configuration', 'preferences', 'system'],
+      },
+      {
+        title: 'Help Center',
+        description: 'Documentation and support resources',
+        path: '/help-center',
+        icon: <IconHelpCircle className='h-5 w-5' />,
+        keywords: ['help', 'documentation', 'support', 'guide', 'docs'],
+      },
+    ];
+
     const currentPath = location.pathname.toLowerCase();
     const query = searchQuery.toLowerCase();
 
@@ -129,7 +129,7 @@ export default function NotFoundError() {
 
     // Sort by score and return top suggestions
     return scoredPages.sort((a, b) => b.score - a.score).slice(0, query ? 6 : 4);
-  }, [location.pathname, searchQuery, suggestedPages]);
+  }, [location.pathname, searchQuery]);
 
   const handlePageNavigation = (path: string) => {
     navigate({ to: path });

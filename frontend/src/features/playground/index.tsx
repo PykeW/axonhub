@@ -169,7 +169,7 @@ export default function Playground() {
         setInput('');
       }
     },
-    [sendMessage, selectedChannel, isLoading]
+    [sendMessage, isLoading]
   );
 
   const handleClear = useCallback(() => {
