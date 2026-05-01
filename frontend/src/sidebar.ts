@@ -125,12 +125,12 @@ export function useSidebarData(): SidebarData {
           title: t('sidebar.items.share'),
           url: '/share',
           icon: IconUpload,
-        } as NavLink,
+        } as unknown as NavLink,
         {
           title: t('sidebar.items.use'),
           url: '/use',
           icon: IconKey,
-        } as NavLink,
+        } as unknown as NavLink,
       ],
     },
     {
