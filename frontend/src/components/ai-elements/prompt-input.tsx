@@ -6,7 +6,6 @@ import {
   Children,
   type ClipboardEventHandler,
   type ComponentProps,
-  createContext,
   type FormEvent,
   type FormEventHandler,
   Fragment,
@@ -16,7 +15,6 @@ import {
   type ReactNode,
   type RefObject,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -32,56 +30,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from '@/components/ui/input-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  type AttachmentsContext,
+  LocalAttachmentsContext,
+  PromptInputController,
+  type PromptInputControllerProps,
+  ProviderAttachmentsContext,
+  useOptionalPromptInputController,
+  usePromptInputAttachments,
+} from './prompt-input-context';
 
 // ============================================================================
 // Provider Context & Types
 // ============================================================================
-
-export type AttachmentsContext = {
-  files: (FileUIPart & { id: string })[];
-  add: (files: File[] | FileList) => void;
-  remove: (id: string) => void;
-  clear: () => void;
-  openFileDialog: () => void;
-  fileInputRef: RefObject<HTMLInputElement | null>;
-};
-
-export type TextInputContext = {
-  value: string;
-  setInput: (v: string) => void;
-  clear: () => void;
-};
-
-export type PromptInputControllerProps = {
-  textInput: TextInputContext;
-  attachments: AttachmentsContext;
-  /** INTERNAL: Allows PromptInput to register its file textInput + "open" callback */
-  __registerFileInput: (ref: RefObject<HTMLInputElement | null>, open: () => void) => void;
-};
-
-const PromptInputController = createContext<PromptInputControllerProps | null>(null);
-const ProviderAttachmentsContext = createContext<AttachmentsContext | null>(null);
-
-export const usePromptInputController = () => {
-  const ctx = useContext(PromptInputController);
-  if (!ctx) {
-    throw new Error('Wrap your component inside <PromptInputProvider> to use usePromptInputController().');
-  }
-  return ctx;
-};
-
-// Optional variants (do NOT throw). Useful for dual-mode components.
-const useOptionalPromptInputController = () => useContext(PromptInputController);
-
-export const useProviderAttachments = () => {
-  const ctx = useContext(ProviderAttachmentsContext);
-  if (!ctx) {
-    throw new Error('Wrap your component inside <PromptInputProvider> to use useProviderAttachments().');
-  }
-  return ctx;
-};
-
-const useOptionalProviderAttachments = () => useContext(ProviderAttachmentsContext);
 
 export type PromptInputProviderProps = PropsWithChildren<{
   initialInput?: string;
@@ -185,19 +146,6 @@ export function PromptInputProvider({ initialInput: initialTextInput = '', child
 // ============================================================================
 // Component Context & Hooks
 // ============================================================================
-
-const LocalAttachmentsContext = createContext<AttachmentsContext | null>(null);
-
-export const usePromptInputAttachments = () => {
-  // Dual-mode: prefer provider if present, otherwise use local
-  const provider = useOptionalProviderAttachments();
-  const local = useContext(LocalAttachmentsContext);
-  const context = provider ?? local;
-  if (!context) {
-    throw new Error('usePromptInputAttachments must be used within a PromptInput or PromptInputProvider');
-  }
-  return context;
-};
 
 export type PromptInputAttachmentProps = HTMLAttributes<HTMLDivElement> & {
   data: FileUIPart & { id: string };
@@ -435,32 +383,70 @@ export const PromptInput = ({
     [matchesAccept, maxFiles, maxFileSize, onError]
   );
 
-  const add = usingProvider ? (files: File[] | FileList) => controller.attachments.add(files) : addLocal;
+  const removeLocal = useCallback((id: string) => {
+    setItems((prev) => {
+      const found = prev.find((file) => file.id === id);
+      if (found?.url) {
+        URL.revokeObjectURL(found.url);
+      }
+      return prev.filter((file) => file.id !== id);
+    });
+  }, []);
 
-  const remove = usingProvider
-    ? (id: string) => controller.attachments.remove(id)
-    : (id: string) =>
-        setItems((prev) => {
-          const found = prev.find((file) => file.id === id);
-          if (found?.url) {
-            URL.revokeObjectURL(found.url);
-          }
-          return prev.filter((file) => file.id !== id);
-        });
+  const clearLocal = useCallback(() => {
+    setItems((prev) => {
+      for (const file of prev) {
+        if (file.url) {
+          URL.revokeObjectURL(file.url);
+        }
+      }
+      return [];
+    });
+  }, []);
 
-  const clear = usingProvider
-    ? () => controller.attachments.clear()
-    : () =>
-        setItems((prev) => {
-          for (const file of prev) {
-            if (file.url) {
-              URL.revokeObjectURL(file.url);
-            }
-          }
-          return [];
-        });
+  const providerAttachments = controller?.attachments;
+  const providerAdd = providerAttachments?.add;
+  const providerRemove = providerAttachments?.remove;
+  const providerClear = providerAttachments?.clear;
+  const providerOpenFileDialog = providerAttachments?.openFileDialog;
 
-  const openFileDialog = usingProvider ? () => controller.attachments.openFileDialog() : openFileDialogLocal;
+  const add = useCallback(
+    (filesToAdd: File[] | FileList) => {
+      if (providerAdd) {
+        providerAdd(filesToAdd);
+        return;
+      }
+      addLocal(filesToAdd);
+    },
+    [addLocal, providerAdd]
+  );
+
+  const remove = useCallback(
+    (id: string) => {
+      if (providerRemove) {
+        providerRemove(id);
+        return;
+      }
+      removeLocal(id);
+    },
+    [providerRemove, removeLocal]
+  );
+
+  const clear = useCallback(() => {
+    if (providerClear) {
+      providerClear();
+      return;
+    }
+    clearLocal();
+  }, [clearLocal, providerClear]);
+
+  const openFileDialog = useCallback(() => {
+    if (providerOpenFileDialog) {
+      providerOpenFileDialog();
+      return;
+    }
+    openFileDialogLocal();
+  }, [openFileDialogLocal, providerOpenFileDialog]);
 
   // Let provider know about our hidden file input so external menus can call openFileDialog()
   useEffect(() => {
@@ -617,7 +603,7 @@ export const PromptInput = ({
             controller.textInput.clear();
           }
         }
-      } catch (error) {
+      } catch (_error) {
         // Don't clear on error - user may want to retry
       }
     });
