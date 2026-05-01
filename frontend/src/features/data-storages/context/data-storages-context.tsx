@@ -1,33 +1,11 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
-import { DataStorage } from '../data/data-storages';
-
-interface DataStoragesContextType {
-  isCreateDialogOpen: boolean;
-  setIsCreateDialogOpen: (open: boolean) => void;
-  isEditDialogOpen: boolean;
-  setIsEditDialogOpen: (open: boolean) => void;
-  isArchiveDialogOpen: boolean;
-  setIsArchiveDialogOpen: (open: boolean) => void;
-  editingDataStorage: DataStorage | null;
-  setEditingDataStorage: (dataStorage: DataStorage | null) => void;
-  archiveDataStorage: DataStorage | null;
-  setArchiveDataStorage: (dataStorage: DataStorage | null) => void;
-}
-
-const DataStoragesContext = createContext<DataStoragesContextType | undefined>(undefined);
-
-export function useDataStoragesContext() {
-  const context = useContext(DataStoragesContext);
-  if (!context) {
-    throw new Error('useDataStoragesContext must be used within DataStoragesProvider');
-  }
-  return context;
-}
+import { useState, type ReactNode } from 'react';
+import type { DataStorage } from '../data/data-storages';
+import { DataStoragesContext } from './data-storages-context-state';
 
 interface DataStoragesProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export default function DataStoragesProvider({ children }: DataStoragesProviderProps) {

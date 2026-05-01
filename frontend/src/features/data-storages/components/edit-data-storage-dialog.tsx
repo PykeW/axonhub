@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useDataStoragesContext } from '../context/data-storages-context';
+import { useDataStoragesContext } from '../context/use-data-storages-context';
 import { useUpdateDataStorage, UpdateDataStorageInput } from '../data/data-storages';
 import { DataStorageFormData } from './types';
 
@@ -154,17 +154,13 @@ export function EditDataStorageDialog() {
       settings,
     };
 
-    try {
-      await updateMutation.mutateAsync({
-        id: editingDataStorage.id,
-        input,
-      });
-      setIsEditDialogOpen(false);
-      setEditingDataStorage(null);
-      reset();
-    } catch (error) {
-      throw error;
-    }
+    await updateMutation.mutateAsync({
+      id: editingDataStorage.id,
+      input,
+    });
+    setIsEditDialogOpen(false);
+    setEditingDataStorage(null);
+    reset();
   };
 
   return (

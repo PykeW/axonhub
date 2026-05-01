@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useDataStoragesContext } from '../context/data-storages-context';
+import { useDataStoragesContext } from '../context/use-data-storages-context';
 import { useArchiveDataStorage } from '../data/data-storages';
 
 export function ArchiveDataStorageDialog() {

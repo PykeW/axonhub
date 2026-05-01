@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useDataStoragesContext } from '../context/data-storages-context';
+import { useDataStoragesContext } from '../context/use-data-storages-context';
 import { useCreateDataStorage, CreateDataStorageInput } from '../data/data-storages';
 import { DataStorageFormData } from './types';
 
@@ -146,13 +146,9 @@ export function CreateDataStorageDialog() {
       },
     };
 
-    try {
-      await createMutation.mutateAsync(input);
-      setIsCreateDialogOpen(false);
-      reset();
-    } catch (error) {
-      throw error;
-    }
+    await createMutation.mutateAsync(input);
+    setIsCreateDialogOpen(false);
+    reset();
   };
 
   return (

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useDataStoragesContext } from '../context/data-storages-context';
+import { useDataStoragesContext } from '../context/use-data-storages-context';
 import { DataStorage } from '../data/data-storages';
 
 interface DataStorageActionsProps {
