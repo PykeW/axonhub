@@ -123,6 +123,7 @@ test-results/
 /integration_test/openai/chat/load_balance/**/.vscode/
 /integration_test/openai/chat/load_balance/.idea/
 /integration_test/openai/chat/load_balance/**/.idea/
+internal/server/static/dist
 
 # AxonHub E2E and migration artifacts
 /scripts/e2e/axonhub-e2e
@@ -137,3 +138,4 @@ test-results/
 *.b64
 *.backup
 locales_backup/
+
