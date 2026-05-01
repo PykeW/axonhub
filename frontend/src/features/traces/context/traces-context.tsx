@@ -1,39 +1,8 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { Trace, RequestTrace, Span } from '../data/schema';
-
-interface TracesContextType {
-  // Dialog states
-  detailDialogOpen: boolean;
-  setDetailDialogOpen: (open: boolean) => void;
-
-  // JSON viewer dialog states
-  jsonViewerOpen: boolean;
-  setJsonViewerOpen: (open: boolean) => void;
-  jsonViewerData: { title: string; data: any } | null;
-  setJsonViewerData: (data: { title: string; data: any } | null) => void;
-
-  // Span detail dialog states
-  spanDetailOpen: boolean;
-  setSpanDetailOpen: (open: boolean) => void;
-
-  // Current selected items
-  currentTrace: Trace | null;
-  setCurrentTrace: (trace: Trace | null) => void;
-
-  currentRequestTrace: RequestTrace | null;
-  setCurrentRequestTrace: (requestTrace: RequestTrace | null) => void;
-
-  currentSpan: Span | null;
-  setCurrentSpan: (span: Span | null) => void;
-
-  // Table selection
-  selectedTraces: string[];
-  setSelectedTraces: (ids: string[]) => void;
-}
-
-const TracesContext = createContext<TracesContextType | undefined>(undefined);
+import { useState, type ReactNode } from 'react';
+import type { RequestTrace, Span, Trace } from '../data/schema';
+import { TracesContext, type TracesContextType } from './traces-context-state';
 
 interface TracesProviderProps {
   children: ReactNode;
@@ -71,13 +40,4 @@ export default function TracesProvider({ children }: TracesProviderProps) {
   return <TracesContext.Provider value={value}>{children}</TracesContext.Provider>;
 }
 
-// Also export as named export for convenience
 export { TracesProvider };
-
-export function useTracesContext() {
-  const context = useContext(TracesContext);
-  if (context === undefined) {
-    throw new Error('useTracesContext must be used within a TracesProvider');
-  }
-  return context;
-}

@@ -232,13 +232,13 @@ export type RequestTrace = TraceDetail;
 // Helper function to parse rawRootSegment JSON string into Segment object
 export function parseRawRootSegment(rawRootSegment: any | null | undefined): Segment | null {
   if (!rawRootSegment) {
-
+    return null;
   }
   if (typeof rawRootSegment === 'string') {
     try {
       const parsed = JSON.parse(rawRootSegment);
       return segmentSchema.parse(parsed);
-    } catch (error) {
+    } catch (_error) {
       return null;
     }
   }
