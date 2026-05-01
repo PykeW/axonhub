@@ -12,6 +12,7 @@ import {
   IconBaselineDensityMedium,
   IconAi,
   IconNote,
+  IconUpload,
 } from '@tabler/icons-react';
 import { Command } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -114,6 +115,21 @@ export function useSidebarData(): SidebarData {
         //   url: '/permission-demo',
         //   icon: IconSettings,
         // } as NavLink,
+      ],
+    },
+    {
+      title: t('sidebar.groups.shareUse'),
+      items: [
+        {
+          title: t('sidebar.items.share'),
+          url: '/share',
+          icon: IconUpload,
+        } as NavLink,
+        {
+          title: t('sidebar.items.use'),
+          url: '/use',
+          icon: IconKey,
+        } as NavLink,
       ],
     },
     {
