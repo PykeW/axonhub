@@ -2,7 +2,7 @@ import { IconPlus } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/components/permission-guard';
-import { useProjectsContext } from '../context/projects-context';
+import { useProjectsContext } from '../context/use-projects-context';
 
 export function ProjectsPrimaryButtons() {
   const { t } = useTranslation();

@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { ConfirmDialog } from '@/components/confirm-dialog';
-import { useProjectsContext } from '../context/projects-context';
+import { useProjectsContext } from '../context/use-projects-context';
 import { useCreateProject, useUpdateProject, useArchiveProject, useActivateProject, useDeleteProject, useUpdateProjectProfiles } from '../data/projects';
 import { createProjectInputSchema, updateProjectInputSchema, type UpdateProjectProfilesInput } from '../data/schema';
 import { ProjectProfilesDialog } from './project-profiles-dialog';
@@ -38,7 +38,7 @@ export function CreateProjectDialog() {
       await createProject.mutateAsync(values);
       setIsCreateDialogOpen(false);
       form.reset();
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by the mutation
     }
   };
@@ -139,7 +139,7 @@ export function EditProjectDialog() {
     try {
       await updateProject.mutateAsync({ id: editingProject.id, input: values });
       setEditingProject(null);
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by the mutation
     }
   };
@@ -225,7 +225,7 @@ export function ArchiveProjectDialog() {
     try {
       await archiveProject.mutateAsync(archivingProject.id);
       setArchivingProject(null);
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by the mutation
     }
   };
@@ -257,7 +257,7 @@ export function ActivateProjectDialog() {
     try {
       await activateProject.mutateAsync(activatingProject.id);
       setActivatingProject(null);
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by the mutation
     }
   };
@@ -290,7 +290,7 @@ export function DeleteProjectDialog() {
       await deleteProject.mutateAsync(deletingProject.id);
       setDeletingProject(null);
       setValue('');
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by the mutation
     }
   };

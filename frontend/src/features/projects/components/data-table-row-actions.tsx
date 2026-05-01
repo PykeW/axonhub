@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useProjectsContext } from '../context/projects-context';
+import { useProjectsContext } from '../context/use-projects-context';
 import { Project } from '../data/schema';
 
 interface DataTableRowActionsProps {
