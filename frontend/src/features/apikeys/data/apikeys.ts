@@ -89,8 +89,9 @@ function buildApiKeyQuery(permissions: { canViewUsers: boolean }) {
             channelTagsMatchMode
             modelIDs
             loadBalanceStrategy
+            useStrategy
             quota {
-              requests
+
               totalTokens
               cost
               period {
@@ -187,8 +188,9 @@ const UPDATE_APIKEY_PROFILES_MUTATION = `
           channelTagsMatchMode
           modelIDs
           loadBalanceStrategy
+          useStrategy
           quota {
-            requests
+
             totalTokens
             cost
             period {

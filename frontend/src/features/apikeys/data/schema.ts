@@ -21,6 +21,17 @@ const channelTagsMatchModeFieldSchema = z.preprocess((value) => {
   return value;
 }, channelTagsMatchModeSchema);
 
+export const apiKeyUseStrategySchema = z.enum(['prefer_own', 'only_own', 'allow_shared']);
+export type ApiKeyUseStrategy = z.infer<typeof apiKeyUseStrategySchema>;
+
+const apiKeyUseStrategyFieldSchema = z.preprocess((value) => {
+  if (value == null || value === '') {
+    return 'prefer_own';
+  }
+
+  return value;
+}, apiKeyUseStrategySchema);
+
 // API Key schema based on GraphQL schema
 export const apiKeySchema = z.object({
   id: z.string(),
@@ -51,6 +62,7 @@ export const apiKeySchema = z.object({
             channelTagsMatchMode: channelTagsMatchModeFieldSchema,
             modelIDs: z.array(z.string()).optional().nullable(),
             loadBalanceStrategy: z.string().optional().nullable(),
+            useStrategy: apiKeyUseStrategyFieldSchema.optional(),
             quota: z
               .object({
                 requests: z.number().optional().nullable(),
@@ -145,6 +157,7 @@ export const apiKeyProfileSchema = z.object({
   channelTagsMatchMode: channelTagsMatchModeFieldSchema,
   modelIDs: z.array(z.string()).optional().nullable(),
   loadBalanceStrategy: z.string().optional().nullable(),
+  useStrategy: apiKeyUseStrategyFieldSchema.optional(),
   quota: z
     .object({
       requests: z.number().optional().nullable(),
@@ -199,6 +212,7 @@ export const updateApiKeyProfilesInputSchemaFactory = (t: (key: string) => strin
             channelTagsMatchMode: channelTagsMatchModeFieldSchema,
             modelIDs: z.array(z.string()).optional().nullable(),
             loadBalanceStrategy: z.string().optional().nullable(),
+            useStrategy: apiKeyUseStrategyFieldSchema.optional(),
             quota: z
               .object({
                 requests: z.number().int().positive().optional().nullable(),
@@ -299,6 +313,7 @@ export const updateApiKeyProfilesInputSchema = z.object({
       channelTagsMatchMode: channelTagsMatchModeFieldSchema,
       modelIDs: z.array(z.string()).optional().nullable(),
       loadBalanceStrategy: z.string().optional().nullable(),
+      useStrategy: apiKeyUseStrategyFieldSchema.optional(),
       quota: z
         .object({
           requests: z.number().int().positive().optional().nullable(),

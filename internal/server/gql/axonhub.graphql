@@ -289,6 +289,7 @@ input APIKeyProfileInput {
   modelIDs: [String!]
   quota: APIKeyQuotaInput
   loadBalanceStrategy: String
+  useStrategy: APIKeyUseStrategy
 }
 
 input UpdateProjectProfilesInput {
@@ -333,12 +334,19 @@ type APIKeyProfile {
   modelIDs: [String!]
   quota: APIKeyQuota
   loadBalanceStrategy: String
+  useStrategy: APIKeyUseStrategy
 }
 
 enum ChannelTagsMatchMode {
   any
   all
   none
+}
+
+enum APIKeyUseStrategy {
+  prefer_own
+  only_own
+  allow_shared
 }
 
 input APIKeyQuotaInput {
@@ -681,7 +689,10 @@ type Mutation {
   bulkRecoverChannels(ids: [ID!]!): Boolean!
   bulkDeleteChannels(ids: [ID!]!): Boolean!
   testChannel(input: TestChannelInput!): TestChannelPayload!
-  testChannelAPIKeys(channelID: ID!, modelID: String): TestChannelAPIKeysPayload!
+  testChannelAPIKeys(
+    channelID: ID!
+    modelID: String
+  ): TestChannelAPIKeysPayload!
   bulkImportChannels(input: BulkImportChannelsInput!): BulkImportChannelsResult!
   bulkUpdateChannelOrdering(
     input: BulkUpdateChannelOrderingInput!

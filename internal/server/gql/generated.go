@@ -27,6 +27,10 @@ import (
 	"github.com/looplj/axonhub/internal/ent/prompt"
 	"github.com/looplj/axonhub/internal/ent/promptprotectionrule"
 	"github.com/looplj/axonhub/internal/ent/providerquotastatus"
+	"github.com/looplj/axonhub/internal/ent/relaykey"
+	"github.com/looplj/axonhub/internal/ent/relayproduct"
+	"github.com/looplj/axonhub/internal/ent/relayproductchannel"
+	"github.com/looplj/axonhub/internal/ent/relaywalletledgerentry"
 	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/ent/requestexecution"
 	"github.com/looplj/axonhub/internal/ent/role"
@@ -78,6 +82,12 @@ type ResolverRoot interface {
 	PromptProtectionRule() PromptProtectionRuleResolver
 	ProviderQuotaStatus() ProviderQuotaStatusResolver
 	Query() QueryResolver
+	RelayDailyUsageSummary() RelayDailyUsageSummaryResolver
+	RelayKey() RelayKeyResolver
+	RelayProduct() RelayProductResolver
+	RelayProductChannel() RelayProductChannelResolver
+	RelayWallet() RelayWalletResolver
+	RelayWalletLedgerEntry() RelayWalletLedgerEntryResolver
 	Request() RequestResolver
 	RequestExecution() RequestExecutionResolver
 	Role() RoleResolver
@@ -103,6 +113,7 @@ type ComplexityRoot struct {
 		Profiles  func(childComplexity int) int
 		Project   func(childComplexity int) int
 		ProjectID func(childComplexity int) int
+		RelayKey  func(childComplexity int) int
 		Requests  func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RequestOrder, where *ent.RequestWhereInput) int
 		Scopes    func(childComplexity int) int
 		Status    func(childComplexity int) int
@@ -132,6 +143,7 @@ type ComplexityRoot struct {
 		ModelMappings        func(childComplexity int) int
 		Name                 func(childComplexity int) int
 		Quota                func(childComplexity int) int
+		UseStrategy          func(childComplexity int) int
 	}
 
 	APIKeyProfileQuotaUsage struct {
@@ -276,6 +288,7 @@ type ComplexityRoot struct {
 		OrderingWeight          func(childComplexity int) int
 		Policies                func(childComplexity int) int
 		ProviderQuotaStatus     func(childComplexity int) int
+		RelayProductBindings    func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RelayProductChannelOrder, where *ent.RelayProductChannelWhereInput) int
 		Remark                  func(childComplexity int) int
 		Requests                func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RequestOrder, where *ent.RequestWhereInput) int
 		Settings                func(childComplexity int) int
@@ -943,6 +956,7 @@ type ComplexityRoot struct {
 		Profiles     func(childComplexity int) int
 		ProjectUsers func(childComplexity int) int
 		Prompts      func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PromptOrder, where *ent.PromptWhereInput) int
+		RelayKeys    func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RelayKeyOrder, where *ent.RelayKeyWhereInput) int
 		Requests     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RequestOrder, where *ent.RequestWhereInput) int
 		Roles        func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RoleOrder, where *ent.RoleWhereInput) int
 		Status       func(childComplexity int) int
@@ -1125,6 +1139,8 @@ type ComplexityRoot struct {
 		QueryModelChannelConnections func(childComplexity int, associations []*objects.ModelAssociation) int
 		QueryModels                  func(childComplexity int, input QueryModelsInput) int
 		QueryUnassociatedChannels    func(childComplexity int) int
+		RelayProductChannels         func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RelayProductChannelOrder, where *ent.RelayProductChannelWhereInput) int
+		RelayProducts                func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RelayProductOrder, where *ent.RelayProductWhereInput) int
 		RequestStats                 func(childComplexity int) int
 		RequestStatsByAPIKey         func(childComplexity int, timeWindow *string) int
 		RequestStatsByChannel        func(childComplexity int, timeWindow *string) int
@@ -1156,6 +1172,182 @@ type ComplexityRoot struct {
 	RegexAssociation struct {
 		Exclude func(childComplexity int) int
 		Pattern func(childComplexity int) int
+	}
+
+	RelayDailyUsageSummary struct {
+		CreatedAt         func(childComplexity int) int
+		ID                func(childComplexity int) int
+		LastRequestID     func(childComplexity int) int
+		ProjectID         func(childComplexity int) int
+		RelayKey          func(childComplexity int) int
+		RelayKeyID        func(childComplexity int) int
+		RequestCount      func(childComplexity int) int
+		StatDate          func(childComplexity int) int
+		TotalCharge       func(childComplexity int) int
+		TotalTokens       func(childComplexity int) int
+		TotalUpstreamCost func(childComplexity int) int
+		UpdatedAt         func(childComplexity int) int
+	}
+
+	RelayDailyUsageSummaryConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	RelayDailyUsageSummaryEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	RelayKey struct {
+		APIKey              func(childComplexity int) int
+		APIKeyID            func(childComplexity int) int
+		BalanceMode         func(childComplexity int) int
+		ConcurrencyLimit    func(childComplexity int) int
+		CreatedAt           func(childComplexity int) int
+		DailyRequestLimit   func(childComplexity int) int
+		DailyTokenLimit     func(childComplexity int) int
+		DailyUsageSummaries func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RelayDailyUsageSummaryOrder, where *ent.RelayDailyUsageSummaryWhereInput) int
+		DisplayName         func(childComplexity int) int
+		ExpiresAt           func(childComplexity int) int
+		ID                  func(childComplexity int) int
+		LastUsedAt          func(childComplexity int) int
+		LedgerEntries       func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RelayWalletLedgerEntryOrder, where *ent.RelayWalletLedgerEntryWhereInput) int
+		MonthlyCostLimit    func(childComplexity int) int
+		OwnerUser           func(childComplexity int) int
+		OwnerUserID         func(childComplexity int) int
+		Product             func(childComplexity int) int
+		ProductID           func(childComplexity int) int
+		Project             func(childComplexity int) int
+		ProjectID           func(childComplexity int) int
+		Status              func(childComplexity int) int
+		UpdatedAt           func(childComplexity int) int
+		Wallet              func(childComplexity int) int
+	}
+
+	RelayKeyConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	RelayKeyEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	RelayProduct struct {
+		AccessMode            func(childComplexity int) int
+		AllowedModels         func(childComplexity int) int
+		BillingMode           func(childComplexity int) int
+		ChannelBindings       func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RelayProductChannelOrder, where *ent.RelayProductChannelWhereInput) int
+		Code                  func(childComplexity int) int
+		CreatedAt             func(childComplexity int) int
+		Currency              func(childComplexity int) int
+		ID                    func(childComplexity int) int
+		ListPriceConfig       func(childComplexity int) int
+		Name                  func(childComplexity int) int
+		ProviderType          func(childComplexity int) int
+		RelayKeys             func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RelayKeyOrder, where *ent.RelayKeyWhereInput) int
+		RequestTimeoutSeconds func(childComplexity int) int
+		Status                func(childComplexity int) int
+		UpdatedAt             func(childComplexity int) int
+	}
+
+	RelayProductChannel struct {
+		AllowFallback func(childComplexity int) int
+		Channel       func(childComplexity int) int
+		ChannelID     func(childComplexity int) int
+		CreatedAt     func(childComplexity int) int
+		ID            func(childComplexity int) int
+		MaxInflight   func(childComplexity int) int
+		ModelFilter   func(childComplexity int) int
+		Priority      func(childComplexity int) int
+		Product       func(childComplexity int) int
+		ProductID     func(childComplexity int) int
+		Status        func(childComplexity int) int
+		UpdatedAt     func(childComplexity int) int
+		Weight        func(childComplexity int) int
+	}
+
+	RelayProductChannelConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	RelayProductChannelEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	RelayProductConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	RelayProductEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	RelayWallet struct {
+		AvailableAmount func(childComplexity int) int
+		CreatedAt       func(childComplexity int) int
+		Currency        func(childComplexity int) int
+		FrozenAmount    func(childComplexity int) int
+		ID              func(childComplexity int) int
+		OverdraftLimit  func(childComplexity int) int
+		ProjectID       func(childComplexity int) int
+		RelayKey        func(childComplexity int) int
+		RelayKeyID      func(childComplexity int) int
+		UpdatedAt       func(childComplexity int) int
+		Version         func(childComplexity int) int
+	}
+
+	RelayWalletConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	RelayWalletEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	RelayWalletLedgerEntry struct {
+		Amount         func(childComplexity int) int
+		BalanceAfter   func(childComplexity int) int
+		BalanceBefore  func(childComplexity int) int
+		CreatedAt      func(childComplexity int) int
+		Direction      func(childComplexity int) int
+		ID             func(childComplexity int) int
+		IdempotencyKey func(childComplexity int) int
+		OperatorUserID func(childComplexity int) int
+		PriceSnapshot  func(childComplexity int) int
+		ProjectID      func(childComplexity int) int
+		RelayKey       func(childComplexity int) int
+		RelayKeyID     func(childComplexity int) int
+		Remark         func(childComplexity int) int
+		RequestID      func(childComplexity int) int
+		Scene          func(childComplexity int) int
+		UpdatedAt      func(childComplexity int) int
+		UpstreamCost   func(childComplexity int) int
+		UsageLogID     func(childComplexity int) int
+	}
+
+	RelayWalletLedgerEntryConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	RelayWalletLedgerEntryEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
 	}
 
 	Request struct {
@@ -1684,6 +1876,7 @@ type ComplexityRoot struct {
 		PreferLanguage           func(childComplexity int) int
 		ProjectUsers             func(childComplexity int) int
 		Projects                 func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ProjectOrder, where *ent.ProjectWhereInput) int
+		RelayKeys                func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RelayKeyOrder, where *ent.RelayKeyWhereInput) int
 		Roles                    func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RoleOrder, where *ent.RoleWhereInput) int
 		Scopes                   func(childComplexity int) int
 		Status                   func(childComplexity int) int
@@ -1972,6 +2165,8 @@ type QueryResolver interface {
 	Projects(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ProjectOrder, where *ent.ProjectWhereInput) (*ent.ProjectConnection, error)
 	Prompts(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PromptOrder, where *ent.PromptWhereInput) (*ent.PromptConnection, error)
 	PromptProtectionRules(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.PromptProtectionRuleOrder, where *ent.PromptProtectionRuleWhereInput) (*ent.PromptProtectionRuleConnection, error)
+	RelayProducts(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RelayProductOrder, where *ent.RelayProductWhereInput) (*ent.RelayProductConnection, error)
+	RelayProductChannels(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RelayProductChannelOrder, where *ent.RelayProductChannelWhereInput) (*ent.RelayProductChannelConnection, error)
 	Requests(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RequestOrder, where *ent.RequestWhereInput) (*ent.RequestConnection, error)
 	Roles(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RoleOrder, where *ent.RoleWhereInput) (*ent.RoleConnection, error)
 	Systems(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.SystemOrder, where *ent.SystemWhereInput) (*ent.SystemConnection, error)
@@ -2029,6 +2224,38 @@ type QueryResolver interface {
 	QueryUnassociatedChannels(ctx context.Context) ([]*biz.UnassociatedChannel, error)
 	AutoBackupSettings(ctx context.Context) (*biz.AutoBackupSettings, error)
 	ChannelProbeData(ctx context.Context, input biz.GetChannelProbeDataInput) ([]*biz.ChannelProbeData, error)
+}
+type RelayDailyUsageSummaryResolver interface {
+	ID(ctx context.Context, obj *ent.RelayDailyUsageSummary) (*objects.GUID, error)
+
+	RelayKeyID(ctx context.Context, obj *ent.RelayDailyUsageSummary) (*objects.GUID, error)
+}
+type RelayKeyResolver interface {
+	ID(ctx context.Context, obj *ent.RelayKey) (*objects.GUID, error)
+
+	APIKeyID(ctx context.Context, obj *ent.RelayKey) (*objects.GUID, error)
+	ProjectID(ctx context.Context, obj *ent.RelayKey) (*objects.GUID, error)
+	ProductID(ctx context.Context, obj *ent.RelayKey) (*objects.GUID, error)
+	OwnerUserID(ctx context.Context, obj *ent.RelayKey) (*objects.GUID, error)
+}
+type RelayProductResolver interface {
+	ID(ctx context.Context, obj *ent.RelayProduct) (*objects.GUID, error)
+}
+type RelayProductChannelResolver interface {
+	ID(ctx context.Context, obj *ent.RelayProductChannel) (*objects.GUID, error)
+
+	ProductID(ctx context.Context, obj *ent.RelayProductChannel) (*objects.GUID, error)
+	ChannelID(ctx context.Context, obj *ent.RelayProductChannel) (*objects.GUID, error)
+}
+type RelayWalletResolver interface {
+	ID(ctx context.Context, obj *ent.RelayWallet) (*objects.GUID, error)
+
+	RelayKeyID(ctx context.Context, obj *ent.RelayWallet) (*objects.GUID, error)
+}
+type RelayWalletLedgerEntryResolver interface {
+	ID(ctx context.Context, obj *ent.RelayWalletLedgerEntry) (*objects.GUID, error)
+
+	RelayKeyID(ctx context.Context, obj *ent.RelayWalletLedgerEntry) (*objects.GUID, error)
 }
 type RequestResolver interface {
 	ID(ctx context.Context, obj *ent.Request) (*objects.GUID, error)
@@ -2182,6 +2409,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.APIKey.ProjectID(childComplexity), true
+	case "APIKey.relayKey":
+		if e.complexity.APIKey.RelayKey == nil {
+			break
+		}
+
+		return e.complexity.APIKey.RelayKey(childComplexity), true
 	case "APIKey.requests":
 		if e.complexity.APIKey.Requests == nil {
 			break
@@ -2310,6 +2543,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.APIKeyProfile.Quota(childComplexity), true
+	case "APIKeyProfile.useStrategy":
+		if e.complexity.APIKeyProfile.UseStrategy == nil {
+			break
+		}
+
+		return e.complexity.APIKeyProfile.UseStrategy(childComplexity), true
 
 	case "APIKeyProfileQuotaUsage.profileName":
 		if e.complexity.APIKeyProfileQuotaUsage.ProfileName == nil {
@@ -2822,6 +3061,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Channel.ProviderQuotaStatus(childComplexity), true
+	case "Channel.relayProductBindings":
+		if e.complexity.Channel.RelayProductBindings == nil {
+			break
+		}
+
+		args, err := ec.field_Channel_relayProductBindings_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Channel.RelayProductBindings(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.RelayProductChannelOrder), args["where"].(*ent.RelayProductChannelWhereInput)), true
 	case "Channel.remark":
 		if e.complexity.Channel.Remark == nil {
 			break
@@ -5942,6 +6192,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Project.Prompts(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.PromptOrder), args["where"].(*ent.PromptWhereInput)), true
+	case "Project.relayKeys":
+		if e.complexity.Project.RelayKeys == nil {
+			break
+		}
+
+		args, err := ec.field_Project_relayKeys_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Project.RelayKeys(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.RelayKeyOrder), args["where"].(*ent.RelayKeyWhereInput)), true
 	case "Project.requests":
 		if e.complexity.Project.Requests == nil {
 			break
@@ -6859,6 +7120,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.QueryUnassociatedChannels(childComplexity), true
+	case "Query.relayProductChannels":
+		if e.complexity.Query.RelayProductChannels == nil {
+			break
+		}
+
+		args, err := ec.field_Query_relayProductChannels_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.RelayProductChannels(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.RelayProductChannelOrder), args["where"].(*ent.RelayProductChannelWhereInput)), true
+	case "Query.relayProducts":
+		if e.complexity.Query.RelayProducts == nil {
+			break
+		}
+
+		args, err := ec.field_Query_relayProducts_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.RelayProducts(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.RelayProductOrder), args["where"].(*ent.RelayProductWhereInput)), true
 	case "Query.requestStats":
 		if e.complexity.Query.RequestStats == nil {
 			break
@@ -7093,6 +7376,776 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.RegexAssociation.Pattern(childComplexity), true
+
+	case "RelayDailyUsageSummary.createdAt":
+		if e.complexity.RelayDailyUsageSummary.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.RelayDailyUsageSummary.CreatedAt(childComplexity), true
+	case "RelayDailyUsageSummary.id":
+		if e.complexity.RelayDailyUsageSummary.ID == nil {
+			break
+		}
+
+		return e.complexity.RelayDailyUsageSummary.ID(childComplexity), true
+	case "RelayDailyUsageSummary.lastRequestID":
+		if e.complexity.RelayDailyUsageSummary.LastRequestID == nil {
+			break
+		}
+
+		return e.complexity.RelayDailyUsageSummary.LastRequestID(childComplexity), true
+	case "RelayDailyUsageSummary.projectID":
+		if e.complexity.RelayDailyUsageSummary.ProjectID == nil {
+			break
+		}
+
+		return e.complexity.RelayDailyUsageSummary.ProjectID(childComplexity), true
+	case "RelayDailyUsageSummary.relayKey":
+		if e.complexity.RelayDailyUsageSummary.RelayKey == nil {
+			break
+		}
+
+		return e.complexity.RelayDailyUsageSummary.RelayKey(childComplexity), true
+	case "RelayDailyUsageSummary.relayKeyID":
+		if e.complexity.RelayDailyUsageSummary.RelayKeyID == nil {
+			break
+		}
+
+		return e.complexity.RelayDailyUsageSummary.RelayKeyID(childComplexity), true
+	case "RelayDailyUsageSummary.requestCount":
+		if e.complexity.RelayDailyUsageSummary.RequestCount == nil {
+			break
+		}
+
+		return e.complexity.RelayDailyUsageSummary.RequestCount(childComplexity), true
+	case "RelayDailyUsageSummary.statDate":
+		if e.complexity.RelayDailyUsageSummary.StatDate == nil {
+			break
+		}
+
+		return e.complexity.RelayDailyUsageSummary.StatDate(childComplexity), true
+	case "RelayDailyUsageSummary.totalCharge":
+		if e.complexity.RelayDailyUsageSummary.TotalCharge == nil {
+			break
+		}
+
+		return e.complexity.RelayDailyUsageSummary.TotalCharge(childComplexity), true
+	case "RelayDailyUsageSummary.totalTokens":
+		if e.complexity.RelayDailyUsageSummary.TotalTokens == nil {
+			break
+		}
+
+		return e.complexity.RelayDailyUsageSummary.TotalTokens(childComplexity), true
+	case "RelayDailyUsageSummary.totalUpstreamCost":
+		if e.complexity.RelayDailyUsageSummary.TotalUpstreamCost == nil {
+			break
+		}
+
+		return e.complexity.RelayDailyUsageSummary.TotalUpstreamCost(childComplexity), true
+	case "RelayDailyUsageSummary.updatedAt":
+		if e.complexity.RelayDailyUsageSummary.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.RelayDailyUsageSummary.UpdatedAt(childComplexity), true
+
+	case "RelayDailyUsageSummaryConnection.edges":
+		if e.complexity.RelayDailyUsageSummaryConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.RelayDailyUsageSummaryConnection.Edges(childComplexity), true
+	case "RelayDailyUsageSummaryConnection.pageInfo":
+		if e.complexity.RelayDailyUsageSummaryConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.RelayDailyUsageSummaryConnection.PageInfo(childComplexity), true
+	case "RelayDailyUsageSummaryConnection.totalCount":
+		if e.complexity.RelayDailyUsageSummaryConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.RelayDailyUsageSummaryConnection.TotalCount(childComplexity), true
+
+	case "RelayDailyUsageSummaryEdge.cursor":
+		if e.complexity.RelayDailyUsageSummaryEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.RelayDailyUsageSummaryEdge.Cursor(childComplexity), true
+	case "RelayDailyUsageSummaryEdge.node":
+		if e.complexity.RelayDailyUsageSummaryEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.RelayDailyUsageSummaryEdge.Node(childComplexity), true
+
+	case "RelayKey.apiKey":
+		if e.complexity.RelayKey.APIKey == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.APIKey(childComplexity), true
+	case "RelayKey.apiKeyID":
+		if e.complexity.RelayKey.APIKeyID == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.APIKeyID(childComplexity), true
+	case "RelayKey.balanceMode":
+		if e.complexity.RelayKey.BalanceMode == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.BalanceMode(childComplexity), true
+	case "RelayKey.concurrencyLimit":
+		if e.complexity.RelayKey.ConcurrencyLimit == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.ConcurrencyLimit(childComplexity), true
+	case "RelayKey.createdAt":
+		if e.complexity.RelayKey.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.CreatedAt(childComplexity), true
+	case "RelayKey.dailyRequestLimit":
+		if e.complexity.RelayKey.DailyRequestLimit == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.DailyRequestLimit(childComplexity), true
+	case "RelayKey.dailyTokenLimit":
+		if e.complexity.RelayKey.DailyTokenLimit == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.DailyTokenLimit(childComplexity), true
+	case "RelayKey.dailyUsageSummaries":
+		if e.complexity.RelayKey.DailyUsageSummaries == nil {
+			break
+		}
+
+		args, err := ec.field_RelayKey_dailyUsageSummaries_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.RelayKey.DailyUsageSummaries(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.RelayDailyUsageSummaryOrder), args["where"].(*ent.RelayDailyUsageSummaryWhereInput)), true
+	case "RelayKey.displayName":
+		if e.complexity.RelayKey.DisplayName == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.DisplayName(childComplexity), true
+	case "RelayKey.expiresAt":
+		if e.complexity.RelayKey.ExpiresAt == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.ExpiresAt(childComplexity), true
+	case "RelayKey.id":
+		if e.complexity.RelayKey.ID == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.ID(childComplexity), true
+	case "RelayKey.lastUsedAt":
+		if e.complexity.RelayKey.LastUsedAt == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.LastUsedAt(childComplexity), true
+	case "RelayKey.ledgerEntries":
+		if e.complexity.RelayKey.LedgerEntries == nil {
+			break
+		}
+
+		args, err := ec.field_RelayKey_ledgerEntries_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.RelayKey.LedgerEntries(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.RelayWalletLedgerEntryOrder), args["where"].(*ent.RelayWalletLedgerEntryWhereInput)), true
+	case "RelayKey.monthlyCostLimit":
+		if e.complexity.RelayKey.MonthlyCostLimit == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.MonthlyCostLimit(childComplexity), true
+	case "RelayKey.ownerUser":
+		if e.complexity.RelayKey.OwnerUser == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.OwnerUser(childComplexity), true
+	case "RelayKey.ownerUserID":
+		if e.complexity.RelayKey.OwnerUserID == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.OwnerUserID(childComplexity), true
+	case "RelayKey.product":
+		if e.complexity.RelayKey.Product == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.Product(childComplexity), true
+	case "RelayKey.productID":
+		if e.complexity.RelayKey.ProductID == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.ProductID(childComplexity), true
+	case "RelayKey.project":
+		if e.complexity.RelayKey.Project == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.Project(childComplexity), true
+	case "RelayKey.projectID":
+		if e.complexity.RelayKey.ProjectID == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.ProjectID(childComplexity), true
+	case "RelayKey.status":
+		if e.complexity.RelayKey.Status == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.Status(childComplexity), true
+	case "RelayKey.updatedAt":
+		if e.complexity.RelayKey.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.UpdatedAt(childComplexity), true
+	case "RelayKey.wallet":
+		if e.complexity.RelayKey.Wallet == nil {
+			break
+		}
+
+		return e.complexity.RelayKey.Wallet(childComplexity), true
+
+	case "RelayKeyConnection.edges":
+		if e.complexity.RelayKeyConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.RelayKeyConnection.Edges(childComplexity), true
+	case "RelayKeyConnection.pageInfo":
+		if e.complexity.RelayKeyConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.RelayKeyConnection.PageInfo(childComplexity), true
+	case "RelayKeyConnection.totalCount":
+		if e.complexity.RelayKeyConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.RelayKeyConnection.TotalCount(childComplexity), true
+
+	case "RelayKeyEdge.cursor":
+		if e.complexity.RelayKeyEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.RelayKeyEdge.Cursor(childComplexity), true
+	case "RelayKeyEdge.node":
+		if e.complexity.RelayKeyEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.RelayKeyEdge.Node(childComplexity), true
+
+	case "RelayProduct.accessMode":
+		if e.complexity.RelayProduct.AccessMode == nil {
+			break
+		}
+
+		return e.complexity.RelayProduct.AccessMode(childComplexity), true
+	case "RelayProduct.allowedModels":
+		if e.complexity.RelayProduct.AllowedModels == nil {
+			break
+		}
+
+		return e.complexity.RelayProduct.AllowedModels(childComplexity), true
+	case "RelayProduct.billingMode":
+		if e.complexity.RelayProduct.BillingMode == nil {
+			break
+		}
+
+		return e.complexity.RelayProduct.BillingMode(childComplexity), true
+	case "RelayProduct.channelBindings":
+		if e.complexity.RelayProduct.ChannelBindings == nil {
+			break
+		}
+
+		args, err := ec.field_RelayProduct_channelBindings_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.RelayProduct.ChannelBindings(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.RelayProductChannelOrder), args["where"].(*ent.RelayProductChannelWhereInput)), true
+	case "RelayProduct.code":
+		if e.complexity.RelayProduct.Code == nil {
+			break
+		}
+
+		return e.complexity.RelayProduct.Code(childComplexity), true
+	case "RelayProduct.createdAt":
+		if e.complexity.RelayProduct.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.RelayProduct.CreatedAt(childComplexity), true
+	case "RelayProduct.currency":
+		if e.complexity.RelayProduct.Currency == nil {
+			break
+		}
+
+		return e.complexity.RelayProduct.Currency(childComplexity), true
+	case "RelayProduct.id":
+		if e.complexity.RelayProduct.ID == nil {
+			break
+		}
+
+		return e.complexity.RelayProduct.ID(childComplexity), true
+	case "RelayProduct.listPriceConfig":
+		if e.complexity.RelayProduct.ListPriceConfig == nil {
+			break
+		}
+
+		return e.complexity.RelayProduct.ListPriceConfig(childComplexity), true
+	case "RelayProduct.name":
+		if e.complexity.RelayProduct.Name == nil {
+			break
+		}
+
+		return e.complexity.RelayProduct.Name(childComplexity), true
+	case "RelayProduct.providerType":
+		if e.complexity.RelayProduct.ProviderType == nil {
+			break
+		}
+
+		return e.complexity.RelayProduct.ProviderType(childComplexity), true
+	case "RelayProduct.relayKeys":
+		if e.complexity.RelayProduct.RelayKeys == nil {
+			break
+		}
+
+		args, err := ec.field_RelayProduct_relayKeys_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.RelayProduct.RelayKeys(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.RelayKeyOrder), args["where"].(*ent.RelayKeyWhereInput)), true
+	case "RelayProduct.requestTimeoutSeconds":
+		if e.complexity.RelayProduct.RequestTimeoutSeconds == nil {
+			break
+		}
+
+		return e.complexity.RelayProduct.RequestTimeoutSeconds(childComplexity), true
+	case "RelayProduct.status":
+		if e.complexity.RelayProduct.Status == nil {
+			break
+		}
+
+		return e.complexity.RelayProduct.Status(childComplexity), true
+	case "RelayProduct.updatedAt":
+		if e.complexity.RelayProduct.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.RelayProduct.UpdatedAt(childComplexity), true
+
+	case "RelayProductChannel.allowFallback":
+		if e.complexity.RelayProductChannel.AllowFallback == nil {
+			break
+		}
+
+		return e.complexity.RelayProductChannel.AllowFallback(childComplexity), true
+	case "RelayProductChannel.channel":
+		if e.complexity.RelayProductChannel.Channel == nil {
+			break
+		}
+
+		return e.complexity.RelayProductChannel.Channel(childComplexity), true
+	case "RelayProductChannel.channelID":
+		if e.complexity.RelayProductChannel.ChannelID == nil {
+			break
+		}
+
+		return e.complexity.RelayProductChannel.ChannelID(childComplexity), true
+	case "RelayProductChannel.createdAt":
+		if e.complexity.RelayProductChannel.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.RelayProductChannel.CreatedAt(childComplexity), true
+	case "RelayProductChannel.id":
+		if e.complexity.RelayProductChannel.ID == nil {
+			break
+		}
+
+		return e.complexity.RelayProductChannel.ID(childComplexity), true
+	case "RelayProductChannel.maxInflight":
+		if e.complexity.RelayProductChannel.MaxInflight == nil {
+			break
+		}
+
+		return e.complexity.RelayProductChannel.MaxInflight(childComplexity), true
+	case "RelayProductChannel.modelFilter":
+		if e.complexity.RelayProductChannel.ModelFilter == nil {
+			break
+		}
+
+		return e.complexity.RelayProductChannel.ModelFilter(childComplexity), true
+	case "RelayProductChannel.priority":
+		if e.complexity.RelayProductChannel.Priority == nil {
+			break
+		}
+
+		return e.complexity.RelayProductChannel.Priority(childComplexity), true
+	case "RelayProductChannel.product":
+		if e.complexity.RelayProductChannel.Product == nil {
+			break
+		}
+
+		return e.complexity.RelayProductChannel.Product(childComplexity), true
+	case "RelayProductChannel.productID":
+		if e.complexity.RelayProductChannel.ProductID == nil {
+			break
+		}
+
+		return e.complexity.RelayProductChannel.ProductID(childComplexity), true
+	case "RelayProductChannel.status":
+		if e.complexity.RelayProductChannel.Status == nil {
+			break
+		}
+
+		return e.complexity.RelayProductChannel.Status(childComplexity), true
+	case "RelayProductChannel.updatedAt":
+		if e.complexity.RelayProductChannel.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.RelayProductChannel.UpdatedAt(childComplexity), true
+	case "RelayProductChannel.weight":
+		if e.complexity.RelayProductChannel.Weight == nil {
+			break
+		}
+
+		return e.complexity.RelayProductChannel.Weight(childComplexity), true
+
+	case "RelayProductChannelConnection.edges":
+		if e.complexity.RelayProductChannelConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.RelayProductChannelConnection.Edges(childComplexity), true
+	case "RelayProductChannelConnection.pageInfo":
+		if e.complexity.RelayProductChannelConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.RelayProductChannelConnection.PageInfo(childComplexity), true
+	case "RelayProductChannelConnection.totalCount":
+		if e.complexity.RelayProductChannelConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.RelayProductChannelConnection.TotalCount(childComplexity), true
+
+	case "RelayProductChannelEdge.cursor":
+		if e.complexity.RelayProductChannelEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.RelayProductChannelEdge.Cursor(childComplexity), true
+	case "RelayProductChannelEdge.node":
+		if e.complexity.RelayProductChannelEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.RelayProductChannelEdge.Node(childComplexity), true
+
+	case "RelayProductConnection.edges":
+		if e.complexity.RelayProductConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.RelayProductConnection.Edges(childComplexity), true
+	case "RelayProductConnection.pageInfo":
+		if e.complexity.RelayProductConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.RelayProductConnection.PageInfo(childComplexity), true
+	case "RelayProductConnection.totalCount":
+		if e.complexity.RelayProductConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.RelayProductConnection.TotalCount(childComplexity), true
+
+	case "RelayProductEdge.cursor":
+		if e.complexity.RelayProductEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.RelayProductEdge.Cursor(childComplexity), true
+	case "RelayProductEdge.node":
+		if e.complexity.RelayProductEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.RelayProductEdge.Node(childComplexity), true
+
+	case "RelayWallet.availableAmount":
+		if e.complexity.RelayWallet.AvailableAmount == nil {
+			break
+		}
+
+		return e.complexity.RelayWallet.AvailableAmount(childComplexity), true
+	case "RelayWallet.createdAt":
+		if e.complexity.RelayWallet.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.RelayWallet.CreatedAt(childComplexity), true
+	case "RelayWallet.currency":
+		if e.complexity.RelayWallet.Currency == nil {
+			break
+		}
+
+		return e.complexity.RelayWallet.Currency(childComplexity), true
+	case "RelayWallet.frozenAmount":
+		if e.complexity.RelayWallet.FrozenAmount == nil {
+			break
+		}
+
+		return e.complexity.RelayWallet.FrozenAmount(childComplexity), true
+	case "RelayWallet.id":
+		if e.complexity.RelayWallet.ID == nil {
+			break
+		}
+
+		return e.complexity.RelayWallet.ID(childComplexity), true
+	case "RelayWallet.overdraftLimit":
+		if e.complexity.RelayWallet.OverdraftLimit == nil {
+			break
+		}
+
+		return e.complexity.RelayWallet.OverdraftLimit(childComplexity), true
+	case "RelayWallet.projectID":
+		if e.complexity.RelayWallet.ProjectID == nil {
+			break
+		}
+
+		return e.complexity.RelayWallet.ProjectID(childComplexity), true
+	case "RelayWallet.relayKey":
+		if e.complexity.RelayWallet.RelayKey == nil {
+			break
+		}
+
+		return e.complexity.RelayWallet.RelayKey(childComplexity), true
+	case "RelayWallet.relayKeyID":
+		if e.complexity.RelayWallet.RelayKeyID == nil {
+			break
+		}
+
+		return e.complexity.RelayWallet.RelayKeyID(childComplexity), true
+	case "RelayWallet.updatedAt":
+		if e.complexity.RelayWallet.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.RelayWallet.UpdatedAt(childComplexity), true
+	case "RelayWallet.version":
+		if e.complexity.RelayWallet.Version == nil {
+			break
+		}
+
+		return e.complexity.RelayWallet.Version(childComplexity), true
+
+	case "RelayWalletConnection.edges":
+		if e.complexity.RelayWalletConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletConnection.Edges(childComplexity), true
+	case "RelayWalletConnection.pageInfo":
+		if e.complexity.RelayWalletConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletConnection.PageInfo(childComplexity), true
+	case "RelayWalletConnection.totalCount":
+		if e.complexity.RelayWalletConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletConnection.TotalCount(childComplexity), true
+
+	case "RelayWalletEdge.cursor":
+		if e.complexity.RelayWalletEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletEdge.Cursor(childComplexity), true
+	case "RelayWalletEdge.node":
+		if e.complexity.RelayWalletEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletEdge.Node(childComplexity), true
+
+	case "RelayWalletLedgerEntry.amount":
+		if e.complexity.RelayWalletLedgerEntry.Amount == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntry.Amount(childComplexity), true
+	case "RelayWalletLedgerEntry.balanceAfter":
+		if e.complexity.RelayWalletLedgerEntry.BalanceAfter == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntry.BalanceAfter(childComplexity), true
+	case "RelayWalletLedgerEntry.balanceBefore":
+		if e.complexity.RelayWalletLedgerEntry.BalanceBefore == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntry.BalanceBefore(childComplexity), true
+	case "RelayWalletLedgerEntry.createdAt":
+		if e.complexity.RelayWalletLedgerEntry.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntry.CreatedAt(childComplexity), true
+	case "RelayWalletLedgerEntry.direction":
+		if e.complexity.RelayWalletLedgerEntry.Direction == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntry.Direction(childComplexity), true
+	case "RelayWalletLedgerEntry.id":
+		if e.complexity.RelayWalletLedgerEntry.ID == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntry.ID(childComplexity), true
+	case "RelayWalletLedgerEntry.idempotencyKey":
+		if e.complexity.RelayWalletLedgerEntry.IdempotencyKey == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntry.IdempotencyKey(childComplexity), true
+	case "RelayWalletLedgerEntry.operatorUserID":
+		if e.complexity.RelayWalletLedgerEntry.OperatorUserID == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntry.OperatorUserID(childComplexity), true
+	case "RelayWalletLedgerEntry.priceSnapshot":
+		if e.complexity.RelayWalletLedgerEntry.PriceSnapshot == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntry.PriceSnapshot(childComplexity), true
+	case "RelayWalletLedgerEntry.projectID":
+		if e.complexity.RelayWalletLedgerEntry.ProjectID == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntry.ProjectID(childComplexity), true
+	case "RelayWalletLedgerEntry.relayKey":
+		if e.complexity.RelayWalletLedgerEntry.RelayKey == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntry.RelayKey(childComplexity), true
+	case "RelayWalletLedgerEntry.relayKeyID":
+		if e.complexity.RelayWalletLedgerEntry.RelayKeyID == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntry.RelayKeyID(childComplexity), true
+	case "RelayWalletLedgerEntry.remark":
+		if e.complexity.RelayWalletLedgerEntry.Remark == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntry.Remark(childComplexity), true
+	case "RelayWalletLedgerEntry.requestID":
+		if e.complexity.RelayWalletLedgerEntry.RequestID == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntry.RequestID(childComplexity), true
+	case "RelayWalletLedgerEntry.scene":
+		if e.complexity.RelayWalletLedgerEntry.Scene == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntry.Scene(childComplexity), true
+	case "RelayWalletLedgerEntry.updatedAt":
+		if e.complexity.RelayWalletLedgerEntry.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntry.UpdatedAt(childComplexity), true
+	case "RelayWalletLedgerEntry.upstreamCost":
+		if e.complexity.RelayWalletLedgerEntry.UpstreamCost == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntry.UpstreamCost(childComplexity), true
+	case "RelayWalletLedgerEntry.usageLogID":
+		if e.complexity.RelayWalletLedgerEntry.UsageLogID == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntry.UsageLogID(childComplexity), true
+
+	case "RelayWalletLedgerEntryConnection.edges":
+		if e.complexity.RelayWalletLedgerEntryConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntryConnection.Edges(childComplexity), true
+	case "RelayWalletLedgerEntryConnection.pageInfo":
+		if e.complexity.RelayWalletLedgerEntryConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntryConnection.PageInfo(childComplexity), true
+	case "RelayWalletLedgerEntryConnection.totalCount":
+		if e.complexity.RelayWalletLedgerEntryConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntryConnection.TotalCount(childComplexity), true
+
+	case "RelayWalletLedgerEntryEdge.cursor":
+		if e.complexity.RelayWalletLedgerEntryEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntryEdge.Cursor(childComplexity), true
+	case "RelayWalletLedgerEntryEdge.node":
+		if e.complexity.RelayWalletLedgerEntryEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.RelayWalletLedgerEntryEdge.Node(childComplexity), true
 
 	case "Request.apiKey":
 		if e.complexity.Request.APIKey == nil {
@@ -9179,6 +10232,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.User.Projects(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ProjectOrder), args["where"].(*ent.ProjectWhereInput)), true
+	case "User.relayKeys":
+		if e.complexity.User.RelayKeys == nil {
+			break
+		}
+
+		args, err := ec.field_User_relayKeys_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.User.RelayKeys(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.RelayKeyOrder), args["where"].(*ent.RelayKeyWhereInput)), true
 	case "User.roles":
 		if e.complexity.User.Roles == nil {
 			break
@@ -9646,6 +10710,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateProjectInput,
 		ec.unmarshalInputCreatePromptInput,
 		ec.unmarshalInputCreatePromptProtectionRuleInput,
+		ec.unmarshalInputCreateRelayProductChannelInput,
+		ec.unmarshalInputCreateRelayProductInput,
 		ec.unmarshalInputCreateRequestInput,
 		ec.unmarshalInputCreateRoleInput,
 		ec.unmarshalInputCreateSystemInput,
@@ -9703,6 +10769,18 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputQueryChannelInput,
 		ec.unmarshalInputQueryModelsInput,
 		ec.unmarshalInputRegexAssociationInput,
+		ec.unmarshalInputRelayDailyUsageSummaryOrder,
+		ec.unmarshalInputRelayDailyUsageSummaryWhereInput,
+		ec.unmarshalInputRelayKeyOrder,
+		ec.unmarshalInputRelayKeyWhereInput,
+		ec.unmarshalInputRelayProductChannelOrder,
+		ec.unmarshalInputRelayProductChannelWhereInput,
+		ec.unmarshalInputRelayProductOrder,
+		ec.unmarshalInputRelayProductWhereInput,
+		ec.unmarshalInputRelayWalletLedgerEntryOrder,
+		ec.unmarshalInputRelayWalletLedgerEntryWhereInput,
+		ec.unmarshalInputRelayWalletOrder,
+		ec.unmarshalInputRelayWalletWhereInput,
 		ec.unmarshalInputRemoveUserFromProjectInput,
 		ec.unmarshalInputRequestExecutionOrder,
 		ec.unmarshalInputRequestExecutionWhereInput,
@@ -9743,6 +10821,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUpdateProjectUserInput,
 		ec.unmarshalInputUpdatePromptInput,
 		ec.unmarshalInputUpdatePromptProtectionRuleInput,
+		ec.unmarshalInputUpdateRelayProductChannelInput,
+		ec.unmarshalInputUpdateRelayProductInput,
 		ec.unmarshalInputUpdateRequestInput,
 		ec.unmarshalInputUpdateRetryPolicyInput,
 		ec.unmarshalInputUpdateRoleInput,
@@ -9963,6 +11043,42 @@ func (ec *executionContext) field_Channel_executions_args(ctx context.Context, r
 	}
 	args["orderBy"] = arg4
 	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "where", ec.unmarshalORequestExecutionWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRequestExecutionWhereInput)
+	if err != nil {
+		return nil, err
+	}
+	args["where"] = arg5
+	return args, nil
+}
+
+func (ec *executionContext) field_Channel_relayProductBindings_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "orderBy", ec.unmarshalORelayProductChannelOrder2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelOrder)
+	if err != nil {
+		return nil, err
+	}
+	args["orderBy"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "where", ec.unmarshalORelayProductChannelWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelWhereInput)
 	if err != nil {
 		return nil, err
 	}
@@ -11344,6 +12460,42 @@ func (ec *executionContext) field_Project_prompts_args(ctx context.Context, rawA
 	return args, nil
 }
 
+func (ec *executionContext) field_Project_relayKeys_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "orderBy", ec.unmarshalORelayKeyOrder2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyOrder)
+	if err != nil {
+		return nil, err
+	}
+	args["orderBy"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "where", ec.unmarshalORelayKeyWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyWhereInput)
+	if err != nil {
+		return nil, err
+	}
+	args["where"] = arg5
+	return args, nil
+}
+
 func (ec *executionContext) field_Project_requests_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -12093,6 +13245,78 @@ func (ec *executionContext) field_Query_queryModels_args(ctx context.Context, ra
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_relayProductChannels_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "orderBy", ec.unmarshalORelayProductChannelOrder2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelOrder)
+	if err != nil {
+		return nil, err
+	}
+	args["orderBy"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "where", ec.unmarshalORelayProductChannelWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelWhereInput)
+	if err != nil {
+		return nil, err
+	}
+	args["where"] = arg5
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_relayProducts_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "orderBy", ec.unmarshalORelayProductOrder2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductOrder)
+	if err != nil {
+		return nil, err
+	}
+	args["orderBy"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "where", ec.unmarshalORelayProductWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductWhereInput)
+	if err != nil {
+		return nil, err
+	}
+	args["where"] = arg5
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_requestStatsByAPIKey_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -12411,6 +13635,150 @@ func (ec *executionContext) field_Query_users_args(ctx context.Context, rawArgs 
 	return args, nil
 }
 
+func (ec *executionContext) field_RelayKey_dailyUsageSummaries_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "orderBy", ec.unmarshalORelayDailyUsageSummaryOrder2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryOrder)
+	if err != nil {
+		return nil, err
+	}
+	args["orderBy"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "where", ec.unmarshalORelayDailyUsageSummaryWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryWhereInput)
+	if err != nil {
+		return nil, err
+	}
+	args["where"] = arg5
+	return args, nil
+}
+
+func (ec *executionContext) field_RelayKey_ledgerEntries_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "orderBy", ec.unmarshalORelayWalletLedgerEntryOrder2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryOrder)
+	if err != nil {
+		return nil, err
+	}
+	args["orderBy"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "where", ec.unmarshalORelayWalletLedgerEntryWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryWhereInput)
+	if err != nil {
+		return nil, err
+	}
+	args["where"] = arg5
+	return args, nil
+}
+
+func (ec *executionContext) field_RelayProduct_channelBindings_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "orderBy", ec.unmarshalORelayProductChannelOrder2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelOrder)
+	if err != nil {
+		return nil, err
+	}
+	args["orderBy"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "where", ec.unmarshalORelayProductChannelWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelWhereInput)
+	if err != nil {
+		return nil, err
+	}
+	args["where"] = arg5
+	return args, nil
+}
+
+func (ec *executionContext) field_RelayProduct_relayKeys_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "orderBy", ec.unmarshalORelayKeyOrder2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyOrder)
+	if err != nil {
+		return nil, err
+	}
+	args["orderBy"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "where", ec.unmarshalORelayKeyWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyWhereInput)
+	if err != nil {
+		return nil, err
+	}
+	args["where"] = arg5
+	return args, nil
+}
+
 func (ec *executionContext) field_Request_executions_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -12692,6 +14060,42 @@ func (ec *executionContext) field_User_projects_args(ctx context.Context, rawArg
 	}
 	args["orderBy"] = arg4
 	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "where", ec.unmarshalOProjectWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐProjectWhereInput)
+	if err != nil {
+		return nil, err
+	}
+	args["where"] = arg5
+	return args, nil
+}
+
+func (ec *executionContext) field_User_relayKeys_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "orderBy", ec.unmarshalORelayKeyOrder2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyOrder)
+	if err != nil {
+		return nil, err
+	}
+	args["orderBy"] = arg4
+	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "where", ec.unmarshalORelayKeyWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyWhereInput)
 	if err != nil {
 		return nil, err
 	}
@@ -13162,6 +14566,8 @@ func (ec *executionContext) fieldContext_APIKey_user(_ context.Context, field gr
 				return ec.fieldContext_User_projects(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_User_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_User_relayKeys(ctx, field)
 			case "roles":
 				return ec.fieldContext_User_roles(ctx, field)
 			case "channelOverrideTemplates":
@@ -13221,6 +14627,8 @@ func (ec *executionContext) fieldContext_APIKey_project(_ context.Context, field
 				return ec.fieldContext_Project_roles(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_Project_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_Project_relayKeys(ctx, field)
 			case "requests":
 				return ec.fieldContext_Project_requests(ctx, field)
 			case "usageLogs":
@@ -13285,6 +14693,83 @@ func (ec *executionContext) fieldContext_APIKey_requests(ctx context.Context, fi
 	if fc.Args, err = ec.field_APIKey_requests_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _APIKey_relayKey(ctx context.Context, field graphql.CollectedField, obj *ent.APIKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_APIKey_relayKey,
+		func(ctx context.Context) (any, error) {
+			return obj.RelayKey(ctx)
+		},
+		nil,
+		ec.marshalORelayKey2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKey,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_APIKey_relayKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "APIKey",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_RelayKey_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_RelayKey_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_RelayKey_updatedAt(ctx, field)
+			case "apiKeyID":
+				return ec.fieldContext_RelayKey_apiKeyID(ctx, field)
+			case "projectID":
+				return ec.fieldContext_RelayKey_projectID(ctx, field)
+			case "productID":
+				return ec.fieldContext_RelayKey_productID(ctx, field)
+			case "ownerUserID":
+				return ec.fieldContext_RelayKey_ownerUserID(ctx, field)
+			case "displayName":
+				return ec.fieldContext_RelayKey_displayName(ctx, field)
+			case "status":
+				return ec.fieldContext_RelayKey_status(ctx, field)
+			case "balanceMode":
+				return ec.fieldContext_RelayKey_balanceMode(ctx, field)
+			case "dailyRequestLimit":
+				return ec.fieldContext_RelayKey_dailyRequestLimit(ctx, field)
+			case "dailyTokenLimit":
+				return ec.fieldContext_RelayKey_dailyTokenLimit(ctx, field)
+			case "monthlyCostLimit":
+				return ec.fieldContext_RelayKey_monthlyCostLimit(ctx, field)
+			case "concurrencyLimit":
+				return ec.fieldContext_RelayKey_concurrencyLimit(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_RelayKey_expiresAt(ctx, field)
+			case "lastUsedAt":
+				return ec.fieldContext_RelayKey_lastUsedAt(ctx, field)
+			case "apiKey":
+				return ec.fieldContext_RelayKey_apiKey(ctx, field)
+			case "project":
+				return ec.fieldContext_RelayKey_project(ctx, field)
+			case "product":
+				return ec.fieldContext_RelayKey_product(ctx, field)
+			case "ownerUser":
+				return ec.fieldContext_RelayKey_ownerUser(ctx, field)
+			case "wallet":
+				return ec.fieldContext_RelayKey_wallet(ctx, field)
+			case "ledgerEntries":
+				return ec.fieldContext_RelayKey_ledgerEntries(ctx, field)
+			case "dailyUsageSummaries":
+				return ec.fieldContext_RelayKey_dailyUsageSummaries(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayKey", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -13444,6 +14929,8 @@ func (ec *executionContext) fieldContext_APIKeyEdge_node(_ context.Context, fiel
 				return ec.fieldContext_APIKey_project(ctx, field)
 			case "requests":
 				return ec.fieldContext_APIKey_requests(ctx, field)
+			case "relayKey":
+				return ec.fieldContext_APIKey_relayKey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type APIKey", field.Name)
 		},
@@ -13728,6 +15215,35 @@ func (ec *executionContext) fieldContext_APIKeyProfile_loadBalanceStrategy(_ con
 	return fc, nil
 }
 
+func (ec *executionContext) _APIKeyProfile_useStrategy(ctx context.Context, field graphql.CollectedField, obj *objects.APIKeyProfile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_APIKeyProfile_useStrategy,
+		func(ctx context.Context) (any, error) {
+			return obj.UseStrategy, nil
+		},
+		nil,
+		ec.marshalOAPIKeyUseStrategy2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐAPIKeyUseStrategy,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_APIKeyProfile_useStrategy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "APIKeyProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type APIKeyUseStrategy does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _APIKeyProfileQuotaUsage_profileName(ctx context.Context, field graphql.CollectedField, obj *APIKeyProfileQuotaUsage) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -13937,6 +15453,8 @@ func (ec *executionContext) fieldContext_APIKeyProfiles_profiles(_ context.Conte
 				return ec.fieldContext_APIKeyProfile_quota(ctx, field)
 			case "loadBalanceStrategy":
 				return ec.fieldContext_APIKeyProfile_loadBalanceStrategy(ctx, field)
+			case "useStrategy":
+				return ec.fieldContext_APIKeyProfile_useStrategy(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type APIKeyProfile", field.Name)
 		},
@@ -14711,6 +16229,8 @@ func (ec *executionContext) fieldContext_ApplyChannelOverrideTemplatePayload_cha
 				return ec.fieldContext_Channel_channelProbes(ctx, field)
 			case "channelModelPrices":
 				return ec.fieldContext_Channel_channelModelPrices(ctx, field)
+			case "relayProductBindings":
+				return ec.fieldContext_Channel_relayProductBindings(ctx, field)
 			case "providerQuotaStatus":
 				return ec.fieldContext_Channel_providerQuotaStatus(ctx, field)
 			case "allModelEntries":
@@ -15649,6 +17169,8 @@ func (ec *executionContext) fieldContext_BulkImportChannelsResult_channels(_ con
 				return ec.fieldContext_Channel_channelProbes(ctx, field)
 			case "channelModelPrices":
 				return ec.fieldContext_Channel_channelModelPrices(ctx, field)
+			case "relayProductBindings":
+				return ec.fieldContext_Channel_relayProductBindings(ctx, field)
 			case "providerQuotaStatus":
 				return ec.fieldContext_Channel_providerQuotaStatus(ctx, field)
 			case "allModelEntries":
@@ -15792,6 +17314,8 @@ func (ec *executionContext) fieldContext_BulkUpdateChannelOrderingResult_channel
 				return ec.fieldContext_Channel_channelProbes(ctx, field)
 			case "channelModelPrices":
 				return ec.fieldContext_Channel_channelModelPrices(ctx, field)
+			case "relayProductBindings":
+				return ec.fieldContext_Channel_relayProductBindings(ctx, field)
 			case "providerQuotaStatus":
 				return ec.fieldContext_Channel_providerQuotaStatus(ctx, field)
 			case "allModelEntries":
@@ -16602,6 +18126,55 @@ func (ec *executionContext) fieldContext_Channel_channelModelPrices(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _Channel_relayProductBindings(ctx context.Context, field graphql.CollectedField, obj *ent.Channel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Channel_relayProductBindings,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return obj.RelayProductBindings(ctx, fc.Args["after"].(*entgql.Cursor[int]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[int]), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.RelayProductChannelOrder), fc.Args["where"].(*ent.RelayProductChannelWhereInput))
+		},
+		nil,
+		ec.marshalNRelayProductChannelConnection2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Channel_relayProductBindings(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Channel",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "edges":
+				return ec.fieldContext_RelayProductChannelConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_RelayProductChannelConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_RelayProductChannelConnection_totalCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayProductChannelConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Channel_relayProductBindings_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Channel_providerQuotaStatus(ctx context.Context, field graphql.CollectedField, obj *ent.Channel) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -17081,6 +18654,8 @@ func (ec *executionContext) fieldContext_ChannelEdge_node(_ context.Context, fie
 				return ec.fieldContext_Channel_channelProbes(ctx, field)
 			case "channelModelPrices":
 				return ec.fieldContext_Channel_channelModelPrices(ctx, field)
+			case "relayProductBindings":
+				return ec.fieldContext_Channel_relayProductBindings(ctx, field)
 			case "providerQuotaStatus":
 				return ec.fieldContext_Channel_providerQuotaStatus(ctx, field)
 			case "allModelEntries":
@@ -17576,6 +19151,8 @@ func (ec *executionContext) fieldContext_ChannelModelPrice_channel(_ context.Con
 				return ec.fieldContext_Channel_channelProbes(ctx, field)
 			case "channelModelPrices":
 				return ec.fieldContext_Channel_channelModelPrices(ctx, field)
+			case "relayProductBindings":
+				return ec.fieldContext_Channel_relayProductBindings(ctx, field)
 			case "providerQuotaStatus":
 				return ec.fieldContext_Channel_providerQuotaStatus(ctx, field)
 			case "allModelEntries":
@@ -18760,6 +20337,8 @@ func (ec *executionContext) fieldContext_ChannelOverrideTemplate_user(_ context.
 				return ec.fieldContext_User_projects(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_User_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_User_relayKeys(ctx, field)
 			case "roles":
 				return ec.fieldContext_User_roles(ctx, field)
 			case "channelOverrideTemplates":
@@ -19436,6 +21015,8 @@ func (ec *executionContext) fieldContext_ChannelProbe_channel(_ context.Context,
 				return ec.fieldContext_Channel_channelProbes(ctx, field)
 			case "channelModelPrices":
 				return ec.fieldContext_Channel_channelModelPrices(ctx, field)
+			case "relayProductBindings":
+				return ec.fieldContext_Channel_relayProductBindings(ctx, field)
 			case "providerQuotaStatus":
 				return ec.fieldContext_Channel_providerQuotaStatus(ctx, field)
 			case "allModelEntries":
@@ -23497,6 +25078,8 @@ func (ec *executionContext) fieldContext_InitializeSystemPayload_user(_ context.
 				return ec.fieldContext_User_projects(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_User_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_User_relayKeys(ctx, field)
 			case "roles":
 				return ec.fieldContext_User_roles(ctx, field)
 			case "channelOverrideTemplates":
@@ -25055,6 +26638,8 @@ func (ec *executionContext) fieldContext_ModelChannelConnection_channel(_ contex
 				return ec.fieldContext_Channel_channelProbes(ctx, field)
 			case "channelModelPrices":
 				return ec.fieldContext_Channel_channelModelPrices(ctx, field)
+			case "relayProductBindings":
+				return ec.fieldContext_Channel_relayProductBindings(ctx, field)
 			case "providerQuotaStatus":
 				return ec.fieldContext_Channel_providerQuotaStatus(ctx, field)
 			case "allModelEntries":
@@ -26090,6 +27675,8 @@ func (ec *executionContext) fieldContext_Mutation_createChannel(ctx context.Cont
 				return ec.fieldContext_Channel_channelProbes(ctx, field)
 			case "channelModelPrices":
 				return ec.fieldContext_Channel_channelModelPrices(ctx, field)
+			case "relayProductBindings":
+				return ec.fieldContext_Channel_relayProductBindings(ctx, field)
 			case "providerQuotaStatus":
 				return ec.fieldContext_Channel_providerQuotaStatus(ctx, field)
 			case "allModelEntries":
@@ -26187,6 +27774,8 @@ func (ec *executionContext) fieldContext_Mutation_bulkCreateChannels(ctx context
 				return ec.fieldContext_Channel_channelProbes(ctx, field)
 			case "channelModelPrices":
 				return ec.fieldContext_Channel_channelModelPrices(ctx, field)
+			case "relayProductBindings":
+				return ec.fieldContext_Channel_relayProductBindings(ctx, field)
 			case "providerQuotaStatus":
 				return ec.fieldContext_Channel_providerQuotaStatus(ctx, field)
 			case "allModelEntries":
@@ -26284,6 +27873,8 @@ func (ec *executionContext) fieldContext_Mutation_updateChannel(ctx context.Cont
 				return ec.fieldContext_Channel_channelProbes(ctx, field)
 			case "channelModelPrices":
 				return ec.fieldContext_Channel_channelModelPrices(ctx, field)
+			case "relayProductBindings":
+				return ec.fieldContext_Channel_relayProductBindings(ctx, field)
 			case "providerQuotaStatus":
 				return ec.fieldContext_Channel_providerQuotaStatus(ctx, field)
 			case "allModelEntries":
@@ -26381,6 +27972,8 @@ func (ec *executionContext) fieldContext_Mutation_updateChannelStatus(ctx contex
 				return ec.fieldContext_Channel_channelProbes(ctx, field)
 			case "channelModelPrices":
 				return ec.fieldContext_Channel_channelModelPrices(ctx, field)
+			case "relayProductBindings":
+				return ec.fieldContext_Channel_relayProductBindings(ctx, field)
 			case "providerQuotaStatus":
 				return ec.fieldContext_Channel_providerQuotaStatus(ctx, field)
 			case "allModelEntries":
@@ -27123,6 +28716,8 @@ func (ec *executionContext) fieldContext_Mutation_createAPIKey(ctx context.Conte
 				return ec.fieldContext_APIKey_project(ctx, field)
 			case "requests":
 				return ec.fieldContext_APIKey_requests(ctx, field)
+			case "relayKey":
+				return ec.fieldContext_APIKey_relayKey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type APIKey", field.Name)
 		},
@@ -27194,6 +28789,8 @@ func (ec *executionContext) fieldContext_Mutation_updateAPIKey(ctx context.Conte
 				return ec.fieldContext_APIKey_project(ctx, field)
 			case "requests":
 				return ec.fieldContext_APIKey_requests(ctx, field)
+			case "relayKey":
+				return ec.fieldContext_APIKey_relayKey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type APIKey", field.Name)
 		},
@@ -27265,6 +28862,8 @@ func (ec *executionContext) fieldContext_Mutation_updateAPIKeyStatus(ctx context
 				return ec.fieldContext_APIKey_project(ctx, field)
 			case "requests":
 				return ec.fieldContext_APIKey_requests(ctx, field)
+			case "relayKey":
+				return ec.fieldContext_APIKey_relayKey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type APIKey", field.Name)
 		},
@@ -27336,6 +28935,8 @@ func (ec *executionContext) fieldContext_Mutation_updateAPIKeyProfiles(ctx conte
 				return ec.fieldContext_APIKey_project(ctx, field)
 			case "requests":
 				return ec.fieldContext_APIKey_requests(ctx, field)
+			case "relayKey":
+				return ec.fieldContext_APIKey_relayKey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type APIKey", field.Name)
 		},
@@ -27528,6 +29129,8 @@ func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context
 				return ec.fieldContext_User_projects(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_User_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_User_relayKeys(ctx, field)
 			case "roles":
 				return ec.fieldContext_User_roles(ctx, field)
 			case "channelOverrideTemplates":
@@ -27605,6 +29208,8 @@ func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context
 				return ec.fieldContext_User_projects(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_User_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_User_relayKeys(ctx, field)
 			case "roles":
 				return ec.fieldContext_User_roles(ctx, field)
 			case "channelOverrideTemplates":
@@ -27682,6 +29287,8 @@ func (ec *executionContext) fieldContext_Mutation_updateUserStatus(ctx context.C
 				return ec.fieldContext_User_projects(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_User_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_User_relayKeys(ctx, field)
 			case "roles":
 				return ec.fieldContext_User_roles(ctx, field)
 			case "channelOverrideTemplates":
@@ -28002,6 +29609,8 @@ func (ec *executionContext) fieldContext_Mutation_createProject(ctx context.Cont
 				return ec.fieldContext_Project_roles(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_Project_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_Project_relayKeys(ctx, field)
 			case "requests":
 				return ec.fieldContext_Project_requests(ctx, field)
 			case "usageLogs":
@@ -28077,6 +29686,8 @@ func (ec *executionContext) fieldContext_Mutation_updateProject(ctx context.Cont
 				return ec.fieldContext_Project_roles(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_Project_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_Project_relayKeys(ctx, field)
 			case "requests":
 				return ec.fieldContext_Project_requests(ctx, field)
 			case "usageLogs":
@@ -28152,6 +29763,8 @@ func (ec *executionContext) fieldContext_Mutation_updateProjectStatus(ctx contex
 				return ec.fieldContext_Project_roles(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_Project_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_Project_relayKeys(ctx, field)
 			case "requests":
 				return ec.fieldContext_Project_requests(ctx, field)
 			case "usageLogs":
@@ -28227,6 +29840,8 @@ func (ec *executionContext) fieldContext_Mutation_updateProjectProfiles(ctx cont
 				return ec.fieldContext_Project_roles(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_Project_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_Project_relayKeys(ctx, field)
 			case "requests":
 				return ec.fieldContext_Project_requests(ctx, field)
 			case "usageLogs":
@@ -28909,6 +30524,8 @@ func (ec *executionContext) fieldContext_Mutation_updateMe(ctx context.Context, 
 				return ec.fieldContext_User_projects(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_User_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_User_relayKeys(ctx, field)
 			case "roles":
 				return ec.fieldContext_User_roles(ctx, field)
 			case "channelOverrideTemplates":
@@ -32137,6 +33754,55 @@ func (ec *executionContext) fieldContext_Project_apiKeys(ctx context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _Project_relayKeys(ctx context.Context, field graphql.CollectedField, obj *ent.Project) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Project_relayKeys,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return obj.RelayKeys(ctx, fc.Args["after"].(*entgql.Cursor[int]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[int]), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.RelayKeyOrder), fc.Args["where"].(*ent.RelayKeyWhereInput))
+		},
+		nil,
+		ec.marshalNRelayKeyConnection2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Project_relayKeys(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "edges":
+				return ec.fieldContext_RelayKeyConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_RelayKeyConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_RelayKeyConnection_totalCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayKeyConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Project_relayKeys_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Project_requests(ctx context.Context, field graphql.CollectedField, obj *ent.Project) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -32578,6 +34244,8 @@ func (ec *executionContext) fieldContext_ProjectEdge_node(_ context.Context, fie
 				return ec.fieldContext_Project_roles(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_Project_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_Project_relayKeys(ctx, field)
 			case "requests":
 				return ec.fieldContext_Project_requests(ctx, field)
 			case "usageLogs":
@@ -34555,6 +36223,8 @@ func (ec *executionContext) fieldContext_ProviderQuotaStatus_channel(_ context.C
 				return ec.fieldContext_Channel_channelProbes(ctx, field)
 			case "channelModelPrices":
 				return ec.fieldContext_Channel_channelModelPrices(ctx, field)
+			case "relayProductBindings":
+				return ec.fieldContext_Channel_relayProductBindings(ctx, field)
 			case "providerQuotaStatus":
 				return ec.fieldContext_Channel_providerQuotaStatus(ctx, field)
 			case "allModelEntries":
@@ -35276,6 +36946,104 @@ func (ec *executionContext) fieldContext_Query_promptProtectionRules(ctx context
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_relayProducts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_relayProducts,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().RelayProducts(ctx, fc.Args["after"].(*entgql.Cursor[int]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[int]), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.RelayProductOrder), fc.Args["where"].(*ent.RelayProductWhereInput))
+		},
+		nil,
+		ec.marshalNRelayProductConnection2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_relayProducts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "edges":
+				return ec.fieldContext_RelayProductConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_RelayProductConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_RelayProductConnection_totalCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayProductConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_relayProducts_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_relayProductChannels(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_relayProductChannels,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().RelayProductChannels(ctx, fc.Args["after"].(*entgql.Cursor[int]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[int]), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.RelayProductChannelOrder), fc.Args["where"].(*ent.RelayProductChannelWhereInput))
+		},
+		nil,
+		ec.marshalNRelayProductChannelConnection2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_relayProductChannels(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "edges":
+				return ec.fieldContext_RelayProductChannelConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_RelayProductChannelConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_RelayProductChannelConnection_totalCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayProductChannelConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_relayProductChannels_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_requests(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -35690,6 +37458,8 @@ func (ec *executionContext) fieldContext_Query_allChannelSummarys(ctx context.Co
 				return ec.fieldContext_Channel_channelProbes(ctx, field)
 			case "channelModelPrices":
 				return ec.fieldContext_Channel_channelModelPrices(ctx, field)
+			case "relayProductBindings":
+				return ec.fieldContext_Channel_relayProductBindings(ctx, field)
 			case "providerQuotaStatus":
 				return ec.fieldContext_Channel_providerQuotaStatus(ctx, field)
 			case "allModelEntries":
@@ -37002,6 +38772,8 @@ func (ec *executionContext) fieldContext_Query_myProjects(_ context.Context, fie
 				return ec.fieldContext_Project_roles(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_Project_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_Project_relayKeys(ctx, field)
 			case "requests":
 				return ec.fieldContext_Project_requests(ctx, field)
 			case "usageLogs":
@@ -38077,6 +39849,4312 @@ func (ec *executionContext) fieldContext_RegexAssociation_exclude(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _RelayDailyUsageSummary_id(ctx context.Context, field graphql.CollectedField, obj *ent.RelayDailyUsageSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayDailyUsageSummary_id,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.RelayDailyUsageSummary().ID(ctx, obj)
+		},
+		nil,
+		ec.marshalNID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayDailyUsageSummary_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayDailyUsageSummary",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayDailyUsageSummary_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.RelayDailyUsageSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayDailyUsageSummary_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayDailyUsageSummary_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayDailyUsageSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayDailyUsageSummary_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.RelayDailyUsageSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayDailyUsageSummary_updatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayDailyUsageSummary_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayDailyUsageSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayDailyUsageSummary_relayKeyID(ctx context.Context, field graphql.CollectedField, obj *ent.RelayDailyUsageSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayDailyUsageSummary_relayKeyID,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.RelayDailyUsageSummary().RelayKeyID(ctx, obj)
+		},
+		nil,
+		ec.marshalNID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayDailyUsageSummary_relayKeyID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayDailyUsageSummary",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayDailyUsageSummary_projectID(ctx context.Context, field graphql.CollectedField, obj *ent.RelayDailyUsageSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayDailyUsageSummary_projectID,
+		func(ctx context.Context) (any, error) {
+			return obj.ProjectID, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayDailyUsageSummary_projectID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayDailyUsageSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayDailyUsageSummary_statDate(ctx context.Context, field graphql.CollectedField, obj *ent.RelayDailyUsageSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayDailyUsageSummary_statDate,
+		func(ctx context.Context) (any, error) {
+			return obj.StatDate, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayDailyUsageSummary_statDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayDailyUsageSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayDailyUsageSummary_requestCount(ctx context.Context, field graphql.CollectedField, obj *ent.RelayDailyUsageSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayDailyUsageSummary_requestCount,
+		func(ctx context.Context) (any, error) {
+			return obj.RequestCount, nil
+		},
+		nil,
+		ec.marshalNInt2int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayDailyUsageSummary_requestCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayDailyUsageSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayDailyUsageSummary_totalTokens(ctx context.Context, field graphql.CollectedField, obj *ent.RelayDailyUsageSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayDailyUsageSummary_totalTokens,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalTokens, nil
+		},
+		nil,
+		ec.marshalNInt2int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayDailyUsageSummary_totalTokens(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayDailyUsageSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayDailyUsageSummary_totalCharge(ctx context.Context, field graphql.CollectedField, obj *ent.RelayDailyUsageSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayDailyUsageSummary_totalCharge,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCharge, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayDailyUsageSummary_totalCharge(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayDailyUsageSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayDailyUsageSummary_totalUpstreamCost(ctx context.Context, field graphql.CollectedField, obj *ent.RelayDailyUsageSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayDailyUsageSummary_totalUpstreamCost,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalUpstreamCost, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayDailyUsageSummary_totalUpstreamCost(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayDailyUsageSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayDailyUsageSummary_lastRequestID(ctx context.Context, field graphql.CollectedField, obj *ent.RelayDailyUsageSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayDailyUsageSummary_lastRequestID,
+		func(ctx context.Context) (any, error) {
+			return obj.LastRequestID, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayDailyUsageSummary_lastRequestID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayDailyUsageSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayDailyUsageSummary_relayKey(ctx context.Context, field graphql.CollectedField, obj *ent.RelayDailyUsageSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayDailyUsageSummary_relayKey,
+		func(ctx context.Context) (any, error) {
+			return obj.RelayKey(ctx)
+		},
+		nil,
+		ec.marshalNRelayKey2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKey,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayDailyUsageSummary_relayKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayDailyUsageSummary",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_RelayKey_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_RelayKey_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_RelayKey_updatedAt(ctx, field)
+			case "apiKeyID":
+				return ec.fieldContext_RelayKey_apiKeyID(ctx, field)
+			case "projectID":
+				return ec.fieldContext_RelayKey_projectID(ctx, field)
+			case "productID":
+				return ec.fieldContext_RelayKey_productID(ctx, field)
+			case "ownerUserID":
+				return ec.fieldContext_RelayKey_ownerUserID(ctx, field)
+			case "displayName":
+				return ec.fieldContext_RelayKey_displayName(ctx, field)
+			case "status":
+				return ec.fieldContext_RelayKey_status(ctx, field)
+			case "balanceMode":
+				return ec.fieldContext_RelayKey_balanceMode(ctx, field)
+			case "dailyRequestLimit":
+				return ec.fieldContext_RelayKey_dailyRequestLimit(ctx, field)
+			case "dailyTokenLimit":
+				return ec.fieldContext_RelayKey_dailyTokenLimit(ctx, field)
+			case "monthlyCostLimit":
+				return ec.fieldContext_RelayKey_monthlyCostLimit(ctx, field)
+			case "concurrencyLimit":
+				return ec.fieldContext_RelayKey_concurrencyLimit(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_RelayKey_expiresAt(ctx, field)
+			case "lastUsedAt":
+				return ec.fieldContext_RelayKey_lastUsedAt(ctx, field)
+			case "apiKey":
+				return ec.fieldContext_RelayKey_apiKey(ctx, field)
+			case "project":
+				return ec.fieldContext_RelayKey_project(ctx, field)
+			case "product":
+				return ec.fieldContext_RelayKey_product(ctx, field)
+			case "ownerUser":
+				return ec.fieldContext_RelayKey_ownerUser(ctx, field)
+			case "wallet":
+				return ec.fieldContext_RelayKey_wallet(ctx, field)
+			case "ledgerEntries":
+				return ec.fieldContext_RelayKey_ledgerEntries(ctx, field)
+			case "dailyUsageSummaries":
+				return ec.fieldContext_RelayKey_dailyUsageSummaries(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayKey", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayDailyUsageSummaryConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.RelayDailyUsageSummaryConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayDailyUsageSummaryConnection_edges,
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		ec.marshalORelayDailyUsageSummaryEdge2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryEdge,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayDailyUsageSummaryConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayDailyUsageSummaryConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "node":
+				return ec.fieldContext_RelayDailyUsageSummaryEdge_node(ctx, field)
+			case "cursor":
+				return ec.fieldContext_RelayDailyUsageSummaryEdge_cursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayDailyUsageSummaryEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayDailyUsageSummaryConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.RelayDailyUsageSummaryConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayDailyUsageSummaryConnection_pageInfo,
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		ec.marshalNPageInfo2entgoᚗioᚋcontribᚋentgqlᚐPageInfo,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayDailyUsageSummaryConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayDailyUsageSummaryConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayDailyUsageSummaryConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.RelayDailyUsageSummaryConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayDailyUsageSummaryConnection_totalCount,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayDailyUsageSummaryConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayDailyUsageSummaryConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayDailyUsageSummaryEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.RelayDailyUsageSummaryEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayDailyUsageSummaryEdge_node,
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		ec.marshalORelayDailyUsageSummary2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummary,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayDailyUsageSummaryEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayDailyUsageSummaryEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_RelayDailyUsageSummary_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_RelayDailyUsageSummary_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_RelayDailyUsageSummary_updatedAt(ctx, field)
+			case "relayKeyID":
+				return ec.fieldContext_RelayDailyUsageSummary_relayKeyID(ctx, field)
+			case "projectID":
+				return ec.fieldContext_RelayDailyUsageSummary_projectID(ctx, field)
+			case "statDate":
+				return ec.fieldContext_RelayDailyUsageSummary_statDate(ctx, field)
+			case "requestCount":
+				return ec.fieldContext_RelayDailyUsageSummary_requestCount(ctx, field)
+			case "totalTokens":
+				return ec.fieldContext_RelayDailyUsageSummary_totalTokens(ctx, field)
+			case "totalCharge":
+				return ec.fieldContext_RelayDailyUsageSummary_totalCharge(ctx, field)
+			case "totalUpstreamCost":
+				return ec.fieldContext_RelayDailyUsageSummary_totalUpstreamCost(ctx, field)
+			case "lastRequestID":
+				return ec.fieldContext_RelayDailyUsageSummary_lastRequestID(ctx, field)
+			case "relayKey":
+				return ec.fieldContext_RelayDailyUsageSummary_relayKey(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayDailyUsageSummary", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayDailyUsageSummaryEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ent.RelayDailyUsageSummaryEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayDailyUsageSummaryEdge_cursor,
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		ec.marshalNCursor2entgoᚗioᚋcontribᚋentgqlᚐCursor,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayDailyUsageSummaryEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayDailyUsageSummaryEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Cursor does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_id(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_id,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.RelayKey().ID(ctx, obj)
+		},
+		nil,
+		ec.marshalNID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_updatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_apiKeyID(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_apiKeyID,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.RelayKey().APIKeyID(ctx, obj)
+		},
+		nil,
+		ec.marshalNID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_apiKeyID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_projectID(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_projectID,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.RelayKey().ProjectID(ctx, obj)
+		},
+		nil,
+		ec.marshalNID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_projectID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_productID(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_productID,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.RelayKey().ProductID(ctx, obj)
+		},
+		nil,
+		ec.marshalNID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_productID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_ownerUserID(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_ownerUserID,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.RelayKey().OwnerUserID(ctx, obj)
+		},
+		nil,
+		ec.marshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_ownerUserID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_displayName(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_displayName,
+		func(ctx context.Context) (any, error) {
+			return obj.DisplayName, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_displayName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_status(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_status,
+		func(ctx context.Context) (any, error) {
+			return obj.Status, nil
+		},
+		nil,
+		ec.marshalNRelayKeyStatus2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐStatus,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RelayKeyStatus does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_balanceMode(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_balanceMode,
+		func(ctx context.Context) (any, error) {
+			return obj.BalanceMode, nil
+		},
+		nil,
+		ec.marshalNRelayKeyBalanceMode2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐBalanceMode,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_balanceMode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RelayKeyBalanceMode does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_dailyRequestLimit(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_dailyRequestLimit,
+		func(ctx context.Context) (any, error) {
+			return obj.DailyRequestLimit, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_dailyRequestLimit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_dailyTokenLimit(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_dailyTokenLimit,
+		func(ctx context.Context) (any, error) {
+			return obj.DailyTokenLimit, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_dailyTokenLimit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_monthlyCostLimit(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_monthlyCostLimit,
+		func(ctx context.Context) (any, error) {
+			return obj.MonthlyCostLimit, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_monthlyCostLimit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_concurrencyLimit(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_concurrencyLimit,
+		func(ctx context.Context) (any, error) {
+			return obj.ConcurrencyLimit, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_concurrencyLimit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_expiresAt(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_expiresAt,
+		func(ctx context.Context) (any, error) {
+			return obj.ExpiresAt, nil
+		},
+		nil,
+		ec.marshalOTime2ᚖtimeᚐTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_expiresAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_lastUsedAt(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_lastUsedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.LastUsedAt, nil
+		},
+		nil,
+		ec.marshalOTime2ᚖtimeᚐTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_lastUsedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_apiKey(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_apiKey,
+		func(ctx context.Context) (any, error) {
+			return obj.APIKey(ctx)
+		},
+		nil,
+		ec.marshalNAPIKey2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐAPIKey,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_apiKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_APIKey_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_APIKey_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_APIKey_updatedAt(ctx, field)
+			case "userID":
+				return ec.fieldContext_APIKey_userID(ctx, field)
+			case "projectID":
+				return ec.fieldContext_APIKey_projectID(ctx, field)
+			case "key":
+				return ec.fieldContext_APIKey_key(ctx, field)
+			case "name":
+				return ec.fieldContext_APIKey_name(ctx, field)
+			case "type":
+				return ec.fieldContext_APIKey_type(ctx, field)
+			case "status":
+				return ec.fieldContext_APIKey_status(ctx, field)
+			case "scopes":
+				return ec.fieldContext_APIKey_scopes(ctx, field)
+			case "profiles":
+				return ec.fieldContext_APIKey_profiles(ctx, field)
+			case "user":
+				return ec.fieldContext_APIKey_user(ctx, field)
+			case "project":
+				return ec.fieldContext_APIKey_project(ctx, field)
+			case "requests":
+				return ec.fieldContext_APIKey_requests(ctx, field)
+			case "relayKey":
+				return ec.fieldContext_APIKey_relayKey(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type APIKey", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_project(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_project,
+		func(ctx context.Context) (any, error) {
+			return obj.Project(ctx)
+		},
+		nil,
+		ec.marshalNProject2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐProject,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_project(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Project_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Project_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Project_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Project_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Project_description(ctx, field)
+			case "status":
+				return ec.fieldContext_Project_status(ctx, field)
+			case "profiles":
+				return ec.fieldContext_Project_profiles(ctx, field)
+			case "users":
+				return ec.fieldContext_Project_users(ctx, field)
+			case "roles":
+				return ec.fieldContext_Project_roles(ctx, field)
+			case "apiKeys":
+				return ec.fieldContext_Project_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_Project_relayKeys(ctx, field)
+			case "requests":
+				return ec.fieldContext_Project_requests(ctx, field)
+			case "usageLogs":
+				return ec.fieldContext_Project_usageLogs(ctx, field)
+			case "threads":
+				return ec.fieldContext_Project_threads(ctx, field)
+			case "traces":
+				return ec.fieldContext_Project_traces(ctx, field)
+			case "prompts":
+				return ec.fieldContext_Project_prompts(ctx, field)
+			case "projectUsers":
+				return ec.fieldContext_Project_projectUsers(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_product(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_product,
+		func(ctx context.Context) (any, error) {
+			return obj.Product(ctx)
+		},
+		nil,
+		ec.marshalNRelayProduct2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProduct,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_product(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_RelayProduct_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_RelayProduct_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_RelayProduct_updatedAt(ctx, field)
+			case "code":
+				return ec.fieldContext_RelayProduct_code(ctx, field)
+			case "name":
+				return ec.fieldContext_RelayProduct_name(ctx, field)
+			case "providerType":
+				return ec.fieldContext_RelayProduct_providerType(ctx, field)
+			case "accessMode":
+				return ec.fieldContext_RelayProduct_accessMode(ctx, field)
+			case "billingMode":
+				return ec.fieldContext_RelayProduct_billingMode(ctx, field)
+			case "status":
+				return ec.fieldContext_RelayProduct_status(ctx, field)
+			case "currency":
+				return ec.fieldContext_RelayProduct_currency(ctx, field)
+			case "listPriceConfig":
+				return ec.fieldContext_RelayProduct_listPriceConfig(ctx, field)
+			case "allowedModels":
+				return ec.fieldContext_RelayProduct_allowedModels(ctx, field)
+			case "requestTimeoutSeconds":
+				return ec.fieldContext_RelayProduct_requestTimeoutSeconds(ctx, field)
+			case "channelBindings":
+				return ec.fieldContext_RelayProduct_channelBindings(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_RelayProduct_relayKeys(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayProduct", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_ownerUser(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_ownerUser,
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerUser(ctx)
+		},
+		nil,
+		ec.marshalOUser2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐUser,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_ownerUser(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_User_updatedAt(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "status":
+				return ec.fieldContext_User_status(ctx, field)
+			case "preferLanguage":
+				return ec.fieldContext_User_preferLanguage(ctx, field)
+			case "firstName":
+				return ec.fieldContext_User_firstName(ctx, field)
+			case "lastName":
+				return ec.fieldContext_User_lastName(ctx, field)
+			case "avatar":
+				return ec.fieldContext_User_avatar(ctx, field)
+			case "isOwner":
+				return ec.fieldContext_User_isOwner(ctx, field)
+			case "scopes":
+				return ec.fieldContext_User_scopes(ctx, field)
+			case "projects":
+				return ec.fieldContext_User_projects(ctx, field)
+			case "apiKeys":
+				return ec.fieldContext_User_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_User_relayKeys(ctx, field)
+			case "roles":
+				return ec.fieldContext_User_roles(ctx, field)
+			case "channelOverrideTemplates":
+				return ec.fieldContext_User_channelOverrideTemplates(ctx, field)
+			case "projectUsers":
+				return ec.fieldContext_User_projectUsers(ctx, field)
+			case "userRoles":
+				return ec.fieldContext_User_userRoles(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_wallet(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_wallet,
+		func(ctx context.Context) (any, error) {
+			return obj.Wallet(ctx)
+		},
+		nil,
+		ec.marshalORelayWallet2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWallet,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_wallet(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_RelayWallet_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_RelayWallet_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_RelayWallet_updatedAt(ctx, field)
+			case "relayKeyID":
+				return ec.fieldContext_RelayWallet_relayKeyID(ctx, field)
+			case "projectID":
+				return ec.fieldContext_RelayWallet_projectID(ctx, field)
+			case "currency":
+				return ec.fieldContext_RelayWallet_currency(ctx, field)
+			case "availableAmount":
+				return ec.fieldContext_RelayWallet_availableAmount(ctx, field)
+			case "frozenAmount":
+				return ec.fieldContext_RelayWallet_frozenAmount(ctx, field)
+			case "overdraftLimit":
+				return ec.fieldContext_RelayWallet_overdraftLimit(ctx, field)
+			case "version":
+				return ec.fieldContext_RelayWallet_version(ctx, field)
+			case "relayKey":
+				return ec.fieldContext_RelayWallet_relayKey(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayWallet", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_ledgerEntries(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_ledgerEntries,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return obj.LedgerEntries(ctx, fc.Args["after"].(*entgql.Cursor[int]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[int]), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.RelayWalletLedgerEntryOrder), fc.Args["where"].(*ent.RelayWalletLedgerEntryWhereInput))
+		},
+		nil,
+		ec.marshalNRelayWalletLedgerEntryConnection2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_ledgerEntries(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "edges":
+				return ec.fieldContext_RelayWalletLedgerEntryConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_RelayWalletLedgerEntryConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_RelayWalletLedgerEntryConnection_totalCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayWalletLedgerEntryConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_RelayKey_ledgerEntries_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKey_dailyUsageSummaries(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKey) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKey_dailyUsageSummaries,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return obj.DailyUsageSummaries(ctx, fc.Args["after"].(*entgql.Cursor[int]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[int]), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.RelayDailyUsageSummaryOrder), fc.Args["where"].(*ent.RelayDailyUsageSummaryWhereInput))
+		},
+		nil,
+		ec.marshalNRelayDailyUsageSummaryConnection2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKey_dailyUsageSummaries(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKey",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "edges":
+				return ec.fieldContext_RelayDailyUsageSummaryConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_RelayDailyUsageSummaryConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_RelayDailyUsageSummaryConnection_totalCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayDailyUsageSummaryConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_RelayKey_dailyUsageSummaries_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKeyConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKeyConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKeyConnection_edges,
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		ec.marshalORelayKeyEdge2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyEdge,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKeyConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKeyConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "node":
+				return ec.fieldContext_RelayKeyEdge_node(ctx, field)
+			case "cursor":
+				return ec.fieldContext_RelayKeyEdge_cursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayKeyEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKeyConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKeyConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKeyConnection_pageInfo,
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		ec.marshalNPageInfo2entgoᚗioᚋcontribᚋentgqlᚐPageInfo,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKeyConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKeyConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKeyConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKeyConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKeyConnection_totalCount,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKeyConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKeyConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKeyEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKeyEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKeyEdge_node,
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		ec.marshalORelayKey2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKey,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKeyEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKeyEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_RelayKey_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_RelayKey_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_RelayKey_updatedAt(ctx, field)
+			case "apiKeyID":
+				return ec.fieldContext_RelayKey_apiKeyID(ctx, field)
+			case "projectID":
+				return ec.fieldContext_RelayKey_projectID(ctx, field)
+			case "productID":
+				return ec.fieldContext_RelayKey_productID(ctx, field)
+			case "ownerUserID":
+				return ec.fieldContext_RelayKey_ownerUserID(ctx, field)
+			case "displayName":
+				return ec.fieldContext_RelayKey_displayName(ctx, field)
+			case "status":
+				return ec.fieldContext_RelayKey_status(ctx, field)
+			case "balanceMode":
+				return ec.fieldContext_RelayKey_balanceMode(ctx, field)
+			case "dailyRequestLimit":
+				return ec.fieldContext_RelayKey_dailyRequestLimit(ctx, field)
+			case "dailyTokenLimit":
+				return ec.fieldContext_RelayKey_dailyTokenLimit(ctx, field)
+			case "monthlyCostLimit":
+				return ec.fieldContext_RelayKey_monthlyCostLimit(ctx, field)
+			case "concurrencyLimit":
+				return ec.fieldContext_RelayKey_concurrencyLimit(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_RelayKey_expiresAt(ctx, field)
+			case "lastUsedAt":
+				return ec.fieldContext_RelayKey_lastUsedAt(ctx, field)
+			case "apiKey":
+				return ec.fieldContext_RelayKey_apiKey(ctx, field)
+			case "project":
+				return ec.fieldContext_RelayKey_project(ctx, field)
+			case "product":
+				return ec.fieldContext_RelayKey_product(ctx, field)
+			case "ownerUser":
+				return ec.fieldContext_RelayKey_ownerUser(ctx, field)
+			case "wallet":
+				return ec.fieldContext_RelayKey_wallet(ctx, field)
+			case "ledgerEntries":
+				return ec.fieldContext_RelayKey_ledgerEntries(ctx, field)
+			case "dailyUsageSummaries":
+				return ec.fieldContext_RelayKey_dailyUsageSummaries(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayKey", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayKeyEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ent.RelayKeyEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayKeyEdge_cursor,
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		ec.marshalNCursor2entgoᚗioᚋcontribᚋentgqlᚐCursor,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayKeyEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayKeyEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Cursor does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProduct_id(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProduct) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProduct_id,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.RelayProduct().ID(ctx, obj)
+		},
+		nil,
+		ec.marshalNID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProduct_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProduct",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProduct_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProduct) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProduct_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProduct_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProduct",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProduct_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProduct) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProduct_updatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProduct_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProduct",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProduct_code(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProduct) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProduct_code,
+		func(ctx context.Context) (any, error) {
+			return obj.Code, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProduct_code(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProduct",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProduct_name(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProduct) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProduct_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProduct_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProduct",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProduct_providerType(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProduct) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProduct_providerType,
+		func(ctx context.Context) (any, error) {
+			return obj.ProviderType, nil
+		},
+		nil,
+		ec.marshalNRelayProductProviderType2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐProviderType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProduct_providerType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProduct",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RelayProductProviderType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProduct_accessMode(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProduct) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProduct_accessMode,
+		func(ctx context.Context) (any, error) {
+			return obj.AccessMode, nil
+		},
+		nil,
+		ec.marshalNRelayProductAccessMode2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐAccessMode,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProduct_accessMode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProduct",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RelayProductAccessMode does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProduct_billingMode(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProduct) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProduct_billingMode,
+		func(ctx context.Context) (any, error) {
+			return obj.BillingMode, nil
+		},
+		nil,
+		ec.marshalNRelayProductBillingMode2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐBillingMode,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProduct_billingMode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProduct",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RelayProductBillingMode does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProduct_status(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProduct) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProduct_status,
+		func(ctx context.Context) (any, error) {
+			return obj.Status, nil
+		},
+		nil,
+		ec.marshalNRelayProductStatus2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐStatus,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProduct_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProduct",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RelayProductStatus does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProduct_currency(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProduct) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProduct_currency,
+		func(ctx context.Context) (any, error) {
+			return obj.Currency, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProduct_currency(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProduct",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProduct_listPriceConfig(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProduct) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProduct_listPriceConfig,
+		func(ctx context.Context) (any, error) {
+			return obj.ListPriceConfig, nil
+		},
+		nil,
+		ec.marshalOMap2map,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProduct_listPriceConfig(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProduct",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Map does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProduct_allowedModels(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProduct) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProduct_allowedModels,
+		func(ctx context.Context) (any, error) {
+			return obj.AllowedModels, nil
+		},
+		nil,
+		ec.marshalOString2ᚕstringᚄ,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProduct_allowedModels(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProduct",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProduct_requestTimeoutSeconds(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProduct) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProduct_requestTimeoutSeconds,
+		func(ctx context.Context) (any, error) {
+			return obj.RequestTimeoutSeconds, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProduct_requestTimeoutSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProduct",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProduct_channelBindings(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProduct) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProduct_channelBindings,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return obj.ChannelBindings(ctx, fc.Args["after"].(*entgql.Cursor[int]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[int]), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.RelayProductChannelOrder), fc.Args["where"].(*ent.RelayProductChannelWhereInput))
+		},
+		nil,
+		ec.marshalNRelayProductChannelConnection2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProduct_channelBindings(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProduct",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "edges":
+				return ec.fieldContext_RelayProductChannelConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_RelayProductChannelConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_RelayProductChannelConnection_totalCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayProductChannelConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_RelayProduct_channelBindings_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProduct_relayKeys(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProduct) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProduct_relayKeys,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return obj.RelayKeys(ctx, fc.Args["after"].(*entgql.Cursor[int]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[int]), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.RelayKeyOrder), fc.Args["where"].(*ent.RelayKeyWhereInput))
+		},
+		nil,
+		ec.marshalNRelayKeyConnection2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProduct_relayKeys(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProduct",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "edges":
+				return ec.fieldContext_RelayKeyConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_RelayKeyConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_RelayKeyConnection_totalCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayKeyConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_RelayProduct_relayKeys_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductChannel_id(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductChannel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductChannel_id,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.RelayProductChannel().ID(ctx, obj)
+		},
+		nil,
+		ec.marshalNID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductChannel_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductChannel",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductChannel_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductChannel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductChannel_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductChannel_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductChannel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductChannel_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductChannel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductChannel_updatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductChannel_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductChannel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductChannel_productID(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductChannel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductChannel_productID,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.RelayProductChannel().ProductID(ctx, obj)
+		},
+		nil,
+		ec.marshalNID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductChannel_productID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductChannel",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductChannel_channelID(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductChannel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductChannel_channelID,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.RelayProductChannel().ChannelID(ctx, obj)
+		},
+		nil,
+		ec.marshalNID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductChannel_channelID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductChannel",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductChannel_priority(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductChannel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductChannel_priority,
+		func(ctx context.Context) (any, error) {
+			return obj.Priority, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductChannel_priority(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductChannel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductChannel_weight(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductChannel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductChannel_weight,
+		func(ctx context.Context) (any, error) {
+			return obj.Weight, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductChannel_weight(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductChannel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductChannel_status(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductChannel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductChannel_status,
+		func(ctx context.Context) (any, error) {
+			return obj.Status, nil
+		},
+		nil,
+		ec.marshalNRelayProductChannelStatus2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductchannelᚐStatus,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductChannel_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductChannel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RelayProductChannelStatus does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductChannel_allowFallback(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductChannel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductChannel_allowFallback,
+		func(ctx context.Context) (any, error) {
+			return obj.AllowFallback, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductChannel_allowFallback(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductChannel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductChannel_modelFilter(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductChannel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductChannel_modelFilter,
+		func(ctx context.Context) (any, error) {
+			return obj.ModelFilter, nil
+		},
+		nil,
+		ec.marshalOAny2interface,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductChannel_modelFilter(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductChannel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Any does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductChannel_maxInflight(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductChannel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductChannel_maxInflight,
+		func(ctx context.Context) (any, error) {
+			return obj.MaxInflight, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductChannel_maxInflight(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductChannel",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductChannel_product(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductChannel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductChannel_product,
+		func(ctx context.Context) (any, error) {
+			return obj.Product(ctx)
+		},
+		nil,
+		ec.marshalNRelayProduct2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProduct,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductChannel_product(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductChannel",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_RelayProduct_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_RelayProduct_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_RelayProduct_updatedAt(ctx, field)
+			case "code":
+				return ec.fieldContext_RelayProduct_code(ctx, field)
+			case "name":
+				return ec.fieldContext_RelayProduct_name(ctx, field)
+			case "providerType":
+				return ec.fieldContext_RelayProduct_providerType(ctx, field)
+			case "accessMode":
+				return ec.fieldContext_RelayProduct_accessMode(ctx, field)
+			case "billingMode":
+				return ec.fieldContext_RelayProduct_billingMode(ctx, field)
+			case "status":
+				return ec.fieldContext_RelayProduct_status(ctx, field)
+			case "currency":
+				return ec.fieldContext_RelayProduct_currency(ctx, field)
+			case "listPriceConfig":
+				return ec.fieldContext_RelayProduct_listPriceConfig(ctx, field)
+			case "allowedModels":
+				return ec.fieldContext_RelayProduct_allowedModels(ctx, field)
+			case "requestTimeoutSeconds":
+				return ec.fieldContext_RelayProduct_requestTimeoutSeconds(ctx, field)
+			case "channelBindings":
+				return ec.fieldContext_RelayProduct_channelBindings(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_RelayProduct_relayKeys(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayProduct", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductChannel_channel(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductChannel) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductChannel_channel,
+		func(ctx context.Context) (any, error) {
+			return obj.Channel(ctx)
+		},
+		nil,
+		ec.marshalNChannel2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐChannel,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductChannel_channel(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductChannel",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Channel_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Channel_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Channel_updatedAt(ctx, field)
+			case "type":
+				return ec.fieldContext_Channel_type(ctx, field)
+			case "baseURL":
+				return ec.fieldContext_Channel_baseURL(ctx, field)
+			case "name":
+				return ec.fieldContext_Channel_name(ctx, field)
+			case "status":
+				return ec.fieldContext_Channel_status(ctx, field)
+			case "supportedModels":
+				return ec.fieldContext_Channel_supportedModels(ctx, field)
+			case "manualModels":
+				return ec.fieldContext_Channel_manualModels(ctx, field)
+			case "autoSyncSupportedModels":
+				return ec.fieldContext_Channel_autoSyncSupportedModels(ctx, field)
+			case "autoSyncModelPattern":
+				return ec.fieldContext_Channel_autoSyncModelPattern(ctx, field)
+			case "tags":
+				return ec.fieldContext_Channel_tags(ctx, field)
+			case "defaultTestModel":
+				return ec.fieldContext_Channel_defaultTestModel(ctx, field)
+			case "policies":
+				return ec.fieldContext_Channel_policies(ctx, field)
+			case "settings":
+				return ec.fieldContext_Channel_settings(ctx, field)
+			case "orderingWeight":
+				return ec.fieldContext_Channel_orderingWeight(ctx, field)
+			case "errorMessage":
+				return ec.fieldContext_Channel_errorMessage(ctx, field)
+			case "remark":
+				return ec.fieldContext_Channel_remark(ctx, field)
+			case "requests":
+				return ec.fieldContext_Channel_requests(ctx, field)
+			case "executions":
+				return ec.fieldContext_Channel_executions(ctx, field)
+			case "usageLogs":
+				return ec.fieldContext_Channel_usageLogs(ctx, field)
+			case "channelProbes":
+				return ec.fieldContext_Channel_channelProbes(ctx, field)
+			case "channelModelPrices":
+				return ec.fieldContext_Channel_channelModelPrices(ctx, field)
+			case "relayProductBindings":
+				return ec.fieldContext_Channel_relayProductBindings(ctx, field)
+			case "providerQuotaStatus":
+				return ec.fieldContext_Channel_providerQuotaStatus(ctx, field)
+			case "allModelEntries":
+				return ec.fieldContext_Channel_allModelEntries(ctx, field)
+			case "credentials":
+				return ec.fieldContext_Channel_credentials(ctx, field)
+			case "disabledAPIKeys":
+				return ec.fieldContext_Channel_disabledAPIKeys(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Channel", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductChannelConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductChannelConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductChannelConnection_edges,
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		ec.marshalORelayProductChannelEdge2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelEdge,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductChannelConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductChannelConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "node":
+				return ec.fieldContext_RelayProductChannelEdge_node(ctx, field)
+			case "cursor":
+				return ec.fieldContext_RelayProductChannelEdge_cursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayProductChannelEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductChannelConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductChannelConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductChannelConnection_pageInfo,
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		ec.marshalNPageInfo2entgoᚗioᚋcontribᚋentgqlᚐPageInfo,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductChannelConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductChannelConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductChannelConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductChannelConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductChannelConnection_totalCount,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductChannelConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductChannelConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductChannelEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductChannelEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductChannelEdge_node,
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		ec.marshalORelayProductChannel2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannel,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductChannelEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductChannelEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_RelayProductChannel_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_RelayProductChannel_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_RelayProductChannel_updatedAt(ctx, field)
+			case "productID":
+				return ec.fieldContext_RelayProductChannel_productID(ctx, field)
+			case "channelID":
+				return ec.fieldContext_RelayProductChannel_channelID(ctx, field)
+			case "priority":
+				return ec.fieldContext_RelayProductChannel_priority(ctx, field)
+			case "weight":
+				return ec.fieldContext_RelayProductChannel_weight(ctx, field)
+			case "status":
+				return ec.fieldContext_RelayProductChannel_status(ctx, field)
+			case "allowFallback":
+				return ec.fieldContext_RelayProductChannel_allowFallback(ctx, field)
+			case "modelFilter":
+				return ec.fieldContext_RelayProductChannel_modelFilter(ctx, field)
+			case "maxInflight":
+				return ec.fieldContext_RelayProductChannel_maxInflight(ctx, field)
+			case "product":
+				return ec.fieldContext_RelayProductChannel_product(ctx, field)
+			case "channel":
+				return ec.fieldContext_RelayProductChannel_channel(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayProductChannel", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductChannelEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductChannelEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductChannelEdge_cursor,
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		ec.marshalNCursor2entgoᚗioᚋcontribᚋentgqlᚐCursor,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductChannelEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductChannelEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Cursor does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductConnection_edges,
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		ec.marshalORelayProductEdge2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductEdge,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "node":
+				return ec.fieldContext_RelayProductEdge_node(ctx, field)
+			case "cursor":
+				return ec.fieldContext_RelayProductEdge_cursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayProductEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductConnection_pageInfo,
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		ec.marshalNPageInfo2entgoᚗioᚋcontribᚋentgqlᚐPageInfo,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductConnection_totalCount,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductEdge_node,
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		ec.marshalORelayProduct2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProduct,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_RelayProduct_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_RelayProduct_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_RelayProduct_updatedAt(ctx, field)
+			case "code":
+				return ec.fieldContext_RelayProduct_code(ctx, field)
+			case "name":
+				return ec.fieldContext_RelayProduct_name(ctx, field)
+			case "providerType":
+				return ec.fieldContext_RelayProduct_providerType(ctx, field)
+			case "accessMode":
+				return ec.fieldContext_RelayProduct_accessMode(ctx, field)
+			case "billingMode":
+				return ec.fieldContext_RelayProduct_billingMode(ctx, field)
+			case "status":
+				return ec.fieldContext_RelayProduct_status(ctx, field)
+			case "currency":
+				return ec.fieldContext_RelayProduct_currency(ctx, field)
+			case "listPriceConfig":
+				return ec.fieldContext_RelayProduct_listPriceConfig(ctx, field)
+			case "allowedModels":
+				return ec.fieldContext_RelayProduct_allowedModels(ctx, field)
+			case "requestTimeoutSeconds":
+				return ec.fieldContext_RelayProduct_requestTimeoutSeconds(ctx, field)
+			case "channelBindings":
+				return ec.fieldContext_RelayProduct_channelBindings(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_RelayProduct_relayKeys(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayProduct", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayProductEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ent.RelayProductEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayProductEdge_cursor,
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		ec.marshalNCursor2entgoᚗioᚋcontribᚋentgqlᚐCursor,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayProductEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayProductEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Cursor does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWallet_id(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWallet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWallet_id,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.RelayWallet().ID(ctx, obj)
+		},
+		nil,
+		ec.marshalNID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWallet_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWallet",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWallet_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWallet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWallet_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWallet_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWallet",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWallet_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWallet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWallet_updatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWallet_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWallet",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWallet_relayKeyID(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWallet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWallet_relayKeyID,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.RelayWallet().RelayKeyID(ctx, obj)
+		},
+		nil,
+		ec.marshalNID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWallet_relayKeyID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWallet",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWallet_projectID(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWallet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWallet_projectID,
+		func(ctx context.Context) (any, error) {
+			return obj.ProjectID, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWallet_projectID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWallet",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWallet_currency(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWallet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWallet_currency,
+		func(ctx context.Context) (any, error) {
+			return obj.Currency, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWallet_currency(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWallet",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWallet_availableAmount(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWallet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWallet_availableAmount,
+		func(ctx context.Context) (any, error) {
+			return obj.AvailableAmount, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWallet_availableAmount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWallet",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWallet_frozenAmount(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWallet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWallet_frozenAmount,
+		func(ctx context.Context) (any, error) {
+			return obj.FrozenAmount, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWallet_frozenAmount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWallet",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWallet_overdraftLimit(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWallet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWallet_overdraftLimit,
+		func(ctx context.Context) (any, error) {
+			return obj.OverdraftLimit, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWallet_overdraftLimit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWallet",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWallet_version(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWallet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWallet_version,
+		func(ctx context.Context) (any, error) {
+			return obj.Version, nil
+		},
+		nil,
+		ec.marshalNInt2int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWallet_version(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWallet",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWallet_relayKey(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWallet) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWallet_relayKey,
+		func(ctx context.Context) (any, error) {
+			return obj.RelayKey(ctx)
+		},
+		nil,
+		ec.marshalNRelayKey2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKey,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWallet_relayKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWallet",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_RelayKey_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_RelayKey_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_RelayKey_updatedAt(ctx, field)
+			case "apiKeyID":
+				return ec.fieldContext_RelayKey_apiKeyID(ctx, field)
+			case "projectID":
+				return ec.fieldContext_RelayKey_projectID(ctx, field)
+			case "productID":
+				return ec.fieldContext_RelayKey_productID(ctx, field)
+			case "ownerUserID":
+				return ec.fieldContext_RelayKey_ownerUserID(ctx, field)
+			case "displayName":
+				return ec.fieldContext_RelayKey_displayName(ctx, field)
+			case "status":
+				return ec.fieldContext_RelayKey_status(ctx, field)
+			case "balanceMode":
+				return ec.fieldContext_RelayKey_balanceMode(ctx, field)
+			case "dailyRequestLimit":
+				return ec.fieldContext_RelayKey_dailyRequestLimit(ctx, field)
+			case "dailyTokenLimit":
+				return ec.fieldContext_RelayKey_dailyTokenLimit(ctx, field)
+			case "monthlyCostLimit":
+				return ec.fieldContext_RelayKey_monthlyCostLimit(ctx, field)
+			case "concurrencyLimit":
+				return ec.fieldContext_RelayKey_concurrencyLimit(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_RelayKey_expiresAt(ctx, field)
+			case "lastUsedAt":
+				return ec.fieldContext_RelayKey_lastUsedAt(ctx, field)
+			case "apiKey":
+				return ec.fieldContext_RelayKey_apiKey(ctx, field)
+			case "project":
+				return ec.fieldContext_RelayKey_project(ctx, field)
+			case "product":
+				return ec.fieldContext_RelayKey_product(ctx, field)
+			case "ownerUser":
+				return ec.fieldContext_RelayKey_ownerUser(ctx, field)
+			case "wallet":
+				return ec.fieldContext_RelayKey_wallet(ctx, field)
+			case "ledgerEntries":
+				return ec.fieldContext_RelayKey_ledgerEntries(ctx, field)
+			case "dailyUsageSummaries":
+				return ec.fieldContext_RelayKey_dailyUsageSummaries(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayKey", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletConnection_edges,
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		ec.marshalORelayWalletEdge2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletEdge,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "node":
+				return ec.fieldContext_RelayWalletEdge_node(ctx, field)
+			case "cursor":
+				return ec.fieldContext_RelayWalletEdge_cursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayWalletEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletConnection_pageInfo,
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		ec.marshalNPageInfo2entgoᚗioᚋcontribᚋentgqlᚐPageInfo,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletConnection_totalCount,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletEdge_node,
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		ec.marshalORelayWallet2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWallet,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_RelayWallet_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_RelayWallet_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_RelayWallet_updatedAt(ctx, field)
+			case "relayKeyID":
+				return ec.fieldContext_RelayWallet_relayKeyID(ctx, field)
+			case "projectID":
+				return ec.fieldContext_RelayWallet_projectID(ctx, field)
+			case "currency":
+				return ec.fieldContext_RelayWallet_currency(ctx, field)
+			case "availableAmount":
+				return ec.fieldContext_RelayWallet_availableAmount(ctx, field)
+			case "frozenAmount":
+				return ec.fieldContext_RelayWallet_frozenAmount(ctx, field)
+			case "overdraftLimit":
+				return ec.fieldContext_RelayWallet_overdraftLimit(ctx, field)
+			case "version":
+				return ec.fieldContext_RelayWallet_version(ctx, field)
+			case "relayKey":
+				return ec.fieldContext_RelayWallet_relayKey(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayWallet", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletEdge_cursor,
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		ec.marshalNCursor2entgoᚗioᚋcontribᚋentgqlᚐCursor,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Cursor does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntry_id(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntry_id,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.RelayWalletLedgerEntry().ID(ctx, obj)
+		},
+		nil,
+		ec.marshalNID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntry_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntry",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntry_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntry_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntry_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntry_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntry_updatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntry_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntry_relayKeyID(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntry_relayKeyID,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.RelayWalletLedgerEntry().RelayKeyID(ctx, obj)
+		},
+		nil,
+		ec.marshalNID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntry_relayKeyID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntry",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntry_projectID(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntry_projectID,
+		func(ctx context.Context) (any, error) {
+			return obj.ProjectID, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntry_projectID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntry_requestID(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntry_requestID,
+		func(ctx context.Context) (any, error) {
+			return obj.RequestID, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntry_requestID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntry_usageLogID(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntry_usageLogID,
+		func(ctx context.Context) (any, error) {
+			return obj.UsageLogID, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntry_usageLogID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntry_direction(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntry_direction,
+		func(ctx context.Context) (any, error) {
+			return obj.Direction, nil
+		},
+		nil,
+		ec.marshalNRelayWalletLedgerEntryDirection2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐDirection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntry_direction(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RelayWalletLedgerEntryDirection does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntry_scene(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntry_scene,
+		func(ctx context.Context) (any, error) {
+			return obj.Scene, nil
+		},
+		nil,
+		ec.marshalNRelayWalletLedgerEntryScene2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐScene,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntry_scene(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RelayWalletLedgerEntryScene does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntry_amount(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntry_amount,
+		func(ctx context.Context) (any, error) {
+			return obj.Amount, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntry_amount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntry_balanceBefore(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntry_balanceBefore,
+		func(ctx context.Context) (any, error) {
+			return obj.BalanceBefore, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntry_balanceBefore(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntry_balanceAfter(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntry_balanceAfter,
+		func(ctx context.Context) (any, error) {
+			return obj.BalanceAfter, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntry_balanceAfter(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntry_upstreamCost(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntry_upstreamCost,
+		func(ctx context.Context) (any, error) {
+			return obj.UpstreamCost, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntry_upstreamCost(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntry_priceSnapshot(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntry_priceSnapshot,
+		func(ctx context.Context) (any, error) {
+			return obj.PriceSnapshot, nil
+		},
+		nil,
+		ec.marshalOMap2map,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntry_priceSnapshot(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Map does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntry_idempotencyKey(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntry_idempotencyKey,
+		func(ctx context.Context) (any, error) {
+			return obj.IdempotencyKey, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntry_idempotencyKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntry_operatorUserID(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntry_operatorUserID,
+		func(ctx context.Context) (any, error) {
+			return obj.OperatorUserID, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntry_operatorUserID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntry_remark(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntry_remark,
+		func(ctx context.Context) (any, error) {
+			return obj.Remark, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntry_remark(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntry_relayKey(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntry_relayKey,
+		func(ctx context.Context) (any, error) {
+			return obj.RelayKey(ctx)
+		},
+		nil,
+		ec.marshalNRelayKey2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKey,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntry_relayKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntry",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_RelayKey_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_RelayKey_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_RelayKey_updatedAt(ctx, field)
+			case "apiKeyID":
+				return ec.fieldContext_RelayKey_apiKeyID(ctx, field)
+			case "projectID":
+				return ec.fieldContext_RelayKey_projectID(ctx, field)
+			case "productID":
+				return ec.fieldContext_RelayKey_productID(ctx, field)
+			case "ownerUserID":
+				return ec.fieldContext_RelayKey_ownerUserID(ctx, field)
+			case "displayName":
+				return ec.fieldContext_RelayKey_displayName(ctx, field)
+			case "status":
+				return ec.fieldContext_RelayKey_status(ctx, field)
+			case "balanceMode":
+				return ec.fieldContext_RelayKey_balanceMode(ctx, field)
+			case "dailyRequestLimit":
+				return ec.fieldContext_RelayKey_dailyRequestLimit(ctx, field)
+			case "dailyTokenLimit":
+				return ec.fieldContext_RelayKey_dailyTokenLimit(ctx, field)
+			case "monthlyCostLimit":
+				return ec.fieldContext_RelayKey_monthlyCostLimit(ctx, field)
+			case "concurrencyLimit":
+				return ec.fieldContext_RelayKey_concurrencyLimit(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_RelayKey_expiresAt(ctx, field)
+			case "lastUsedAt":
+				return ec.fieldContext_RelayKey_lastUsedAt(ctx, field)
+			case "apiKey":
+				return ec.fieldContext_RelayKey_apiKey(ctx, field)
+			case "project":
+				return ec.fieldContext_RelayKey_project(ctx, field)
+			case "product":
+				return ec.fieldContext_RelayKey_product(ctx, field)
+			case "ownerUser":
+				return ec.fieldContext_RelayKey_ownerUser(ctx, field)
+			case "wallet":
+				return ec.fieldContext_RelayKey_wallet(ctx, field)
+			case "ledgerEntries":
+				return ec.fieldContext_RelayKey_ledgerEntries(ctx, field)
+			case "dailyUsageSummaries":
+				return ec.fieldContext_RelayKey_dailyUsageSummaries(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayKey", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntryConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntryConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntryConnection_edges,
+		func(ctx context.Context) (any, error) {
+			return obj.Edges, nil
+		},
+		nil,
+		ec.marshalORelayWalletLedgerEntryEdge2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryEdge,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntryConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntryConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "node":
+				return ec.fieldContext_RelayWalletLedgerEntryEdge_node(ctx, field)
+			case "cursor":
+				return ec.fieldContext_RelayWalletLedgerEntryEdge_cursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayWalletLedgerEntryEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntryConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntryConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntryConnection_pageInfo,
+		func(ctx context.Context) (any, error) {
+			return obj.PageInfo, nil
+		},
+		nil,
+		ec.marshalNPageInfo2entgoᚗioᚋcontribᚋentgqlᚐPageInfo,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntryConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntryConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntryConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntryConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntryConnection_totalCount,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntryConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntryConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntryEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntryEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntryEdge_node,
+		func(ctx context.Context) (any, error) {
+			return obj.Node, nil
+		},
+		nil,
+		ec.marshalORelayWalletLedgerEntry2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntry,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntryEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntryEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_RelayWalletLedgerEntry_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_RelayWalletLedgerEntry_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_RelayWalletLedgerEntry_updatedAt(ctx, field)
+			case "relayKeyID":
+				return ec.fieldContext_RelayWalletLedgerEntry_relayKeyID(ctx, field)
+			case "projectID":
+				return ec.fieldContext_RelayWalletLedgerEntry_projectID(ctx, field)
+			case "requestID":
+				return ec.fieldContext_RelayWalletLedgerEntry_requestID(ctx, field)
+			case "usageLogID":
+				return ec.fieldContext_RelayWalletLedgerEntry_usageLogID(ctx, field)
+			case "direction":
+				return ec.fieldContext_RelayWalletLedgerEntry_direction(ctx, field)
+			case "scene":
+				return ec.fieldContext_RelayWalletLedgerEntry_scene(ctx, field)
+			case "amount":
+				return ec.fieldContext_RelayWalletLedgerEntry_amount(ctx, field)
+			case "balanceBefore":
+				return ec.fieldContext_RelayWalletLedgerEntry_balanceBefore(ctx, field)
+			case "balanceAfter":
+				return ec.fieldContext_RelayWalletLedgerEntry_balanceAfter(ctx, field)
+			case "upstreamCost":
+				return ec.fieldContext_RelayWalletLedgerEntry_upstreamCost(ctx, field)
+			case "priceSnapshot":
+				return ec.fieldContext_RelayWalletLedgerEntry_priceSnapshot(ctx, field)
+			case "idempotencyKey":
+				return ec.fieldContext_RelayWalletLedgerEntry_idempotencyKey(ctx, field)
+			case "operatorUserID":
+				return ec.fieldContext_RelayWalletLedgerEntry_operatorUserID(ctx, field)
+			case "remark":
+				return ec.fieldContext_RelayWalletLedgerEntry_remark(ctx, field)
+			case "relayKey":
+				return ec.fieldContext_RelayWalletLedgerEntry_relayKey(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayWalletLedgerEntry", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RelayWalletLedgerEntryEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ent.RelayWalletLedgerEntryEdge) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RelayWalletLedgerEntryEdge_cursor,
+		func(ctx context.Context) (any, error) {
+			return obj.Cursor, nil
+		},
+		nil,
+		ec.marshalNCursor2entgoᚗioᚋcontribᚋentgqlᚐCursor,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RelayWalletLedgerEntryEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RelayWalletLedgerEntryEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Cursor does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Request_id(ctx context.Context, field graphql.CollectedField, obj *ent.Request) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -38883,6 +44961,8 @@ func (ec *executionContext) fieldContext_Request_apiKey(_ context.Context, field
 				return ec.fieldContext_APIKey_project(ctx, field)
 			case "requests":
 				return ec.fieldContext_APIKey_requests(ctx, field)
+			case "relayKey":
+				return ec.fieldContext_APIKey_relayKey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type APIKey", field.Name)
 		},
@@ -38934,6 +45014,8 @@ func (ec *executionContext) fieldContext_Request_project(_ context.Context, fiel
 				return ec.fieldContext_Project_roles(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_Project_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_Project_relayKeys(ctx, field)
 			case "requests":
 				return ec.fieldContext_Project_requests(ctx, field)
 			case "usageLogs":
@@ -39184,6 +45266,8 @@ func (ec *executionContext) fieldContext_Request_channel(_ context.Context, fiel
 				return ec.fieldContext_Channel_channelProbes(ctx, field)
 			case "channelModelPrices":
 				return ec.fieldContext_Channel_channelModelPrices(ctx, field)
+			case "relayProductBindings":
+				return ec.fieldContext_Channel_relayProductBindings(ctx, field)
 			case "providerQuotaStatus":
 				return ec.fieldContext_Channel_providerQuotaStatus(ctx, field)
 			case "allModelEntries":
@@ -40253,6 +46337,8 @@ func (ec *executionContext) fieldContext_RequestExecution_channel(_ context.Cont
 				return ec.fieldContext_Channel_channelProbes(ctx, field)
 			case "channelModelPrices":
 				return ec.fieldContext_Channel_channelModelPrices(ctx, field)
+			case "relayProductBindings":
+				return ec.fieldContext_Channel_relayProductBindings(ctx, field)
 			case "providerQuotaStatus":
 				return ec.fieldContext_Channel_providerQuotaStatus(ctx, field)
 			case "allModelEntries":
@@ -41559,6 +47645,8 @@ func (ec *executionContext) fieldContext_Role_project(_ context.Context, field g
 				return ec.fieldContext_Project_roles(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_Project_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_Project_relayKeys(ctx, field)
 			case "requests":
 				return ec.fieldContext_Project_requests(ctx, field)
 			case "usageLogs":
@@ -42436,6 +48524,8 @@ func (ec *executionContext) fieldContext_SignInPayload_user(_ context.Context, f
 				return ec.fieldContext_User_projects(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_User_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_User_relayKeys(ctx, field)
 			case "roles":
 				return ec.fieldContext_User_roles(ctx, field)
 			case "channelOverrideTemplates":
@@ -44873,6 +50963,8 @@ func (ec *executionContext) fieldContext_Thread_project(_ context.Context, field
 				return ec.fieldContext_Project_roles(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_Project_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_Project_relayKeys(ctx, field)
 			case "requests":
 				return ec.fieldContext_Project_requests(ctx, field)
 			case "usageLogs":
@@ -46578,6 +52670,8 @@ func (ec *executionContext) fieldContext_Trace_project(_ context.Context, field 
 				return ec.fieldContext_Project_roles(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_Project_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_Project_relayKeys(ctx, field)
 			case "requests":
 				return ec.fieldContext_Project_requests(ctx, field)
 			case "usageLogs":
@@ -47282,6 +53376,8 @@ func (ec *executionContext) fieldContext_UnassociatedChannel_channel(_ context.C
 				return ec.fieldContext_Channel_channelProbes(ctx, field)
 			case "channelModelPrices":
 				return ec.fieldContext_Channel_channelModelPrices(ctx, field)
+			case "relayProductBindings":
+				return ec.fieldContext_Channel_relayProductBindings(ctx, field)
 			case "providerQuotaStatus":
 				return ec.fieldContext_Channel_providerQuotaStatus(ctx, field)
 			case "allModelEntries":
@@ -48202,6 +54298,8 @@ func (ec *executionContext) fieldContext_UsageLog_project(_ context.Context, fie
 				return ec.fieldContext_Project_roles(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_Project_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_Project_relayKeys(ctx, field)
 			case "requests":
 				return ec.fieldContext_Project_requests(ctx, field)
 			case "usageLogs":
@@ -48291,6 +54389,8 @@ func (ec *executionContext) fieldContext_UsageLog_channel(_ context.Context, fie
 				return ec.fieldContext_Channel_channelProbes(ctx, field)
 			case "channelModelPrices":
 				return ec.fieldContext_Channel_channelModelPrices(ctx, field)
+			case "relayProductBindings":
+				return ec.fieldContext_Channel_relayProductBindings(ctx, field)
 			case "providerQuotaStatus":
 				return ec.fieldContext_Channel_providerQuotaStatus(ctx, field)
 			case "allModelEntries":
@@ -49116,6 +55216,55 @@ func (ec *executionContext) fieldContext_User_apiKeys(ctx context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _User_relayKeys(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_User_relayKeys,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return obj.RelayKeys(ctx, fc.Args["after"].(*entgql.Cursor[int]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[int]), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.RelayKeyOrder), fc.Args["where"].(*ent.RelayKeyWhereInput))
+		},
+		nil,
+		ec.marshalNRelayKeyConnection2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_User_relayKeys(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "edges":
+				return ec.fieldContext_RelayKeyConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_RelayKeyConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_RelayKeyConnection_totalCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RelayKeyConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_User_relayKeys_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _User_roles(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -49490,6 +55639,8 @@ func (ec *executionContext) fieldContext_UserEdge_node(_ context.Context, field 
 				return ec.fieldContext_User_projects(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_User_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_User_relayKeys(ctx, field)
 			case "roles":
 				return ec.fieldContext_User_roles(ctx, field)
 			case "channelOverrideTemplates":
@@ -50091,6 +56242,8 @@ func (ec *executionContext) fieldContext_UserProject_user(_ context.Context, fie
 				return ec.fieldContext_User_projects(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_User_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_User_relayKeys(ctx, field)
 			case "roles":
 				return ec.fieldContext_User_roles(ctx, field)
 			case "channelOverrideTemplates":
@@ -50150,6 +56303,8 @@ func (ec *executionContext) fieldContext_UserProject_project(_ context.Context, 
 				return ec.fieldContext_Project_roles(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_Project_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_Project_relayKeys(ctx, field)
 			case "requests":
 				return ec.fieldContext_Project_requests(ctx, field)
 			case "usageLogs":
@@ -50484,6 +56639,8 @@ func (ec *executionContext) fieldContext_UserRole_user(_ context.Context, field 
 				return ec.fieldContext_User_projects(ctx, field)
 			case "apiKeys":
 				return ec.fieldContext_User_apiKeys(ctx, field)
+			case "relayKeys":
+				return ec.fieldContext_User_relayKeys(ctx, field)
 			case "roles":
 				return ec.fieldContext_User_roles(ctx, field)
 			case "channelOverrideTemplates":
@@ -52775,7 +58932,7 @@ func (ec *executionContext) unmarshalInputAPIKeyProfileInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "modelMappings", "channelIDs", "channelTags", "channelTagsMatchMode", "modelIDs", "quota", "loadBalanceStrategy"}
+	fieldsInOrder := [...]string{"name", "modelMappings", "channelIDs", "channelTags", "channelTagsMatchMode", "modelIDs", "quota", "loadBalanceStrategy", "useStrategy"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -52838,6 +58995,13 @@ func (ec *executionContext) unmarshalInputAPIKeyProfileInput(ctx context.Context
 				return it, err
 			}
 			it.LoadBalanceStrategy = data
+		case "useStrategy":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("useStrategy"))
+			data, err := ec.unmarshalOAPIKeyUseStrategy2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐAPIKeyUseStrategy(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UseStrategy = data
 		}
 	}
 
@@ -53042,7 +59206,7 @@ func (ec *executionContext) unmarshalInputAPIKeyWhereInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "userID", "userIDNEQ", "userIDIn", "userIDNotIn", "userIDIsNil", "userIDNotNil", "projectID", "projectIDNEQ", "projectIDIn", "projectIDNotIn", "key", "keyNEQ", "keyIn", "keyNotIn", "keyGT", "keyGTE", "keyLT", "keyLTE", "keyContains", "keyHasPrefix", "keyHasSuffix", "keyEqualFold", "keyContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "type", "typeNEQ", "typeIn", "typeNotIn", "status", "statusNEQ", "statusIn", "statusNotIn", "hasUser", "hasUserWith", "hasProject", "hasProjectWith", "hasRequests", "hasRequestsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "userID", "userIDNEQ", "userIDIn", "userIDNotIn", "userIDIsNil", "userIDNotNil", "projectID", "projectIDNEQ", "projectIDIn", "projectIDNotIn", "key", "keyNEQ", "keyIn", "keyNotIn", "keyGT", "keyGTE", "keyLT", "keyLTE", "keyContains", "keyHasPrefix", "keyHasSuffix", "keyEqualFold", "keyContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "type", "typeNEQ", "typeIn", "typeNotIn", "status", "statusNEQ", "statusIn", "statusNotIn", "hasUser", "hasUserWith", "hasProject", "hasProjectWith", "hasRequests", "hasRequestsWith", "hasRelayKey", "hasRelayKeyWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -53652,6 +59816,20 @@ func (ec *executionContext) unmarshalInputAPIKeyWhereInput(ctx context.Context, 
 				return it, err
 			}
 			it.HasRequestsWith = data
+		case "hasRelayKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasRelayKey"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasRelayKey = data
+		case "hasRelayKeyWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasRelayKeyWith"))
+			data, err := ec.unmarshalORelayKeyWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasRelayKeyWith = data
 		}
 	}
 
@@ -56928,7 +63106,7 @@ func (ec *executionContext) unmarshalInputChannelWhereInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "type", "typeNEQ", "typeIn", "typeNotIn", "baseURL", "baseURLNEQ", "baseURLIn", "baseURLNotIn", "baseURLGT", "baseURLGTE", "baseURLLT", "baseURLLTE", "baseURLContains", "baseURLHasPrefix", "baseURLHasSuffix", "baseURLIsNil", "baseURLNotNil", "baseURLEqualFold", "baseURLContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "status", "statusNEQ", "statusIn", "statusNotIn", "autoSyncSupportedModels", "autoSyncSupportedModelsNEQ", "autoSyncModelPattern", "autoSyncModelPatternNEQ", "autoSyncModelPatternIn", "autoSyncModelPatternNotIn", "autoSyncModelPatternGT", "autoSyncModelPatternGTE", "autoSyncModelPatternLT", "autoSyncModelPatternLTE", "autoSyncModelPatternContains", "autoSyncModelPatternHasPrefix", "autoSyncModelPatternHasSuffix", "autoSyncModelPatternIsNil", "autoSyncModelPatternNotNil", "autoSyncModelPatternEqualFold", "autoSyncModelPatternContainsFold", "defaultTestModel", "defaultTestModelNEQ", "defaultTestModelIn", "defaultTestModelNotIn", "defaultTestModelGT", "defaultTestModelGTE", "defaultTestModelLT", "defaultTestModelLTE", "defaultTestModelContains", "defaultTestModelHasPrefix", "defaultTestModelHasSuffix", "defaultTestModelEqualFold", "defaultTestModelContainsFold", "orderingWeight", "orderingWeightNEQ", "orderingWeightIn", "orderingWeightNotIn", "orderingWeightGT", "orderingWeightGTE", "orderingWeightLT", "orderingWeightLTE", "errorMessage", "errorMessageNEQ", "errorMessageIn", "errorMessageNotIn", "errorMessageGT", "errorMessageGTE", "errorMessageLT", "errorMessageLTE", "errorMessageContains", "errorMessageHasPrefix", "errorMessageHasSuffix", "errorMessageIsNil", "errorMessageNotNil", "errorMessageEqualFold", "errorMessageContainsFold", "remark", "remarkNEQ", "remarkIn", "remarkNotIn", "remarkGT", "remarkGTE", "remarkLT", "remarkLTE", "remarkContains", "remarkHasPrefix", "remarkHasSuffix", "remarkIsNil", "remarkNotNil", "remarkEqualFold", "remarkContainsFold", "hasRequests", "hasRequestsWith", "hasExecutions", "hasExecutionsWith", "hasUsageLogs", "hasUsageLogsWith", "hasChannelProbes", "hasChannelProbesWith", "hasChannelModelPrices", "hasChannelModelPricesWith", "hasProviderQuotaStatus", "hasProviderQuotaStatusWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "type", "typeNEQ", "typeIn", "typeNotIn", "baseURL", "baseURLNEQ", "baseURLIn", "baseURLNotIn", "baseURLGT", "baseURLGTE", "baseURLLT", "baseURLLTE", "baseURLContains", "baseURLHasPrefix", "baseURLHasSuffix", "baseURLIsNil", "baseURLNotNil", "baseURLEqualFold", "baseURLContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "status", "statusNEQ", "statusIn", "statusNotIn", "autoSyncSupportedModels", "autoSyncSupportedModelsNEQ", "autoSyncModelPattern", "autoSyncModelPatternNEQ", "autoSyncModelPatternIn", "autoSyncModelPatternNotIn", "autoSyncModelPatternGT", "autoSyncModelPatternGTE", "autoSyncModelPatternLT", "autoSyncModelPatternLTE", "autoSyncModelPatternContains", "autoSyncModelPatternHasPrefix", "autoSyncModelPatternHasSuffix", "autoSyncModelPatternIsNil", "autoSyncModelPatternNotNil", "autoSyncModelPatternEqualFold", "autoSyncModelPatternContainsFold", "defaultTestModel", "defaultTestModelNEQ", "defaultTestModelIn", "defaultTestModelNotIn", "defaultTestModelGT", "defaultTestModelGTE", "defaultTestModelLT", "defaultTestModelLTE", "defaultTestModelContains", "defaultTestModelHasPrefix", "defaultTestModelHasSuffix", "defaultTestModelEqualFold", "defaultTestModelContainsFold", "orderingWeight", "orderingWeightNEQ", "orderingWeightIn", "orderingWeightNotIn", "orderingWeightGT", "orderingWeightGTE", "orderingWeightLT", "orderingWeightLTE", "errorMessage", "errorMessageNEQ", "errorMessageIn", "errorMessageNotIn", "errorMessageGT", "errorMessageGTE", "errorMessageLT", "errorMessageLTE", "errorMessageContains", "errorMessageHasPrefix", "errorMessageHasSuffix", "errorMessageIsNil", "errorMessageNotNil", "errorMessageEqualFold", "errorMessageContainsFold", "remark", "remarkNEQ", "remarkIn", "remarkNotIn", "remarkGT", "remarkGTE", "remarkLT", "remarkLTE", "remarkContains", "remarkHasPrefix", "remarkHasSuffix", "remarkIsNil", "remarkNotNil", "remarkEqualFold", "remarkContainsFold", "hasRequests", "hasRequestsWith", "hasExecutions", "hasExecutionsWith", "hasUsageLogs", "hasUsageLogsWith", "hasChannelProbes", "hasChannelProbesWith", "hasChannelModelPrices", "hasChannelModelPricesWith", "hasRelayProductBindings", "hasRelayProductBindingsWith", "hasProviderQuotaStatus", "hasProviderQuotaStatusWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -57954,6 +64132,20 @@ func (ec *executionContext) unmarshalInputChannelWhereInput(ctx context.Context,
 				return it, err
 			}
 			it.HasChannelModelPricesWith = data
+		case "hasRelayProductBindings":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasRelayProductBindings"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasRelayProductBindings = data
+		case "hasRelayProductBindingsWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasRelayProductBindingsWith"))
+			data, err := ec.unmarshalORelayProductChannelWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasRelayProductBindingsWith = data
 		case "hasProviderQuotaStatus":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasProviderQuotaStatus"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -58728,6 +64920,169 @@ func (ec *executionContext) unmarshalInputCreatePromptProtectionRuleInput(ctx co
 				return it, err
 			}
 			it.Settings = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateRelayProductChannelInput(ctx context.Context, obj any) (ent.CreateRelayProductChannelInput, error) {
+	var it ent.CreateRelayProductChannelInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"priority", "weight", "status", "allowFallback", "modelFilter", "maxInflight", "productID"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "priority":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priority"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Priority = data
+		case "weight":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("weight"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Weight = data
+		case "status":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			data, err := ec.unmarshalORelayProductChannelStatus2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductchannelᚐStatus(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Status = data
+		case "allowFallback":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowFallback"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AllowFallback = data
+		case "modelFilter":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("modelFilter"))
+			data, err := ec.unmarshalOAny2interface(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ModelFilter = data
+		case "maxInflight":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxInflight"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxInflight = data
+		case "productID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("productID"))
+			data, err := ec.unmarshalNID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToInt(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ProductID = converted
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateRelayProductInput(ctx context.Context, obj any) (ent.CreateRelayProductInput, error) {
+	var it ent.CreateRelayProductInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"code", "name", "providerType", "accessMode", "billingMode", "status", "currency", "listPriceConfig", "allowedModels", "requestTimeoutSeconds"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "code":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("code"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Code = data
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "providerType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerType"))
+			data, err := ec.unmarshalNRelayProductProviderType2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐProviderType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProviderType = data
+		case "accessMode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accessMode"))
+			data, err := ec.unmarshalORelayProductAccessMode2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐAccessMode(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccessMode = data
+		case "billingMode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("billingMode"))
+			data, err := ec.unmarshalORelayProductBillingMode2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐBillingMode(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BillingMode = data
+		case "status":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			data, err := ec.unmarshalORelayProductStatus2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐStatus(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Status = data
+		case "currency":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currency"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Currency = data
+		case "listPriceConfig":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("listPriceConfig"))
+			data, err := ec.unmarshalOMap2map(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ListPriceConfig = data
+		case "allowedModels":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowedModels"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AllowedModels = data
+		case "requestTimeoutSeconds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestTimeoutSeconds"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestTimeoutSeconds = data
 		}
 	}
 
@@ -62160,7 +68515,7 @@ func (ec *executionContext) unmarshalInputProjectWhereInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "description", "descriptionNEQ", "descriptionIn", "descriptionNotIn", "descriptionGT", "descriptionGTE", "descriptionLT", "descriptionLTE", "descriptionContains", "descriptionHasPrefix", "descriptionHasSuffix", "descriptionEqualFold", "descriptionContainsFold", "status", "statusNEQ", "statusIn", "statusNotIn", "hasUsers", "hasUsersWith", "hasRoles", "hasRolesWith", "hasAPIKeys", "hasAPIKeysWith", "hasRequests", "hasRequestsWith", "hasUsageLogs", "hasUsageLogsWith", "hasThreads", "hasThreadsWith", "hasTraces", "hasTracesWith", "hasPrompts", "hasPromptsWith", "hasProjectUsers", "hasProjectUsersWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "description", "descriptionNEQ", "descriptionIn", "descriptionNotIn", "descriptionGT", "descriptionGTE", "descriptionLT", "descriptionLTE", "descriptionContains", "descriptionHasPrefix", "descriptionHasSuffix", "descriptionEqualFold", "descriptionContainsFold", "status", "statusNEQ", "statusIn", "statusNotIn", "hasUsers", "hasUsersWith", "hasRoles", "hasRolesWith", "hasAPIKeys", "hasAPIKeysWith", "hasRelayKeys", "hasRelayKeysWith", "hasRequests", "hasRequestsWith", "hasUsageLogs", "hasUsageLogsWith", "hasThreads", "hasThreadsWith", "hasTraces", "hasTracesWith", "hasPrompts", "hasPromptsWith", "hasProjectUsers", "hasProjectUsersWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -62640,6 +68995,20 @@ func (ec *executionContext) unmarshalInputProjectWhereInput(ctx context.Context,
 				return it, err
 			}
 			it.HasAPIKeysWith = data
+		case "hasRelayKeys":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasRelayKeys"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasRelayKeys = data
+		case "hasRelayKeysWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasRelayKeysWith"))
+			data, err := ec.unmarshalORelayKeyWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasRelayKeysWith = data
 		case "hasRequests":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasRequests"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -65051,6 +71420,5401 @@ func (ec *executionContext) unmarshalInputRegexAssociationInput(ctx context.Cont
 				return it, err
 			}
 			it.Exclude = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRelayDailyUsageSummaryOrder(ctx context.Context, obj any) (ent.RelayDailyUsageSummaryOrder, error) {
+	var it ent.RelayDailyUsageSummaryOrder
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["direction"]; !present {
+		asMap["direction"] = "ASC"
+	}
+
+	fieldsInOrder := [...]string{"direction", "field"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "direction":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
+			data, err := ec.unmarshalNOrderDirection2entgoᚗioᚋcontribᚋentgqlᚐOrderDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Direction = data
+		case "field":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			data, err := ec.unmarshalNRelayDailyUsageSummaryOrderField2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryOrderField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Field = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRelayDailyUsageSummaryWhereInput(ctx context.Context, obj any) (ent.RelayDailyUsageSummaryWhereInput, error) {
+	var it ent.RelayDailyUsageSummaryWhereInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "relayKeyID", "relayKeyIDNEQ", "relayKeyIDIn", "relayKeyIDNotIn", "projectID", "projectIDNEQ", "projectIDIn", "projectIDNotIn", "projectIDGT", "projectIDGTE", "projectIDLT", "projectIDLTE", "statDate", "statDateNEQ", "statDateIn", "statDateNotIn", "statDateGT", "statDateGTE", "statDateLT", "statDateLTE", "requestCount", "requestCountNEQ", "requestCountIn", "requestCountNotIn", "requestCountGT", "requestCountGTE", "requestCountLT", "requestCountLTE", "totalTokens", "totalTokensNEQ", "totalTokensIn", "totalTokensNotIn", "totalTokensGT", "totalTokensGTE", "totalTokensLT", "totalTokensLTE", "totalCharge", "totalChargeNEQ", "totalChargeIn", "totalChargeNotIn", "totalChargeGT", "totalChargeGTE", "totalChargeLT", "totalChargeLTE", "totalChargeContains", "totalChargeHasPrefix", "totalChargeHasSuffix", "totalChargeEqualFold", "totalChargeContainsFold", "totalUpstreamCost", "totalUpstreamCostNEQ", "totalUpstreamCostIn", "totalUpstreamCostNotIn", "totalUpstreamCostGT", "totalUpstreamCostGTE", "totalUpstreamCostLT", "totalUpstreamCostLTE", "totalUpstreamCostContains", "totalUpstreamCostHasPrefix", "totalUpstreamCostHasSuffix", "totalUpstreamCostEqualFold", "totalUpstreamCostContainsFold", "lastRequestID", "lastRequestIDNEQ", "lastRequestIDIn", "lastRequestIDNotIn", "lastRequestIDGT", "lastRequestIDGTE", "lastRequestIDLT", "lastRequestIDLTE", "lastRequestIDIsNil", "lastRequestIDNotNil", "hasRelayKey", "hasRelayKeyWith"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "not":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			data, err := ec.unmarshalORelayDailyUsageSummaryWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Not = data
+		case "and":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			data, err := ec.unmarshalORelayDailyUsageSummaryWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.And = data
+		case "or":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			data, err := ec.unmarshalORelayDailyUsageSummaryWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Or = data
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ID = converted
+		case "idNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNEQ"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDNEQ = converted
+		case "idIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDIn = converted
+		case "idNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNotIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDNotIn = converted
+		case "idGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDGT = converted
+		case "idGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDGTE = converted
+		case "idLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDLT = converted
+		case "idLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDLTE = converted
+		case "createdAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAt = data
+		case "createdAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNEQ = data
+		case "createdAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtIn = data
+		case "createdAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNotIn = data
+		case "createdAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGT = data
+		case "createdAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGTE = data
+		case "createdAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLT = data
+		case "createdAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLTE = data
+		case "updatedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAt = data
+		case "updatedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNEQ = data
+		case "updatedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtIn = data
+		case "updatedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNotIn = data
+		case "updatedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGT = data
+		case "updatedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGTE = data
+		case "updatedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLT = data
+		case "updatedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLTE = data
+		case "relayKeyID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("relayKeyID"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.RelayKeyID = converted
+		case "relayKeyIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("relayKeyIDNEQ"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.RelayKeyIDNEQ = converted
+		case "relayKeyIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("relayKeyIDIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.RelayKeyIDIn = converted
+		case "relayKeyIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("relayKeyIDNotIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.RelayKeyIDNotIn = converted
+		case "projectID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectID"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectID = data
+		case "projectIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDNEQ = data
+		case "projectIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDIn = data
+		case "projectIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDNotIn = data
+		case "projectIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDGT = data
+		case "projectIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDGTE = data
+		case "projectIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDLT = data
+		case "projectIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDLTE = data
+		case "statDate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statDate"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatDate = data
+		case "statDateNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statDateNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatDateNEQ = data
+		case "statDateIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statDateIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatDateIn = data
+		case "statDateNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statDateNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatDateNotIn = data
+		case "statDateGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statDateGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatDateGT = data
+		case "statDateGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statDateGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatDateGTE = data
+		case "statDateLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statDateLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatDateLT = data
+		case "statDateLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statDateLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatDateLTE = data
+		case "requestCount":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestCount"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestCount = data
+		case "requestCountNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestCountNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestCountNEQ = data
+		case "requestCountIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestCountIn"))
+			data, err := ec.unmarshalOInt2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestCountIn = data
+		case "requestCountNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestCountNotIn"))
+			data, err := ec.unmarshalOInt2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestCountNotIn = data
+		case "requestCountGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestCountGT"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestCountGT = data
+		case "requestCountGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestCountGTE"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestCountGTE = data
+		case "requestCountLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestCountLT"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestCountLT = data
+		case "requestCountLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestCountLTE"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestCountLTE = data
+		case "totalTokens":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalTokens"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalTokens = data
+		case "totalTokensNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalTokensNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalTokensNEQ = data
+		case "totalTokensIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalTokensIn"))
+			data, err := ec.unmarshalOInt2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalTokensIn = data
+		case "totalTokensNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalTokensNotIn"))
+			data, err := ec.unmarshalOInt2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalTokensNotIn = data
+		case "totalTokensGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalTokensGT"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalTokensGT = data
+		case "totalTokensGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalTokensGTE"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalTokensGTE = data
+		case "totalTokensLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalTokensLT"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalTokensLT = data
+		case "totalTokensLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalTokensLTE"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalTokensLTE = data
+		case "totalCharge":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalCharge"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalCharge = data
+		case "totalChargeNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalChargeNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalChargeNEQ = data
+		case "totalChargeIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalChargeIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalChargeIn = data
+		case "totalChargeNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalChargeNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalChargeNotIn = data
+		case "totalChargeGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalChargeGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalChargeGT = data
+		case "totalChargeGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalChargeGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalChargeGTE = data
+		case "totalChargeLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalChargeLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalChargeLT = data
+		case "totalChargeLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalChargeLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalChargeLTE = data
+		case "totalChargeContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalChargeContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalChargeContains = data
+		case "totalChargeHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalChargeHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalChargeHasPrefix = data
+		case "totalChargeHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalChargeHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalChargeHasSuffix = data
+		case "totalChargeEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalChargeEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalChargeEqualFold = data
+		case "totalChargeContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalChargeContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalChargeContainsFold = data
+		case "totalUpstreamCost":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalUpstreamCost"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalUpstreamCost = data
+		case "totalUpstreamCostNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalUpstreamCostNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalUpstreamCostNEQ = data
+		case "totalUpstreamCostIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalUpstreamCostIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalUpstreamCostIn = data
+		case "totalUpstreamCostNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalUpstreamCostNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalUpstreamCostNotIn = data
+		case "totalUpstreamCostGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalUpstreamCostGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalUpstreamCostGT = data
+		case "totalUpstreamCostGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalUpstreamCostGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalUpstreamCostGTE = data
+		case "totalUpstreamCostLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalUpstreamCostLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalUpstreamCostLT = data
+		case "totalUpstreamCostLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalUpstreamCostLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalUpstreamCostLTE = data
+		case "totalUpstreamCostContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalUpstreamCostContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalUpstreamCostContains = data
+		case "totalUpstreamCostHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalUpstreamCostHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalUpstreamCostHasPrefix = data
+		case "totalUpstreamCostHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalUpstreamCostHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalUpstreamCostHasSuffix = data
+		case "totalUpstreamCostEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalUpstreamCostEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalUpstreamCostEqualFold = data
+		case "totalUpstreamCostContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalUpstreamCostContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TotalUpstreamCostContainsFold = data
+		case "lastRequestID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRequestID"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRequestID = data
+		case "lastRequestIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRequestIDNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRequestIDNEQ = data
+		case "lastRequestIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRequestIDIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRequestIDIn = data
+		case "lastRequestIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRequestIDNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRequestIDNotIn = data
+		case "lastRequestIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRequestIDGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRequestIDGT = data
+		case "lastRequestIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRequestIDGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRequestIDGTE = data
+		case "lastRequestIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRequestIDLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRequestIDLT = data
+		case "lastRequestIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRequestIDLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRequestIDLTE = data
+		case "lastRequestIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRequestIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRequestIDIsNil = data
+		case "lastRequestIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastRequestIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastRequestIDNotNil = data
+		case "hasRelayKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasRelayKey"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasRelayKey = data
+		case "hasRelayKeyWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasRelayKeyWith"))
+			data, err := ec.unmarshalORelayKeyWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasRelayKeyWith = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRelayKeyOrder(ctx context.Context, obj any) (ent.RelayKeyOrder, error) {
+	var it ent.RelayKeyOrder
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["direction"]; !present {
+		asMap["direction"] = "ASC"
+	}
+
+	fieldsInOrder := [...]string{"direction", "field"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "direction":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
+			data, err := ec.unmarshalNOrderDirection2entgoᚗioᚋcontribᚋentgqlᚐOrderDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Direction = data
+		case "field":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			data, err := ec.unmarshalNRelayKeyOrderField2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyOrderField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Field = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRelayKeyWhereInput(ctx context.Context, obj any) (ent.RelayKeyWhereInput, error) {
+	var it ent.RelayKeyWhereInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "apiKeyID", "apiKeyIDNEQ", "apiKeyIDIn", "apiKeyIDNotIn", "projectID", "projectIDNEQ", "projectIDIn", "projectIDNotIn", "productID", "productIDNEQ", "productIDIn", "productIDNotIn", "ownerUserID", "ownerUserIDNEQ", "ownerUserIDIn", "ownerUserIDNotIn", "ownerUserIDIsNil", "ownerUserIDNotNil", "displayName", "displayNameNEQ", "displayNameIn", "displayNameNotIn", "displayNameGT", "displayNameGTE", "displayNameLT", "displayNameLTE", "displayNameContains", "displayNameHasPrefix", "displayNameHasSuffix", "displayNameEqualFold", "displayNameContainsFold", "status", "statusNEQ", "statusIn", "statusNotIn", "balanceMode", "balanceModeNEQ", "balanceModeIn", "balanceModeNotIn", "dailyRequestLimit", "dailyRequestLimitNEQ", "dailyRequestLimitIn", "dailyRequestLimitNotIn", "dailyRequestLimitGT", "dailyRequestLimitGTE", "dailyRequestLimitLT", "dailyRequestLimitLTE", "dailyRequestLimitIsNil", "dailyRequestLimitNotNil", "dailyTokenLimit", "dailyTokenLimitNEQ", "dailyTokenLimitIn", "dailyTokenLimitNotIn", "dailyTokenLimitGT", "dailyTokenLimitGTE", "dailyTokenLimitLT", "dailyTokenLimitLTE", "dailyTokenLimitIsNil", "dailyTokenLimitNotNil", "monthlyCostLimit", "monthlyCostLimitNEQ", "monthlyCostLimitIn", "monthlyCostLimitNotIn", "monthlyCostLimitGT", "monthlyCostLimitGTE", "monthlyCostLimitLT", "monthlyCostLimitLTE", "monthlyCostLimitContains", "monthlyCostLimitHasPrefix", "monthlyCostLimitHasSuffix", "monthlyCostLimitIsNil", "monthlyCostLimitNotNil", "monthlyCostLimitEqualFold", "monthlyCostLimitContainsFold", "concurrencyLimit", "concurrencyLimitNEQ", "concurrencyLimitIn", "concurrencyLimitNotIn", "concurrencyLimitGT", "concurrencyLimitGTE", "concurrencyLimitLT", "concurrencyLimitLTE", "concurrencyLimitIsNil", "concurrencyLimitNotNil", "expiresAt", "expiresAtNEQ", "expiresAtIn", "expiresAtNotIn", "expiresAtGT", "expiresAtGTE", "expiresAtLT", "expiresAtLTE", "expiresAtIsNil", "expiresAtNotNil", "lastUsedAt", "lastUsedAtNEQ", "lastUsedAtIn", "lastUsedAtNotIn", "lastUsedAtGT", "lastUsedAtGTE", "lastUsedAtLT", "lastUsedAtLTE", "lastUsedAtIsNil", "lastUsedAtNotNil", "hasAPIKey", "hasAPIKeyWith", "hasProject", "hasProjectWith", "hasProduct", "hasProductWith", "hasOwnerUser", "hasOwnerUserWith", "hasWallet", "hasWalletWith", "hasLedgerEntries", "hasLedgerEntriesWith", "hasDailyUsageSummaries", "hasDailyUsageSummariesWith"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "not":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			data, err := ec.unmarshalORelayKeyWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Not = data
+		case "and":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			data, err := ec.unmarshalORelayKeyWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.And = data
+		case "or":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			data, err := ec.unmarshalORelayKeyWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Or = data
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ID = converted
+		case "idNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNEQ"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDNEQ = converted
+		case "idIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDIn = converted
+		case "idNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNotIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDNotIn = converted
+		case "idGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDGT = converted
+		case "idGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDGTE = converted
+		case "idLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDLT = converted
+		case "idLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDLTE = converted
+		case "createdAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAt = data
+		case "createdAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNEQ = data
+		case "createdAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtIn = data
+		case "createdAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNotIn = data
+		case "createdAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGT = data
+		case "createdAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGTE = data
+		case "createdAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLT = data
+		case "createdAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLTE = data
+		case "updatedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAt = data
+		case "updatedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNEQ = data
+		case "updatedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtIn = data
+		case "updatedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNotIn = data
+		case "updatedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGT = data
+		case "updatedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGTE = data
+		case "updatedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLT = data
+		case "updatedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLTE = data
+		case "apiKeyID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiKeyID"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.APIKeyID = converted
+		case "apiKeyIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiKeyIDNEQ"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.APIKeyIDNEQ = converted
+		case "apiKeyIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiKeyIDIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.APIKeyIDIn = converted
+		case "apiKeyIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiKeyIDNotIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.APIKeyIDNotIn = converted
+		case "projectID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectID"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ProjectID = converted
+		case "projectIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDNEQ"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ProjectIDNEQ = converted
+		case "projectIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ProjectIDIn = converted
+		case "projectIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDNotIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ProjectIDNotIn = converted
+		case "productID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("productID"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ProductID = converted
+		case "productIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("productIDNEQ"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ProductIDNEQ = converted
+		case "productIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("productIDIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ProductIDIn = converted
+		case "productIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("productIDNotIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ProductIDNotIn = converted
+		case "ownerUserID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerUserID"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.OwnerUserID = converted
+		case "ownerUserIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerUserIDNEQ"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.OwnerUserIDNEQ = converted
+		case "ownerUserIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerUserIDIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.OwnerUserIDIn = converted
+		case "ownerUserIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerUserIDNotIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.OwnerUserIDNotIn = converted
+		case "ownerUserIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerUserIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerUserIDIsNil = data
+		case "ownerUserIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerUserIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerUserIDNotNil = data
+		case "displayName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayName"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayName = data
+		case "displayNameNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameNEQ = data
+		case "displayNameIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameIn = data
+		case "displayNameNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameNotIn = data
+		case "displayNameGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameGT = data
+		case "displayNameGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameGTE = data
+		case "displayNameLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameLT = data
+		case "displayNameLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameLTE = data
+		case "displayNameContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameContains = data
+		case "displayNameHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameHasPrefix = data
+		case "displayNameHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameHasSuffix = data
+		case "displayNameEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameEqualFold = data
+		case "displayNameContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayNameContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayNameContainsFold = data
+		case "status":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			data, err := ec.unmarshalORelayKeyStatus2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐStatus(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Status = data
+		case "statusNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusNEQ"))
+			data, err := ec.unmarshalORelayKeyStatus2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐStatus(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusNEQ = data
+		case "statusIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusIn"))
+			data, err := ec.unmarshalORelayKeyStatus2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐStatusᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusIn = data
+		case "statusNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusNotIn"))
+			data, err := ec.unmarshalORelayKeyStatus2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐStatusᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusNotIn = data
+		case "balanceMode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceMode"))
+			data, err := ec.unmarshalORelayKeyBalanceMode2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐBalanceMode(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceMode = data
+		case "balanceModeNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceModeNEQ"))
+			data, err := ec.unmarshalORelayKeyBalanceMode2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐBalanceMode(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceModeNEQ = data
+		case "balanceModeIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceModeIn"))
+			data, err := ec.unmarshalORelayKeyBalanceMode2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐBalanceModeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceModeIn = data
+		case "balanceModeNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceModeNotIn"))
+			data, err := ec.unmarshalORelayKeyBalanceMode2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐBalanceModeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceModeNotIn = data
+		case "dailyRequestLimit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyRequestLimit"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyRequestLimit = data
+		case "dailyRequestLimitNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyRequestLimitNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyRequestLimitNEQ = data
+		case "dailyRequestLimitIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyRequestLimitIn"))
+			data, err := ec.unmarshalOInt2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyRequestLimitIn = data
+		case "dailyRequestLimitNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyRequestLimitNotIn"))
+			data, err := ec.unmarshalOInt2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyRequestLimitNotIn = data
+		case "dailyRequestLimitGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyRequestLimitGT"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyRequestLimitGT = data
+		case "dailyRequestLimitGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyRequestLimitGTE"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyRequestLimitGTE = data
+		case "dailyRequestLimitLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyRequestLimitLT"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyRequestLimitLT = data
+		case "dailyRequestLimitLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyRequestLimitLTE"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyRequestLimitLTE = data
+		case "dailyRequestLimitIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyRequestLimitIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyRequestLimitIsNil = data
+		case "dailyRequestLimitNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyRequestLimitNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyRequestLimitNotNil = data
+		case "dailyTokenLimit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyTokenLimit"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyTokenLimit = data
+		case "dailyTokenLimitNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyTokenLimitNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyTokenLimitNEQ = data
+		case "dailyTokenLimitIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyTokenLimitIn"))
+			data, err := ec.unmarshalOInt2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyTokenLimitIn = data
+		case "dailyTokenLimitNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyTokenLimitNotIn"))
+			data, err := ec.unmarshalOInt2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyTokenLimitNotIn = data
+		case "dailyTokenLimitGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyTokenLimitGT"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyTokenLimitGT = data
+		case "dailyTokenLimitGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyTokenLimitGTE"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyTokenLimitGTE = data
+		case "dailyTokenLimitLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyTokenLimitLT"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyTokenLimitLT = data
+		case "dailyTokenLimitLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyTokenLimitLTE"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyTokenLimitLTE = data
+		case "dailyTokenLimitIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyTokenLimitIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyTokenLimitIsNil = data
+		case "dailyTokenLimitNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dailyTokenLimitNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DailyTokenLimitNotNil = data
+		case "monthlyCostLimit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("monthlyCostLimit"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MonthlyCostLimit = data
+		case "monthlyCostLimitNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("monthlyCostLimitNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MonthlyCostLimitNEQ = data
+		case "monthlyCostLimitIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("monthlyCostLimitIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MonthlyCostLimitIn = data
+		case "monthlyCostLimitNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("monthlyCostLimitNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MonthlyCostLimitNotIn = data
+		case "monthlyCostLimitGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("monthlyCostLimitGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MonthlyCostLimitGT = data
+		case "monthlyCostLimitGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("monthlyCostLimitGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MonthlyCostLimitGTE = data
+		case "monthlyCostLimitLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("monthlyCostLimitLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MonthlyCostLimitLT = data
+		case "monthlyCostLimitLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("monthlyCostLimitLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MonthlyCostLimitLTE = data
+		case "monthlyCostLimitContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("monthlyCostLimitContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MonthlyCostLimitContains = data
+		case "monthlyCostLimitHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("monthlyCostLimitHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MonthlyCostLimitHasPrefix = data
+		case "monthlyCostLimitHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("monthlyCostLimitHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MonthlyCostLimitHasSuffix = data
+		case "monthlyCostLimitIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("monthlyCostLimitIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MonthlyCostLimitIsNil = data
+		case "monthlyCostLimitNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("monthlyCostLimitNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MonthlyCostLimitNotNil = data
+		case "monthlyCostLimitEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("monthlyCostLimitEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MonthlyCostLimitEqualFold = data
+		case "monthlyCostLimitContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("monthlyCostLimitContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MonthlyCostLimitContainsFold = data
+		case "concurrencyLimit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("concurrencyLimit"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConcurrencyLimit = data
+		case "concurrencyLimitNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("concurrencyLimitNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConcurrencyLimitNEQ = data
+		case "concurrencyLimitIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("concurrencyLimitIn"))
+			data, err := ec.unmarshalOInt2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConcurrencyLimitIn = data
+		case "concurrencyLimitNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("concurrencyLimitNotIn"))
+			data, err := ec.unmarshalOInt2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConcurrencyLimitNotIn = data
+		case "concurrencyLimitGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("concurrencyLimitGT"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConcurrencyLimitGT = data
+		case "concurrencyLimitGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("concurrencyLimitGTE"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConcurrencyLimitGTE = data
+		case "concurrencyLimitLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("concurrencyLimitLT"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConcurrencyLimitLT = data
+		case "concurrencyLimitLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("concurrencyLimitLTE"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConcurrencyLimitLTE = data
+		case "concurrencyLimitIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("concurrencyLimitIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConcurrencyLimitIsNil = data
+		case "concurrencyLimitNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("concurrencyLimitNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConcurrencyLimitNotNil = data
+		case "expiresAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresAt = data
+		case "expiresAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresAtNEQ = data
+		case "expiresAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresAtIn = data
+		case "expiresAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresAtNotIn = data
+		case "expiresAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresAtGT = data
+		case "expiresAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresAtGTE = data
+		case "expiresAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresAtLT = data
+		case "expiresAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresAtLTE = data
+		case "expiresAtIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAtIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresAtIsNil = data
+		case "expiresAtNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAtNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresAtNotNil = data
+		case "lastUsedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastUsedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastUsedAt = data
+		case "lastUsedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastUsedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastUsedAtNEQ = data
+		case "lastUsedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastUsedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastUsedAtIn = data
+		case "lastUsedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastUsedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastUsedAtNotIn = data
+		case "lastUsedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastUsedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastUsedAtGT = data
+		case "lastUsedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastUsedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastUsedAtGTE = data
+		case "lastUsedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastUsedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastUsedAtLT = data
+		case "lastUsedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastUsedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastUsedAtLTE = data
+		case "lastUsedAtIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastUsedAtIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastUsedAtIsNil = data
+		case "lastUsedAtNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastUsedAtNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastUsedAtNotNil = data
+		case "hasAPIKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasAPIKey"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasAPIKey = data
+		case "hasAPIKeyWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasAPIKeyWith"))
+			data, err := ec.unmarshalOAPIKeyWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐAPIKeyWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasAPIKeyWith = data
+		case "hasProject":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasProject"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasProject = data
+		case "hasProjectWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasProjectWith"))
+			data, err := ec.unmarshalOProjectWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐProjectWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasProjectWith = data
+		case "hasProduct":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasProduct"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasProduct = data
+		case "hasProductWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasProductWith"))
+			data, err := ec.unmarshalORelayProductWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasProductWith = data
+		case "hasOwnerUser":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasOwnerUser"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasOwnerUser = data
+		case "hasOwnerUserWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasOwnerUserWith"))
+			data, err := ec.unmarshalOUserWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐUserWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasOwnerUserWith = data
+		case "hasWallet":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasWallet"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasWallet = data
+		case "hasWalletWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasWalletWith"))
+			data, err := ec.unmarshalORelayWalletWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasWalletWith = data
+		case "hasLedgerEntries":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLedgerEntries"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasLedgerEntries = data
+		case "hasLedgerEntriesWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLedgerEntriesWith"))
+			data, err := ec.unmarshalORelayWalletLedgerEntryWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasLedgerEntriesWith = data
+		case "hasDailyUsageSummaries":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasDailyUsageSummaries"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasDailyUsageSummaries = data
+		case "hasDailyUsageSummariesWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasDailyUsageSummariesWith"))
+			data, err := ec.unmarshalORelayDailyUsageSummaryWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasDailyUsageSummariesWith = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRelayProductChannelOrder(ctx context.Context, obj any) (ent.RelayProductChannelOrder, error) {
+	var it ent.RelayProductChannelOrder
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["direction"]; !present {
+		asMap["direction"] = "ASC"
+	}
+
+	fieldsInOrder := [...]string{"direction", "field"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "direction":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
+			data, err := ec.unmarshalNOrderDirection2entgoᚗioᚋcontribᚋentgqlᚐOrderDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Direction = data
+		case "field":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			data, err := ec.unmarshalNRelayProductChannelOrderField2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelOrderField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Field = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRelayProductChannelWhereInput(ctx context.Context, obj any) (ent.RelayProductChannelWhereInput, error) {
+	var it ent.RelayProductChannelWhereInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "productID", "productIDNEQ", "productIDIn", "productIDNotIn", "channelID", "channelIDNEQ", "channelIDIn", "channelIDNotIn", "priority", "priorityNEQ", "priorityIn", "priorityNotIn", "priorityGT", "priorityGTE", "priorityLT", "priorityLTE", "weight", "weightNEQ", "weightIn", "weightNotIn", "weightGT", "weightGTE", "weightLT", "weightLTE", "status", "statusNEQ", "statusIn", "statusNotIn", "allowFallback", "allowFallbackNEQ", "maxInflight", "maxInflightNEQ", "maxInflightIn", "maxInflightNotIn", "maxInflightGT", "maxInflightGTE", "maxInflightLT", "maxInflightLTE", "maxInflightIsNil", "maxInflightNotNil", "hasProduct", "hasProductWith", "hasChannel", "hasChannelWith"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "not":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			data, err := ec.unmarshalORelayProductChannelWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Not = data
+		case "and":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			data, err := ec.unmarshalORelayProductChannelWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.And = data
+		case "or":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			data, err := ec.unmarshalORelayProductChannelWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Or = data
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ID = converted
+		case "idNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNEQ"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDNEQ = converted
+		case "idIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDIn = converted
+		case "idNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNotIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDNotIn = converted
+		case "idGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDGT = converted
+		case "idGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDGTE = converted
+		case "idLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDLT = converted
+		case "idLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDLTE = converted
+		case "createdAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAt = data
+		case "createdAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNEQ = data
+		case "createdAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtIn = data
+		case "createdAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNotIn = data
+		case "createdAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGT = data
+		case "createdAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGTE = data
+		case "createdAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLT = data
+		case "createdAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLTE = data
+		case "updatedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAt = data
+		case "updatedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNEQ = data
+		case "updatedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtIn = data
+		case "updatedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNotIn = data
+		case "updatedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGT = data
+		case "updatedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGTE = data
+		case "updatedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLT = data
+		case "updatedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLTE = data
+		case "productID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("productID"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ProductID = converted
+		case "productIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("productIDNEQ"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ProductIDNEQ = converted
+		case "productIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("productIDIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ProductIDIn = converted
+		case "productIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("productIDNotIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ProductIDNotIn = converted
+		case "channelID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelID"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ChannelID = converted
+		case "channelIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelIDNEQ"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ChannelIDNEQ = converted
+		case "channelIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelIDIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ChannelIDIn = converted
+		case "channelIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelIDNotIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ChannelIDNotIn = converted
+		case "priority":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priority"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Priority = data
+		case "priorityNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priorityNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PriorityNEQ = data
+		case "priorityIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priorityIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PriorityIn = data
+		case "priorityNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priorityNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PriorityNotIn = data
+		case "priorityGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priorityGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PriorityGT = data
+		case "priorityGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priorityGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PriorityGTE = data
+		case "priorityLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priorityLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PriorityLT = data
+		case "priorityLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priorityLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PriorityLTE = data
+		case "weight":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("weight"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Weight = data
+		case "weightNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("weightNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.WeightNEQ = data
+		case "weightIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("weightIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.WeightIn = data
+		case "weightNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("weightNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.WeightNotIn = data
+		case "weightGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("weightGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.WeightGT = data
+		case "weightGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("weightGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.WeightGTE = data
+		case "weightLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("weightLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.WeightLT = data
+		case "weightLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("weightLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.WeightLTE = data
+		case "status":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			data, err := ec.unmarshalORelayProductChannelStatus2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductchannelᚐStatus(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Status = data
+		case "statusNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusNEQ"))
+			data, err := ec.unmarshalORelayProductChannelStatus2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductchannelᚐStatus(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusNEQ = data
+		case "statusIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusIn"))
+			data, err := ec.unmarshalORelayProductChannelStatus2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductchannelᚐStatusᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusIn = data
+		case "statusNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusNotIn"))
+			data, err := ec.unmarshalORelayProductChannelStatus2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductchannelᚐStatusᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusNotIn = data
+		case "allowFallback":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowFallback"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AllowFallback = data
+		case "allowFallbackNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowFallbackNEQ"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AllowFallbackNEQ = data
+		case "maxInflight":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxInflight"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxInflight = data
+		case "maxInflightNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxInflightNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxInflightNEQ = data
+		case "maxInflightIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxInflightIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxInflightIn = data
+		case "maxInflightNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxInflightNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxInflightNotIn = data
+		case "maxInflightGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxInflightGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxInflightGT = data
+		case "maxInflightGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxInflightGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxInflightGTE = data
+		case "maxInflightLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxInflightLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxInflightLT = data
+		case "maxInflightLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxInflightLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxInflightLTE = data
+		case "maxInflightIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxInflightIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxInflightIsNil = data
+		case "maxInflightNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxInflightNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxInflightNotNil = data
+		case "hasProduct":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasProduct"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasProduct = data
+		case "hasProductWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasProductWith"))
+			data, err := ec.unmarshalORelayProductWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasProductWith = data
+		case "hasChannel":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasChannel"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasChannel = data
+		case "hasChannelWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasChannelWith"))
+			data, err := ec.unmarshalOChannelWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐChannelWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasChannelWith = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRelayProductOrder(ctx context.Context, obj any) (ent.RelayProductOrder, error) {
+	var it ent.RelayProductOrder
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["direction"]; !present {
+		asMap["direction"] = "ASC"
+	}
+
+	fieldsInOrder := [...]string{"direction", "field"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "direction":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
+			data, err := ec.unmarshalNOrderDirection2entgoᚗioᚋcontribᚋentgqlᚐOrderDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Direction = data
+		case "field":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			data, err := ec.unmarshalNRelayProductOrderField2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductOrderField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Field = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRelayProductWhereInput(ctx context.Context, obj any) (ent.RelayProductWhereInput, error) {
+	var it ent.RelayProductWhereInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "code", "codeNEQ", "codeIn", "codeNotIn", "codeGT", "codeGTE", "codeLT", "codeLTE", "codeContains", "codeHasPrefix", "codeHasSuffix", "codeEqualFold", "codeContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "providerType", "providerTypeNEQ", "providerTypeIn", "providerTypeNotIn", "accessMode", "accessModeNEQ", "accessModeIn", "accessModeNotIn", "billingMode", "billingModeNEQ", "billingModeIn", "billingModeNotIn", "status", "statusNEQ", "statusIn", "statusNotIn", "currency", "currencyNEQ", "currencyIn", "currencyNotIn", "currencyGT", "currencyGTE", "currencyLT", "currencyLTE", "currencyContains", "currencyHasPrefix", "currencyHasSuffix", "currencyEqualFold", "currencyContainsFold", "requestTimeoutSeconds", "requestTimeoutSecondsNEQ", "requestTimeoutSecondsIn", "requestTimeoutSecondsNotIn", "requestTimeoutSecondsGT", "requestTimeoutSecondsGTE", "requestTimeoutSecondsLT", "requestTimeoutSecondsLTE", "hasChannelBindings", "hasChannelBindingsWith", "hasRelayKeys", "hasRelayKeysWith"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "not":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			data, err := ec.unmarshalORelayProductWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Not = data
+		case "and":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			data, err := ec.unmarshalORelayProductWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.And = data
+		case "or":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			data, err := ec.unmarshalORelayProductWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Or = data
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ID = converted
+		case "idNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNEQ"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDNEQ = converted
+		case "idIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDIn = converted
+		case "idNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNotIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDNotIn = converted
+		case "idGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDGT = converted
+		case "idGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDGTE = converted
+		case "idLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDLT = converted
+		case "idLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDLTE = converted
+		case "createdAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAt = data
+		case "createdAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNEQ = data
+		case "createdAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtIn = data
+		case "createdAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNotIn = data
+		case "createdAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGT = data
+		case "createdAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGTE = data
+		case "createdAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLT = data
+		case "createdAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLTE = data
+		case "updatedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAt = data
+		case "updatedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNEQ = data
+		case "updatedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtIn = data
+		case "updatedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNotIn = data
+		case "updatedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGT = data
+		case "updatedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGTE = data
+		case "updatedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLT = data
+		case "updatedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLTE = data
+		case "code":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("code"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Code = data
+		case "codeNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("codeNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CodeNEQ = data
+		case "codeIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("codeIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CodeIn = data
+		case "codeNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("codeNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CodeNotIn = data
+		case "codeGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("codeGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CodeGT = data
+		case "codeGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("codeGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CodeGTE = data
+		case "codeLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("codeLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CodeLT = data
+		case "codeLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("codeLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CodeLTE = data
+		case "codeContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("codeContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CodeContains = data
+		case "codeHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("codeHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CodeHasPrefix = data
+		case "codeHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("codeHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CodeHasSuffix = data
+		case "codeEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("codeEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CodeEqualFold = data
+		case "codeContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("codeContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CodeContainsFold = data
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "nameNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameNEQ = data
+		case "nameIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameIn = data
+		case "nameNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameNotIn = data
+		case "nameGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameGT = data
+		case "nameGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameGTE = data
+		case "nameLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameLT = data
+		case "nameLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameLTE = data
+		case "nameContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameContains = data
+		case "nameHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameHasPrefix = data
+		case "nameHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameHasSuffix = data
+		case "nameEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameEqualFold = data
+		case "nameContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameContainsFold = data
+		case "providerType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerType"))
+			data, err := ec.unmarshalORelayProductProviderType2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐProviderType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProviderType = data
+		case "providerTypeNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerTypeNEQ"))
+			data, err := ec.unmarshalORelayProductProviderType2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐProviderType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProviderTypeNEQ = data
+		case "providerTypeIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerTypeIn"))
+			data, err := ec.unmarshalORelayProductProviderType2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐProviderTypeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProviderTypeIn = data
+		case "providerTypeNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerTypeNotIn"))
+			data, err := ec.unmarshalORelayProductProviderType2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐProviderTypeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProviderTypeNotIn = data
+		case "accessMode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accessMode"))
+			data, err := ec.unmarshalORelayProductAccessMode2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐAccessMode(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccessMode = data
+		case "accessModeNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accessModeNEQ"))
+			data, err := ec.unmarshalORelayProductAccessMode2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐAccessMode(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccessModeNEQ = data
+		case "accessModeIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accessModeIn"))
+			data, err := ec.unmarshalORelayProductAccessMode2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐAccessModeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccessModeIn = data
+		case "accessModeNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accessModeNotIn"))
+			data, err := ec.unmarshalORelayProductAccessMode2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐAccessModeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccessModeNotIn = data
+		case "billingMode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("billingMode"))
+			data, err := ec.unmarshalORelayProductBillingMode2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐBillingMode(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BillingMode = data
+		case "billingModeNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("billingModeNEQ"))
+			data, err := ec.unmarshalORelayProductBillingMode2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐBillingMode(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BillingModeNEQ = data
+		case "billingModeIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("billingModeIn"))
+			data, err := ec.unmarshalORelayProductBillingMode2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐBillingModeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BillingModeIn = data
+		case "billingModeNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("billingModeNotIn"))
+			data, err := ec.unmarshalORelayProductBillingMode2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐBillingModeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BillingModeNotIn = data
+		case "status":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			data, err := ec.unmarshalORelayProductStatus2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐStatus(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Status = data
+		case "statusNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusNEQ"))
+			data, err := ec.unmarshalORelayProductStatus2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐStatus(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusNEQ = data
+		case "statusIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusIn"))
+			data, err := ec.unmarshalORelayProductStatus2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐStatusᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusIn = data
+		case "statusNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusNotIn"))
+			data, err := ec.unmarshalORelayProductStatus2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐStatusᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusNotIn = data
+		case "currency":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currency"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Currency = data
+		case "currencyNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyNEQ = data
+		case "currencyIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyIn = data
+		case "currencyNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyNotIn = data
+		case "currencyGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyGT = data
+		case "currencyGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyGTE = data
+		case "currencyLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyLT = data
+		case "currencyLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyLTE = data
+		case "currencyContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyContains = data
+		case "currencyHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyHasPrefix = data
+		case "currencyHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyHasSuffix = data
+		case "currencyEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyEqualFold = data
+		case "currencyContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyContainsFold = data
+		case "requestTimeoutSeconds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestTimeoutSeconds"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestTimeoutSeconds = data
+		case "requestTimeoutSecondsNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestTimeoutSecondsNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestTimeoutSecondsNEQ = data
+		case "requestTimeoutSecondsIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestTimeoutSecondsIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestTimeoutSecondsIn = data
+		case "requestTimeoutSecondsNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestTimeoutSecondsNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestTimeoutSecondsNotIn = data
+		case "requestTimeoutSecondsGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestTimeoutSecondsGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestTimeoutSecondsGT = data
+		case "requestTimeoutSecondsGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestTimeoutSecondsGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestTimeoutSecondsGTE = data
+		case "requestTimeoutSecondsLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestTimeoutSecondsLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestTimeoutSecondsLT = data
+		case "requestTimeoutSecondsLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestTimeoutSecondsLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestTimeoutSecondsLTE = data
+		case "hasChannelBindings":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasChannelBindings"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasChannelBindings = data
+		case "hasChannelBindingsWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasChannelBindingsWith"))
+			data, err := ec.unmarshalORelayProductChannelWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasChannelBindingsWith = data
+		case "hasRelayKeys":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasRelayKeys"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasRelayKeys = data
+		case "hasRelayKeysWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasRelayKeysWith"))
+			data, err := ec.unmarshalORelayKeyWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasRelayKeysWith = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRelayWalletLedgerEntryOrder(ctx context.Context, obj any) (ent.RelayWalletLedgerEntryOrder, error) {
+	var it ent.RelayWalletLedgerEntryOrder
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["direction"]; !present {
+		asMap["direction"] = "ASC"
+	}
+
+	fieldsInOrder := [...]string{"direction", "field"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "direction":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
+			data, err := ec.unmarshalNOrderDirection2entgoᚗioᚋcontribᚋentgqlᚐOrderDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Direction = data
+		case "field":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			data, err := ec.unmarshalNRelayWalletLedgerEntryOrderField2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryOrderField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Field = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRelayWalletLedgerEntryWhereInput(ctx context.Context, obj any) (ent.RelayWalletLedgerEntryWhereInput, error) {
+	var it ent.RelayWalletLedgerEntryWhereInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "relayKeyID", "relayKeyIDNEQ", "relayKeyIDIn", "relayKeyIDNotIn", "projectID", "projectIDNEQ", "projectIDIn", "projectIDNotIn", "projectIDGT", "projectIDGTE", "projectIDLT", "projectIDLTE", "requestID", "requestIDNEQ", "requestIDIn", "requestIDNotIn", "requestIDGT", "requestIDGTE", "requestIDLT", "requestIDLTE", "requestIDIsNil", "requestIDNotNil", "usageLogID", "usageLogIDNEQ", "usageLogIDIn", "usageLogIDNotIn", "usageLogIDGT", "usageLogIDGTE", "usageLogIDLT", "usageLogIDLTE", "usageLogIDIsNil", "usageLogIDNotNil", "direction", "directionNEQ", "directionIn", "directionNotIn", "scene", "sceneNEQ", "sceneIn", "sceneNotIn", "amount", "amountNEQ", "amountIn", "amountNotIn", "amountGT", "amountGTE", "amountLT", "amountLTE", "amountContains", "amountHasPrefix", "amountHasSuffix", "amountEqualFold", "amountContainsFold", "balanceBefore", "balanceBeforeNEQ", "balanceBeforeIn", "balanceBeforeNotIn", "balanceBeforeGT", "balanceBeforeGTE", "balanceBeforeLT", "balanceBeforeLTE", "balanceBeforeContains", "balanceBeforeHasPrefix", "balanceBeforeHasSuffix", "balanceBeforeEqualFold", "balanceBeforeContainsFold", "balanceAfter", "balanceAfterNEQ", "balanceAfterIn", "balanceAfterNotIn", "balanceAfterGT", "balanceAfterGTE", "balanceAfterLT", "balanceAfterLTE", "balanceAfterContains", "balanceAfterHasPrefix", "balanceAfterHasSuffix", "balanceAfterEqualFold", "balanceAfterContainsFold", "upstreamCost", "upstreamCostNEQ", "upstreamCostIn", "upstreamCostNotIn", "upstreamCostGT", "upstreamCostGTE", "upstreamCostLT", "upstreamCostLTE", "upstreamCostContains", "upstreamCostHasPrefix", "upstreamCostHasSuffix", "upstreamCostIsNil", "upstreamCostNotNil", "upstreamCostEqualFold", "upstreamCostContainsFold", "idempotencyKey", "idempotencyKeyNEQ", "idempotencyKeyIn", "idempotencyKeyNotIn", "idempotencyKeyGT", "idempotencyKeyGTE", "idempotencyKeyLT", "idempotencyKeyLTE", "idempotencyKeyContains", "idempotencyKeyHasPrefix", "idempotencyKeyHasSuffix", "idempotencyKeyEqualFold", "idempotencyKeyContainsFold", "operatorUserID", "operatorUserIDNEQ", "operatorUserIDIn", "operatorUserIDNotIn", "operatorUserIDGT", "operatorUserIDGTE", "operatorUserIDLT", "operatorUserIDLTE", "operatorUserIDIsNil", "operatorUserIDNotNil", "remark", "remarkNEQ", "remarkIn", "remarkNotIn", "remarkGT", "remarkGTE", "remarkLT", "remarkLTE", "remarkContains", "remarkHasPrefix", "remarkHasSuffix", "remarkIsNil", "remarkNotNil", "remarkEqualFold", "remarkContainsFold", "hasRelayKey", "hasRelayKeyWith"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "not":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			data, err := ec.unmarshalORelayWalletLedgerEntryWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Not = data
+		case "and":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			data, err := ec.unmarshalORelayWalletLedgerEntryWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.And = data
+		case "or":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			data, err := ec.unmarshalORelayWalletLedgerEntryWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Or = data
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ID = converted
+		case "idNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNEQ"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDNEQ = converted
+		case "idIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDIn = converted
+		case "idNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNotIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDNotIn = converted
+		case "idGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDGT = converted
+		case "idGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDGTE = converted
+		case "idLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDLT = converted
+		case "idLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDLTE = converted
+		case "createdAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAt = data
+		case "createdAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNEQ = data
+		case "createdAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtIn = data
+		case "createdAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNotIn = data
+		case "createdAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGT = data
+		case "createdAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGTE = data
+		case "createdAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLT = data
+		case "createdAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLTE = data
+		case "updatedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAt = data
+		case "updatedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNEQ = data
+		case "updatedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtIn = data
+		case "updatedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNotIn = data
+		case "updatedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGT = data
+		case "updatedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGTE = data
+		case "updatedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLT = data
+		case "updatedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLTE = data
+		case "relayKeyID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("relayKeyID"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.RelayKeyID = converted
+		case "relayKeyIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("relayKeyIDNEQ"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.RelayKeyIDNEQ = converted
+		case "relayKeyIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("relayKeyIDIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.RelayKeyIDIn = converted
+		case "relayKeyIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("relayKeyIDNotIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.RelayKeyIDNotIn = converted
+		case "projectID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectID"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectID = data
+		case "projectIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDNEQ = data
+		case "projectIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDIn = data
+		case "projectIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDNotIn = data
+		case "projectIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDGT = data
+		case "projectIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDGTE = data
+		case "projectIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDLT = data
+		case "projectIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDLTE = data
+		case "requestID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestID"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestID = data
+		case "requestIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestIDNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestIDNEQ = data
+		case "requestIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestIDIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestIDIn = data
+		case "requestIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestIDNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestIDNotIn = data
+		case "requestIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestIDGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestIDGT = data
+		case "requestIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestIDGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestIDGTE = data
+		case "requestIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestIDLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestIDLT = data
+		case "requestIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestIDLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestIDLTE = data
+		case "requestIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestIDIsNil = data
+		case "requestIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestIDNotNil = data
+		case "usageLogID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("usageLogID"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UsageLogID = data
+		case "usageLogIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("usageLogIDNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UsageLogIDNEQ = data
+		case "usageLogIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("usageLogIDIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UsageLogIDIn = data
+		case "usageLogIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("usageLogIDNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UsageLogIDNotIn = data
+		case "usageLogIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("usageLogIDGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UsageLogIDGT = data
+		case "usageLogIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("usageLogIDGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UsageLogIDGTE = data
+		case "usageLogIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("usageLogIDLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UsageLogIDLT = data
+		case "usageLogIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("usageLogIDLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UsageLogIDLTE = data
+		case "usageLogIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("usageLogIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UsageLogIDIsNil = data
+		case "usageLogIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("usageLogIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UsageLogIDNotNil = data
+		case "direction":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
+			data, err := ec.unmarshalORelayWalletLedgerEntryDirection2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Direction = data
+		case "directionNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("directionNEQ"))
+			data, err := ec.unmarshalORelayWalletLedgerEntryDirection2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DirectionNEQ = data
+		case "directionIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("directionIn"))
+			data, err := ec.unmarshalORelayWalletLedgerEntryDirection2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐDirectionᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DirectionIn = data
+		case "directionNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("directionNotIn"))
+			data, err := ec.unmarshalORelayWalletLedgerEntryDirection2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐDirectionᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DirectionNotIn = data
+		case "scene":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scene"))
+			data, err := ec.unmarshalORelayWalletLedgerEntryScene2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐScene(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Scene = data
+		case "sceneNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sceneNEQ"))
+			data, err := ec.unmarshalORelayWalletLedgerEntryScene2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐScene(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SceneNEQ = data
+		case "sceneIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sceneIn"))
+			data, err := ec.unmarshalORelayWalletLedgerEntryScene2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐSceneᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SceneIn = data
+		case "sceneNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sceneNotIn"))
+			data, err := ec.unmarshalORelayWalletLedgerEntryScene2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐSceneᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SceneNotIn = data
+		case "amount":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amount"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Amount = data
+		case "amountNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amountNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AmountNEQ = data
+		case "amountIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amountIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AmountIn = data
+		case "amountNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amountNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AmountNotIn = data
+		case "amountGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amountGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AmountGT = data
+		case "amountGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amountGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AmountGTE = data
+		case "amountLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amountLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AmountLT = data
+		case "amountLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amountLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AmountLTE = data
+		case "amountContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amountContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AmountContains = data
+		case "amountHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amountHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AmountHasPrefix = data
+		case "amountHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amountHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AmountHasSuffix = data
+		case "amountEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amountEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AmountEqualFold = data
+		case "amountContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amountContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AmountContainsFold = data
+		case "balanceBefore":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceBefore"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceBefore = data
+		case "balanceBeforeNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceBeforeNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceBeforeNEQ = data
+		case "balanceBeforeIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceBeforeIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceBeforeIn = data
+		case "balanceBeforeNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceBeforeNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceBeforeNotIn = data
+		case "balanceBeforeGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceBeforeGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceBeforeGT = data
+		case "balanceBeforeGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceBeforeGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceBeforeGTE = data
+		case "balanceBeforeLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceBeforeLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceBeforeLT = data
+		case "balanceBeforeLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceBeforeLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceBeforeLTE = data
+		case "balanceBeforeContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceBeforeContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceBeforeContains = data
+		case "balanceBeforeHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceBeforeHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceBeforeHasPrefix = data
+		case "balanceBeforeHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceBeforeHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceBeforeHasSuffix = data
+		case "balanceBeforeEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceBeforeEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceBeforeEqualFold = data
+		case "balanceBeforeContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceBeforeContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceBeforeContainsFold = data
+		case "balanceAfter":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceAfter"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceAfter = data
+		case "balanceAfterNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceAfterNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceAfterNEQ = data
+		case "balanceAfterIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceAfterIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceAfterIn = data
+		case "balanceAfterNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceAfterNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceAfterNotIn = data
+		case "balanceAfterGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceAfterGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceAfterGT = data
+		case "balanceAfterGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceAfterGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceAfterGTE = data
+		case "balanceAfterLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceAfterLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceAfterLT = data
+		case "balanceAfterLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceAfterLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceAfterLTE = data
+		case "balanceAfterContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceAfterContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceAfterContains = data
+		case "balanceAfterHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceAfterHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceAfterHasPrefix = data
+		case "balanceAfterHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceAfterHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceAfterHasSuffix = data
+		case "balanceAfterEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceAfterEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceAfterEqualFold = data
+		case "balanceAfterContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("balanceAfterContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BalanceAfterContainsFold = data
+		case "upstreamCost":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("upstreamCost"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpstreamCost = data
+		case "upstreamCostNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("upstreamCostNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpstreamCostNEQ = data
+		case "upstreamCostIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("upstreamCostIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpstreamCostIn = data
+		case "upstreamCostNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("upstreamCostNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpstreamCostNotIn = data
+		case "upstreamCostGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("upstreamCostGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpstreamCostGT = data
+		case "upstreamCostGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("upstreamCostGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpstreamCostGTE = data
+		case "upstreamCostLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("upstreamCostLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpstreamCostLT = data
+		case "upstreamCostLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("upstreamCostLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpstreamCostLTE = data
+		case "upstreamCostContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("upstreamCostContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpstreamCostContains = data
+		case "upstreamCostHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("upstreamCostHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpstreamCostHasPrefix = data
+		case "upstreamCostHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("upstreamCostHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpstreamCostHasSuffix = data
+		case "upstreamCostIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("upstreamCostIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpstreamCostIsNil = data
+		case "upstreamCostNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("upstreamCostNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpstreamCostNotNil = data
+		case "upstreamCostEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("upstreamCostEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpstreamCostEqualFold = data
+		case "upstreamCostContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("upstreamCostContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpstreamCostContainsFold = data
+		case "idempotencyKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idempotencyKey"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdempotencyKey = data
+		case "idempotencyKeyNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idempotencyKeyNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdempotencyKeyNEQ = data
+		case "idempotencyKeyIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idempotencyKeyIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdempotencyKeyIn = data
+		case "idempotencyKeyNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idempotencyKeyNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdempotencyKeyNotIn = data
+		case "idempotencyKeyGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idempotencyKeyGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdempotencyKeyGT = data
+		case "idempotencyKeyGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idempotencyKeyGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdempotencyKeyGTE = data
+		case "idempotencyKeyLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idempotencyKeyLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdempotencyKeyLT = data
+		case "idempotencyKeyLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idempotencyKeyLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdempotencyKeyLTE = data
+		case "idempotencyKeyContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idempotencyKeyContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdempotencyKeyContains = data
+		case "idempotencyKeyHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idempotencyKeyHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdempotencyKeyHasPrefix = data
+		case "idempotencyKeyHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idempotencyKeyHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdempotencyKeyHasSuffix = data
+		case "idempotencyKeyEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idempotencyKeyEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdempotencyKeyEqualFold = data
+		case "idempotencyKeyContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idempotencyKeyContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IdempotencyKeyContainsFold = data
+		case "operatorUserID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("operatorUserID"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OperatorUserID = data
+		case "operatorUserIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("operatorUserIDNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OperatorUserIDNEQ = data
+		case "operatorUserIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("operatorUserIDIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OperatorUserIDIn = data
+		case "operatorUserIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("operatorUserIDNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OperatorUserIDNotIn = data
+		case "operatorUserIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("operatorUserIDGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OperatorUserIDGT = data
+		case "operatorUserIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("operatorUserIDGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OperatorUserIDGTE = data
+		case "operatorUserIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("operatorUserIDLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OperatorUserIDLT = data
+		case "operatorUserIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("operatorUserIDLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OperatorUserIDLTE = data
+		case "operatorUserIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("operatorUserIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OperatorUserIDIsNil = data
+		case "operatorUserIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("operatorUserIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OperatorUserIDNotNil = data
+		case "remark":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("remark"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Remark = data
+		case "remarkNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("remarkNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RemarkNEQ = data
+		case "remarkIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("remarkIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RemarkIn = data
+		case "remarkNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("remarkNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RemarkNotIn = data
+		case "remarkGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("remarkGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RemarkGT = data
+		case "remarkGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("remarkGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RemarkGTE = data
+		case "remarkLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("remarkLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RemarkLT = data
+		case "remarkLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("remarkLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RemarkLTE = data
+		case "remarkContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("remarkContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RemarkContains = data
+		case "remarkHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("remarkHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RemarkHasPrefix = data
+		case "remarkHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("remarkHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RemarkHasSuffix = data
+		case "remarkIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("remarkIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RemarkIsNil = data
+		case "remarkNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("remarkNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RemarkNotNil = data
+		case "remarkEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("remarkEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RemarkEqualFold = data
+		case "remarkContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("remarkContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RemarkContainsFold = data
+		case "hasRelayKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasRelayKey"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasRelayKey = data
+		case "hasRelayKeyWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasRelayKeyWith"))
+			data, err := ec.unmarshalORelayKeyWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasRelayKeyWith = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRelayWalletOrder(ctx context.Context, obj any) (ent.RelayWalletOrder, error) {
+	var it ent.RelayWalletOrder
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["direction"]; !present {
+		asMap["direction"] = "ASC"
+	}
+
+	fieldsInOrder := [...]string{"direction", "field"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "direction":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
+			data, err := ec.unmarshalNOrderDirection2entgoᚗioᚋcontribᚋentgqlᚐOrderDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Direction = data
+		case "field":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			data, err := ec.unmarshalNRelayWalletOrderField2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletOrderField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Field = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRelayWalletWhereInput(ctx context.Context, obj any) (ent.RelayWalletWhereInput, error) {
+	var it ent.RelayWalletWhereInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "relayKeyID", "relayKeyIDNEQ", "relayKeyIDIn", "relayKeyIDNotIn", "projectID", "projectIDNEQ", "projectIDIn", "projectIDNotIn", "projectIDGT", "projectIDGTE", "projectIDLT", "projectIDLTE", "currency", "currencyNEQ", "currencyIn", "currencyNotIn", "currencyGT", "currencyGTE", "currencyLT", "currencyLTE", "currencyContains", "currencyHasPrefix", "currencyHasSuffix", "currencyEqualFold", "currencyContainsFold", "availableAmount", "availableAmountNEQ", "availableAmountIn", "availableAmountNotIn", "availableAmountGT", "availableAmountGTE", "availableAmountLT", "availableAmountLTE", "availableAmountContains", "availableAmountHasPrefix", "availableAmountHasSuffix", "availableAmountEqualFold", "availableAmountContainsFold", "frozenAmount", "frozenAmountNEQ", "frozenAmountIn", "frozenAmountNotIn", "frozenAmountGT", "frozenAmountGTE", "frozenAmountLT", "frozenAmountLTE", "frozenAmountContains", "frozenAmountHasPrefix", "frozenAmountHasSuffix", "frozenAmountEqualFold", "frozenAmountContainsFold", "overdraftLimit", "overdraftLimitNEQ", "overdraftLimitIn", "overdraftLimitNotIn", "overdraftLimitGT", "overdraftLimitGTE", "overdraftLimitLT", "overdraftLimitLTE", "overdraftLimitContains", "overdraftLimitHasPrefix", "overdraftLimitHasSuffix", "overdraftLimitEqualFold", "overdraftLimitContainsFold", "version", "versionNEQ", "versionIn", "versionNotIn", "versionGT", "versionGTE", "versionLT", "versionLTE", "hasRelayKey", "hasRelayKeyWith"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "not":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			data, err := ec.unmarshalORelayWalletWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Not = data
+		case "and":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			data, err := ec.unmarshalORelayWalletWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.And = data
+		case "or":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			data, err := ec.unmarshalORelayWalletWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Or = data
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.ID = converted
+		case "idNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNEQ"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDNEQ = converted
+		case "idIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDIn = converted
+		case "idNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNotIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDNotIn = converted
+		case "idGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDGT = converted
+		case "idGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDGTE = converted
+		case "idLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLT"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDLT = converted
+		case "idLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLTE"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.IDLTE = converted
+		case "createdAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAt = data
+		case "createdAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNEQ = data
+		case "createdAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtIn = data
+		case "createdAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNotIn = data
+		case "createdAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGT = data
+		case "createdAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGTE = data
+		case "createdAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLT = data
+		case "createdAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLTE = data
+		case "updatedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAt = data
+		case "updatedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNEQ = data
+		case "updatedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtIn = data
+		case "updatedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtNotIn = data
+		case "updatedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGT = data
+		case "updatedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtGTE = data
+		case "updatedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLT = data
+		case "updatedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAtLTE = data
+		case "relayKeyID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("relayKeyID"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.RelayKeyID = converted
+		case "relayKeyIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("relayKeyIDNEQ"))
+			data, err := ec.unmarshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrToIntPtr(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.RelayKeyIDNEQ = converted
+		case "relayKeyIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("relayKeyIDIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.RelayKeyIDIn = converted
+		case "relayKeyIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("relayKeyIDNotIn"))
+			data, err := ec.unmarshalOID2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			converted, err := objects.ConvertGUIDPtrsToInts(data)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			it.RelayKeyIDNotIn = converted
+		case "projectID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectID"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectID = data
+		case "projectIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDNEQ = data
+		case "projectIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDIn = data
+		case "projectIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDNotIn = data
+		case "projectIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDGT = data
+		case "projectIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDGTE = data
+		case "projectIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDLT = data
+		case "projectIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectIDLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectIDLTE = data
+		case "currency":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currency"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Currency = data
+		case "currencyNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyNEQ = data
+		case "currencyIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyIn = data
+		case "currencyNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyNotIn = data
+		case "currencyGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyGT = data
+		case "currencyGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyGTE = data
+		case "currencyLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyLT = data
+		case "currencyLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyLTE = data
+		case "currencyContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyContains = data
+		case "currencyHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyHasPrefix = data
+		case "currencyHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyHasSuffix = data
+		case "currencyEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyEqualFold = data
+		case "currencyContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currencyContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrencyContainsFold = data
+		case "availableAmount":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("availableAmount"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AvailableAmount = data
+		case "availableAmountNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("availableAmountNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AvailableAmountNEQ = data
+		case "availableAmountIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("availableAmountIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AvailableAmountIn = data
+		case "availableAmountNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("availableAmountNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AvailableAmountNotIn = data
+		case "availableAmountGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("availableAmountGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AvailableAmountGT = data
+		case "availableAmountGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("availableAmountGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AvailableAmountGTE = data
+		case "availableAmountLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("availableAmountLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AvailableAmountLT = data
+		case "availableAmountLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("availableAmountLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AvailableAmountLTE = data
+		case "availableAmountContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("availableAmountContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AvailableAmountContains = data
+		case "availableAmountHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("availableAmountHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AvailableAmountHasPrefix = data
+		case "availableAmountHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("availableAmountHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AvailableAmountHasSuffix = data
+		case "availableAmountEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("availableAmountEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AvailableAmountEqualFold = data
+		case "availableAmountContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("availableAmountContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AvailableAmountContainsFold = data
+		case "frozenAmount":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("frozenAmount"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FrozenAmount = data
+		case "frozenAmountNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("frozenAmountNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FrozenAmountNEQ = data
+		case "frozenAmountIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("frozenAmountIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FrozenAmountIn = data
+		case "frozenAmountNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("frozenAmountNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FrozenAmountNotIn = data
+		case "frozenAmountGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("frozenAmountGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FrozenAmountGT = data
+		case "frozenAmountGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("frozenAmountGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FrozenAmountGTE = data
+		case "frozenAmountLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("frozenAmountLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FrozenAmountLT = data
+		case "frozenAmountLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("frozenAmountLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FrozenAmountLTE = data
+		case "frozenAmountContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("frozenAmountContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FrozenAmountContains = data
+		case "frozenAmountHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("frozenAmountHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FrozenAmountHasPrefix = data
+		case "frozenAmountHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("frozenAmountHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FrozenAmountHasSuffix = data
+		case "frozenAmountEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("frozenAmountEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FrozenAmountEqualFold = data
+		case "frozenAmountContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("frozenAmountContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FrozenAmountContainsFold = data
+		case "overdraftLimit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("overdraftLimit"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OverdraftLimit = data
+		case "overdraftLimitNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("overdraftLimitNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OverdraftLimitNEQ = data
+		case "overdraftLimitIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("overdraftLimitIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OverdraftLimitIn = data
+		case "overdraftLimitNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("overdraftLimitNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OverdraftLimitNotIn = data
+		case "overdraftLimitGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("overdraftLimitGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OverdraftLimitGT = data
+		case "overdraftLimitGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("overdraftLimitGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OverdraftLimitGTE = data
+		case "overdraftLimitLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("overdraftLimitLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OverdraftLimitLT = data
+		case "overdraftLimitLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("overdraftLimitLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OverdraftLimitLTE = data
+		case "overdraftLimitContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("overdraftLimitContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OverdraftLimitContains = data
+		case "overdraftLimitHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("overdraftLimitHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OverdraftLimitHasPrefix = data
+		case "overdraftLimitHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("overdraftLimitHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OverdraftLimitHasSuffix = data
+		case "overdraftLimitEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("overdraftLimitEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OverdraftLimitEqualFold = data
+		case "overdraftLimitContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("overdraftLimitContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OverdraftLimitContainsFold = data
+		case "version":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("version"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Version = data
+		case "versionNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("versionNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.VersionNEQ = data
+		case "versionIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("versionIn"))
+			data, err := ec.unmarshalOInt2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.VersionIn = data
+		case "versionNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("versionNotIn"))
+			data, err := ec.unmarshalOInt2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.VersionNotIn = data
+		case "versionGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("versionGT"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.VersionGT = data
+		case "versionGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("versionGTE"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.VersionGTE = data
+		case "versionLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("versionLT"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.VersionLT = data
+		case "versionLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("versionLTE"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.VersionLTE = data
+		case "hasRelayKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasRelayKey"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasRelayKey = data
+		case "hasRelayKeyWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasRelayKeyWith"))
+			data, err := ec.unmarshalORelayKeyWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasRelayKeyWith = data
 		}
 	}
 
@@ -71346,6 +83110,172 @@ func (ec *executionContext) unmarshalInputUpdatePromptProtectionRuleInput(ctx co
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateRelayProductChannelInput(ctx context.Context, obj any) (ent.UpdateRelayProductChannelInput, error) {
+	var it ent.UpdateRelayProductChannelInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"priority", "weight", "status", "allowFallback", "modelFilter", "clearModelFilter", "maxInflight", "clearMaxInflight"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "priority":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priority"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Priority = data
+		case "weight":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("weight"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Weight = data
+		case "status":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			data, err := ec.unmarshalORelayProductChannelStatus2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductchannelᚐStatus(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Status = data
+		case "allowFallback":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowFallback"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AllowFallback = data
+		case "modelFilter":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("modelFilter"))
+			data, err := ec.unmarshalOAny2interface(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ModelFilter = data
+		case "clearModelFilter":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearModelFilter"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClearModelFilter = data
+		case "maxInflight":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxInflight"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxInflight = data
+		case "clearMaxInflight":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearMaxInflight"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClearMaxInflight = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateRelayProductInput(ctx context.Context, obj any) (ent.UpdateRelayProductInput, error) {
+	var it ent.UpdateRelayProductInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "billingMode", "status", "currency", "listPriceConfig", "clearListPriceConfig", "allowedModels", "appendAllowedModels", "clearAllowedModels", "requestTimeoutSeconds"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "billingMode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("billingMode"))
+			data, err := ec.unmarshalORelayProductBillingMode2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐBillingMode(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BillingMode = data
+		case "status":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			data, err := ec.unmarshalORelayProductStatus2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐStatus(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Status = data
+		case "currency":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currency"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Currency = data
+		case "listPriceConfig":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("listPriceConfig"))
+			data, err := ec.unmarshalOMap2map(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ListPriceConfig = data
+		case "clearListPriceConfig":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearListPriceConfig"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClearListPriceConfig = data
+		case "allowedModels":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allowedModels"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AllowedModels = data
+		case "appendAllowedModels":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("appendAllowedModels"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AppendAllowedModels = data
+		case "clearAllowedModels":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearAllowedModels"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClearAllowedModels = data
+		case "requestTimeoutSeconds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestTimeoutSeconds"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequestTimeoutSeconds = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateRequestInput(ctx context.Context, obj any) (ent.UpdateRequestInput, error) {
 	var it ent.UpdateRequestInput
 	asMap := map[string]any{}
@@ -74793,7 +86723,7 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailEqualFold", "emailContainsFold", "status", "statusNEQ", "statusIn", "statusNotIn", "preferLanguage", "preferLanguageNEQ", "preferLanguageIn", "preferLanguageNotIn", "preferLanguageGT", "preferLanguageGTE", "preferLanguageLT", "preferLanguageLTE", "preferLanguageContains", "preferLanguageHasPrefix", "preferLanguageHasSuffix", "preferLanguageEqualFold", "preferLanguageContainsFold", "firstName", "firstNameNEQ", "firstNameIn", "firstNameNotIn", "firstNameGT", "firstNameGTE", "firstNameLT", "firstNameLTE", "firstNameContains", "firstNameHasPrefix", "firstNameHasSuffix", "firstNameEqualFold", "firstNameContainsFold", "lastName", "lastNameNEQ", "lastNameIn", "lastNameNotIn", "lastNameGT", "lastNameGTE", "lastNameLT", "lastNameLTE", "lastNameContains", "lastNameHasPrefix", "lastNameHasSuffix", "lastNameEqualFold", "lastNameContainsFold", "avatar", "avatarNEQ", "avatarIn", "avatarNotIn", "avatarGT", "avatarGTE", "avatarLT", "avatarLTE", "avatarContains", "avatarHasPrefix", "avatarHasSuffix", "avatarIsNil", "avatarNotNil", "avatarEqualFold", "avatarContainsFold", "isOwner", "isOwnerNEQ", "hasProjects", "hasProjectsWith", "hasAPIKeys", "hasAPIKeysWith", "hasRoles", "hasRolesWith", "hasChannelOverrideTemplates", "hasChannelOverrideTemplatesWith", "hasProjectUsers", "hasProjectUsersWith", "hasUserRoles", "hasUserRolesWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailEqualFold", "emailContainsFold", "status", "statusNEQ", "statusIn", "statusNotIn", "preferLanguage", "preferLanguageNEQ", "preferLanguageIn", "preferLanguageNotIn", "preferLanguageGT", "preferLanguageGTE", "preferLanguageLT", "preferLanguageLTE", "preferLanguageContains", "preferLanguageHasPrefix", "preferLanguageHasSuffix", "preferLanguageEqualFold", "preferLanguageContainsFold", "firstName", "firstNameNEQ", "firstNameIn", "firstNameNotIn", "firstNameGT", "firstNameGTE", "firstNameLT", "firstNameLTE", "firstNameContains", "firstNameHasPrefix", "firstNameHasSuffix", "firstNameEqualFold", "firstNameContainsFold", "lastName", "lastNameNEQ", "lastNameIn", "lastNameNotIn", "lastNameGT", "lastNameGTE", "lastNameLT", "lastNameLTE", "lastNameContains", "lastNameHasPrefix", "lastNameHasSuffix", "lastNameEqualFold", "lastNameContainsFold", "avatar", "avatarNEQ", "avatarIn", "avatarNotIn", "avatarGT", "avatarGTE", "avatarLT", "avatarLTE", "avatarContains", "avatarHasPrefix", "avatarHasSuffix", "avatarIsNil", "avatarNotNil", "avatarEqualFold", "avatarContainsFold", "isOwner", "isOwnerNEQ", "hasProjects", "hasProjectsWith", "hasAPIKeys", "hasAPIKeysWith", "hasRelayKeys", "hasRelayKeysWith", "hasRoles", "hasRolesWith", "hasChannelOverrideTemplates", "hasChannelOverrideTemplatesWith", "hasProjectUsers", "hasProjectUsersWith", "hasUserRoles", "hasUserRolesWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -75560,6 +87490,20 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 				return it, err
 			}
 			it.HasAPIKeysWith = data
+		case "hasRelayKeys":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasRelayKeys"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasRelayKeys = data
+		case "hasRelayKeysWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasRelayKeysWith"))
+			data, err := ec.unmarshalORelayKeyWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasRelayKeysWith = data
 		case "hasRoles":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasRoles"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -75872,6 +87816,36 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 			return graphql.Null
 		}
 		return ec._Request(ctx, sel, obj)
+	case *ent.RelayWalletLedgerEntry:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._RelayWalletLedgerEntry(ctx, sel, obj)
+	case *ent.RelayWallet:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._RelayWallet(ctx, sel, obj)
+	case *ent.RelayProductChannel:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._RelayProductChannel(ctx, sel, obj)
+	case *ent.RelayProduct:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._RelayProduct(ctx, sel, obj)
+	case *ent.RelayKey:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._RelayKey(ctx, sel, obj)
+	case *ent.RelayDailyUsageSummary:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._RelayDailyUsageSummary(ctx, sel, obj)
 	case *ent.ProviderQuotaStatus:
 		if obj == nil {
 			return graphql.Null
@@ -76196,6 +88170,39 @@ func (ec *executionContext) _APIKey(ctx context.Context, sel ast.SelectionSet, o
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "relayKey":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._APIKey_relayKey(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -76336,6 +88343,8 @@ func (ec *executionContext) _APIKeyProfile(ctx context.Context, sel ast.Selectio
 			out.Values[i] = ec._APIKeyProfile_quota(ctx, field, obj)
 		case "loadBalanceStrategy":
 			out.Values[i] = ec._APIKeyProfile_loadBalanceStrategy(ctx, field, obj)
+		case "useStrategy":
+			out.Values[i] = ec._APIKeyProfile_useStrategy(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -77596,6 +89605,42 @@ func (ec *executionContext) _Channel(ctx context.Context, sel ast.SelectionSet, 
 					}
 				}()
 				res = ec._Channel_channelModelPrices(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "relayProductBindings":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Channel_relayProductBindings(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
@@ -83327,6 +95372,42 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "relayKeys":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Project_relayKeys(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "requests":
 			field := field
 
@@ -84927,6 +97008,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "relayProducts":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_relayProducts(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "relayProductChannels":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_relayProductChannels(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "requests":
 			field := field
 
@@ -86224,6 +98349,2031 @@ func (ec *executionContext) _RegexAssociation(ctx context.Context, sel ast.Selec
 			}
 		case "exclude":
 			out.Values[i] = ec._RegexAssociation_exclude(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var relayDailyUsageSummaryImplementors = []string{"RelayDailyUsageSummary", "Node"}
+
+func (ec *executionContext) _RelayDailyUsageSummary(ctx context.Context, sel ast.SelectionSet, obj *ent.RelayDailyUsageSummary) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, relayDailyUsageSummaryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RelayDailyUsageSummary")
+		case "id":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayDailyUsageSummary_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._RelayDailyUsageSummary_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._RelayDailyUsageSummary_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "relayKeyID":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayDailyUsageSummary_relayKeyID(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "projectID":
+			out.Values[i] = ec._RelayDailyUsageSummary_projectID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "statDate":
+			out.Values[i] = ec._RelayDailyUsageSummary_statDate(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "requestCount":
+			out.Values[i] = ec._RelayDailyUsageSummary_requestCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "totalTokens":
+			out.Values[i] = ec._RelayDailyUsageSummary_totalTokens(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "totalCharge":
+			out.Values[i] = ec._RelayDailyUsageSummary_totalCharge(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "totalUpstreamCost":
+			out.Values[i] = ec._RelayDailyUsageSummary_totalUpstreamCost(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "lastRequestID":
+			out.Values[i] = ec._RelayDailyUsageSummary_lastRequestID(ctx, field, obj)
+		case "relayKey":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayDailyUsageSummary_relayKey(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var relayDailyUsageSummaryConnectionImplementors = []string{"RelayDailyUsageSummaryConnection"}
+
+func (ec *executionContext) _RelayDailyUsageSummaryConnection(ctx context.Context, sel ast.SelectionSet, obj *ent.RelayDailyUsageSummaryConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, relayDailyUsageSummaryConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RelayDailyUsageSummaryConnection")
+		case "edges":
+			out.Values[i] = ec._RelayDailyUsageSummaryConnection_edges(ctx, field, obj)
+		case "pageInfo":
+			out.Values[i] = ec._RelayDailyUsageSummaryConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._RelayDailyUsageSummaryConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var relayDailyUsageSummaryEdgeImplementors = []string{"RelayDailyUsageSummaryEdge"}
+
+func (ec *executionContext) _RelayDailyUsageSummaryEdge(ctx context.Context, sel ast.SelectionSet, obj *ent.RelayDailyUsageSummaryEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, relayDailyUsageSummaryEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RelayDailyUsageSummaryEdge")
+		case "node":
+			out.Values[i] = ec._RelayDailyUsageSummaryEdge_node(ctx, field, obj)
+		case "cursor":
+			out.Values[i] = ec._RelayDailyUsageSummaryEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var relayKeyImplementors = []string{"RelayKey", "Node"}
+
+func (ec *executionContext) _RelayKey(ctx context.Context, sel ast.SelectionSet, obj *ent.RelayKey) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, relayKeyImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RelayKey")
+		case "id":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayKey_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._RelayKey_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._RelayKey_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "apiKeyID":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayKey_apiKeyID(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "projectID":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayKey_projectID(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "productID":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayKey_productID(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "ownerUserID":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayKey_ownerUserID(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "displayName":
+			out.Values[i] = ec._RelayKey_displayName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "status":
+			out.Values[i] = ec._RelayKey_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "balanceMode":
+			out.Values[i] = ec._RelayKey_balanceMode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "dailyRequestLimit":
+			out.Values[i] = ec._RelayKey_dailyRequestLimit(ctx, field, obj)
+		case "dailyTokenLimit":
+			out.Values[i] = ec._RelayKey_dailyTokenLimit(ctx, field, obj)
+		case "monthlyCostLimit":
+			out.Values[i] = ec._RelayKey_monthlyCostLimit(ctx, field, obj)
+		case "concurrencyLimit":
+			out.Values[i] = ec._RelayKey_concurrencyLimit(ctx, field, obj)
+		case "expiresAt":
+			out.Values[i] = ec._RelayKey_expiresAt(ctx, field, obj)
+		case "lastUsedAt":
+			out.Values[i] = ec._RelayKey_lastUsedAt(ctx, field, obj)
+		case "apiKey":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayKey_apiKey(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "project":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayKey_project(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "product":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayKey_product(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "ownerUser":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayKey_ownerUser(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "wallet":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayKey_wallet(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "ledgerEntries":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayKey_ledgerEntries(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "dailyUsageSummaries":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayKey_dailyUsageSummaries(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var relayKeyConnectionImplementors = []string{"RelayKeyConnection"}
+
+func (ec *executionContext) _RelayKeyConnection(ctx context.Context, sel ast.SelectionSet, obj *ent.RelayKeyConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, relayKeyConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RelayKeyConnection")
+		case "edges":
+			out.Values[i] = ec._RelayKeyConnection_edges(ctx, field, obj)
+		case "pageInfo":
+			out.Values[i] = ec._RelayKeyConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._RelayKeyConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var relayKeyEdgeImplementors = []string{"RelayKeyEdge"}
+
+func (ec *executionContext) _RelayKeyEdge(ctx context.Context, sel ast.SelectionSet, obj *ent.RelayKeyEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, relayKeyEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RelayKeyEdge")
+		case "node":
+			out.Values[i] = ec._RelayKeyEdge_node(ctx, field, obj)
+		case "cursor":
+			out.Values[i] = ec._RelayKeyEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var relayProductImplementors = []string{"RelayProduct", "Node"}
+
+func (ec *executionContext) _RelayProduct(ctx context.Context, sel ast.SelectionSet, obj *ent.RelayProduct) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, relayProductImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RelayProduct")
+		case "id":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayProduct_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._RelayProduct_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._RelayProduct_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "code":
+			out.Values[i] = ec._RelayProduct_code(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "name":
+			out.Values[i] = ec._RelayProduct_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "providerType":
+			out.Values[i] = ec._RelayProduct_providerType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "accessMode":
+			out.Values[i] = ec._RelayProduct_accessMode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "billingMode":
+			out.Values[i] = ec._RelayProduct_billingMode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "status":
+			out.Values[i] = ec._RelayProduct_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "currency":
+			out.Values[i] = ec._RelayProduct_currency(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "listPriceConfig":
+			out.Values[i] = ec._RelayProduct_listPriceConfig(ctx, field, obj)
+		case "allowedModels":
+			out.Values[i] = ec._RelayProduct_allowedModels(ctx, field, obj)
+		case "requestTimeoutSeconds":
+			out.Values[i] = ec._RelayProduct_requestTimeoutSeconds(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "channelBindings":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayProduct_channelBindings(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "relayKeys":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayProduct_relayKeys(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var relayProductChannelImplementors = []string{"RelayProductChannel", "Node"}
+
+func (ec *executionContext) _RelayProductChannel(ctx context.Context, sel ast.SelectionSet, obj *ent.RelayProductChannel) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, relayProductChannelImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RelayProductChannel")
+		case "id":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayProductChannel_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._RelayProductChannel_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._RelayProductChannel_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "productID":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayProductChannel_productID(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "channelID":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayProductChannel_channelID(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "priority":
+			out.Values[i] = ec._RelayProductChannel_priority(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "weight":
+			out.Values[i] = ec._RelayProductChannel_weight(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "status":
+			out.Values[i] = ec._RelayProductChannel_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "allowFallback":
+			out.Values[i] = ec._RelayProductChannel_allowFallback(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "modelFilter":
+			out.Values[i] = ec._RelayProductChannel_modelFilter(ctx, field, obj)
+		case "maxInflight":
+			out.Values[i] = ec._RelayProductChannel_maxInflight(ctx, field, obj)
+		case "product":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayProductChannel_product(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "channel":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayProductChannel_channel(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var relayProductChannelConnectionImplementors = []string{"RelayProductChannelConnection"}
+
+func (ec *executionContext) _RelayProductChannelConnection(ctx context.Context, sel ast.SelectionSet, obj *ent.RelayProductChannelConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, relayProductChannelConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RelayProductChannelConnection")
+		case "edges":
+			out.Values[i] = ec._RelayProductChannelConnection_edges(ctx, field, obj)
+		case "pageInfo":
+			out.Values[i] = ec._RelayProductChannelConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._RelayProductChannelConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var relayProductChannelEdgeImplementors = []string{"RelayProductChannelEdge"}
+
+func (ec *executionContext) _RelayProductChannelEdge(ctx context.Context, sel ast.SelectionSet, obj *ent.RelayProductChannelEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, relayProductChannelEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RelayProductChannelEdge")
+		case "node":
+			out.Values[i] = ec._RelayProductChannelEdge_node(ctx, field, obj)
+		case "cursor":
+			out.Values[i] = ec._RelayProductChannelEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var relayProductConnectionImplementors = []string{"RelayProductConnection"}
+
+func (ec *executionContext) _RelayProductConnection(ctx context.Context, sel ast.SelectionSet, obj *ent.RelayProductConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, relayProductConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RelayProductConnection")
+		case "edges":
+			out.Values[i] = ec._RelayProductConnection_edges(ctx, field, obj)
+		case "pageInfo":
+			out.Values[i] = ec._RelayProductConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._RelayProductConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var relayProductEdgeImplementors = []string{"RelayProductEdge"}
+
+func (ec *executionContext) _RelayProductEdge(ctx context.Context, sel ast.SelectionSet, obj *ent.RelayProductEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, relayProductEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RelayProductEdge")
+		case "node":
+			out.Values[i] = ec._RelayProductEdge_node(ctx, field, obj)
+		case "cursor":
+			out.Values[i] = ec._RelayProductEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var relayWalletImplementors = []string{"RelayWallet", "Node"}
+
+func (ec *executionContext) _RelayWallet(ctx context.Context, sel ast.SelectionSet, obj *ent.RelayWallet) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, relayWalletImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RelayWallet")
+		case "id":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayWallet_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._RelayWallet_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._RelayWallet_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "relayKeyID":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayWallet_relayKeyID(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "projectID":
+			out.Values[i] = ec._RelayWallet_projectID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "currency":
+			out.Values[i] = ec._RelayWallet_currency(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "availableAmount":
+			out.Values[i] = ec._RelayWallet_availableAmount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "frozenAmount":
+			out.Values[i] = ec._RelayWallet_frozenAmount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "overdraftLimit":
+			out.Values[i] = ec._RelayWallet_overdraftLimit(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "version":
+			out.Values[i] = ec._RelayWallet_version(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "relayKey":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayWallet_relayKey(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var relayWalletConnectionImplementors = []string{"RelayWalletConnection"}
+
+func (ec *executionContext) _RelayWalletConnection(ctx context.Context, sel ast.SelectionSet, obj *ent.RelayWalletConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, relayWalletConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RelayWalletConnection")
+		case "edges":
+			out.Values[i] = ec._RelayWalletConnection_edges(ctx, field, obj)
+		case "pageInfo":
+			out.Values[i] = ec._RelayWalletConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._RelayWalletConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var relayWalletEdgeImplementors = []string{"RelayWalletEdge"}
+
+func (ec *executionContext) _RelayWalletEdge(ctx context.Context, sel ast.SelectionSet, obj *ent.RelayWalletEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, relayWalletEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RelayWalletEdge")
+		case "node":
+			out.Values[i] = ec._RelayWalletEdge_node(ctx, field, obj)
+		case "cursor":
+			out.Values[i] = ec._RelayWalletEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var relayWalletLedgerEntryImplementors = []string{"RelayWalletLedgerEntry", "Node"}
+
+func (ec *executionContext) _RelayWalletLedgerEntry(ctx context.Context, sel ast.SelectionSet, obj *ent.RelayWalletLedgerEntry) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, relayWalletLedgerEntryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RelayWalletLedgerEntry")
+		case "id":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayWalletLedgerEntry_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._RelayWalletLedgerEntry_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._RelayWalletLedgerEntry_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "relayKeyID":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayWalletLedgerEntry_relayKeyID(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "projectID":
+			out.Values[i] = ec._RelayWalletLedgerEntry_projectID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "requestID":
+			out.Values[i] = ec._RelayWalletLedgerEntry_requestID(ctx, field, obj)
+		case "usageLogID":
+			out.Values[i] = ec._RelayWalletLedgerEntry_usageLogID(ctx, field, obj)
+		case "direction":
+			out.Values[i] = ec._RelayWalletLedgerEntry_direction(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "scene":
+			out.Values[i] = ec._RelayWalletLedgerEntry_scene(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "amount":
+			out.Values[i] = ec._RelayWalletLedgerEntry_amount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "balanceBefore":
+			out.Values[i] = ec._RelayWalletLedgerEntry_balanceBefore(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "balanceAfter":
+			out.Values[i] = ec._RelayWalletLedgerEntry_balanceAfter(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "upstreamCost":
+			out.Values[i] = ec._RelayWalletLedgerEntry_upstreamCost(ctx, field, obj)
+		case "priceSnapshot":
+			out.Values[i] = ec._RelayWalletLedgerEntry_priceSnapshot(ctx, field, obj)
+		case "idempotencyKey":
+			out.Values[i] = ec._RelayWalletLedgerEntry_idempotencyKey(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "operatorUserID":
+			out.Values[i] = ec._RelayWalletLedgerEntry_operatorUserID(ctx, field, obj)
+		case "remark":
+			out.Values[i] = ec._RelayWalletLedgerEntry_remark(ctx, field, obj)
+		case "relayKey":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RelayWalletLedgerEntry_relayKey(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var relayWalletLedgerEntryConnectionImplementors = []string{"RelayWalletLedgerEntryConnection"}
+
+func (ec *executionContext) _RelayWalletLedgerEntryConnection(ctx context.Context, sel ast.SelectionSet, obj *ent.RelayWalletLedgerEntryConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, relayWalletLedgerEntryConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RelayWalletLedgerEntryConnection")
+		case "edges":
+			out.Values[i] = ec._RelayWalletLedgerEntryConnection_edges(ctx, field, obj)
+		case "pageInfo":
+			out.Values[i] = ec._RelayWalletLedgerEntryConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._RelayWalletLedgerEntryConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var relayWalletLedgerEntryEdgeImplementors = []string{"RelayWalletLedgerEntryEdge"}
+
+func (ec *executionContext) _RelayWalletLedgerEntryEdge(ctx context.Context, sel ast.SelectionSet, obj *ent.RelayWalletLedgerEntryEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, relayWalletLedgerEntryEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RelayWalletLedgerEntryEdge")
+		case "node":
+			out.Values[i] = ec._RelayWalletLedgerEntryEdge_node(ctx, field, obj)
+		case "cursor":
+			out.Values[i] = ec._RelayWalletLedgerEntryEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -91675,6 +105825,42 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "relayKeys":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_relayKeys(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "roles":
 			field := field
 
@@ -96859,6 +111045,300 @@ func (ec *executionContext) unmarshalNQueryModelsInput2githubᚗcomᚋloopljᚋa
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNRelayDailyUsageSummaryConnection2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryConnection(ctx context.Context, sel ast.SelectionSet, v *ent.RelayDailyUsageSummaryConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RelayDailyUsageSummaryConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNRelayDailyUsageSummaryOrderField2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryOrderField(ctx context.Context, v any) (*ent.RelayDailyUsageSummaryOrderField, error) {
+	var res = new(ent.RelayDailyUsageSummaryOrderField)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRelayDailyUsageSummaryOrderField2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryOrderField(ctx context.Context, sel ast.SelectionSet, v *ent.RelayDailyUsageSummaryOrderField) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalNRelayDailyUsageSummaryWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryWhereInput(ctx context.Context, v any) (*ent.RelayDailyUsageSummaryWhereInput, error) {
+	res, err := ec.unmarshalInputRelayDailyUsageSummaryWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRelayKey2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKey(ctx context.Context, sel ast.SelectionSet, v *ent.RelayKey) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RelayKey(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNRelayKeyBalanceMode2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐBalanceMode(ctx context.Context, v any) (relaykey.BalanceMode, error) {
+	var res relaykey.BalanceMode
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRelayKeyBalanceMode2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐBalanceMode(ctx context.Context, sel ast.SelectionSet, v relaykey.BalanceMode) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNRelayKeyConnection2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyConnection(ctx context.Context, sel ast.SelectionSet, v *ent.RelayKeyConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RelayKeyConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNRelayKeyOrderField2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyOrderField(ctx context.Context, v any) (*ent.RelayKeyOrderField, error) {
+	var res = new(ent.RelayKeyOrderField)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRelayKeyOrderField2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyOrderField(ctx context.Context, sel ast.SelectionSet, v *ent.RelayKeyOrderField) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalNRelayKeyStatus2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐStatus(ctx context.Context, v any) (relaykey.Status, error) {
+	var res relaykey.Status
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRelayKeyStatus2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐStatus(ctx context.Context, sel ast.SelectionSet, v relaykey.Status) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNRelayKeyWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyWhereInput(ctx context.Context, v any) (*ent.RelayKeyWhereInput, error) {
+	res, err := ec.unmarshalInputRelayKeyWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRelayProduct2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProduct(ctx context.Context, sel ast.SelectionSet, v *ent.RelayProduct) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RelayProduct(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNRelayProductAccessMode2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐAccessMode(ctx context.Context, v any) (relayproduct.AccessMode, error) {
+	var res relayproduct.AccessMode
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRelayProductAccessMode2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐAccessMode(ctx context.Context, sel ast.SelectionSet, v relayproduct.AccessMode) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNRelayProductBillingMode2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐBillingMode(ctx context.Context, v any) (relayproduct.BillingMode, error) {
+	var res relayproduct.BillingMode
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRelayProductBillingMode2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐBillingMode(ctx context.Context, sel ast.SelectionSet, v relayproduct.BillingMode) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNRelayProductChannelConnection2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelConnection(ctx context.Context, sel ast.SelectionSet, v ent.RelayProductChannelConnection) graphql.Marshaler {
+	return ec._RelayProductChannelConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRelayProductChannelConnection2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelConnection(ctx context.Context, sel ast.SelectionSet, v *ent.RelayProductChannelConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RelayProductChannelConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNRelayProductChannelOrderField2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelOrderField(ctx context.Context, v any) (*ent.RelayProductChannelOrderField, error) {
+	var res = new(ent.RelayProductChannelOrderField)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRelayProductChannelOrderField2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelOrderField(ctx context.Context, sel ast.SelectionSet, v *ent.RelayProductChannelOrderField) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalNRelayProductChannelStatus2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductchannelᚐStatus(ctx context.Context, v any) (relayproductchannel.Status, error) {
+	var res relayproductchannel.Status
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRelayProductChannelStatus2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductchannelᚐStatus(ctx context.Context, sel ast.SelectionSet, v relayproductchannel.Status) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNRelayProductChannelWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelWhereInput(ctx context.Context, v any) (*ent.RelayProductChannelWhereInput, error) {
+	res, err := ec.unmarshalInputRelayProductChannelWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRelayProductConnection2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductConnection(ctx context.Context, sel ast.SelectionSet, v ent.RelayProductConnection) graphql.Marshaler {
+	return ec._RelayProductConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRelayProductConnection2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductConnection(ctx context.Context, sel ast.SelectionSet, v *ent.RelayProductConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RelayProductConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNRelayProductOrderField2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductOrderField(ctx context.Context, v any) (*ent.RelayProductOrderField, error) {
+	var res = new(ent.RelayProductOrderField)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRelayProductOrderField2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductOrderField(ctx context.Context, sel ast.SelectionSet, v *ent.RelayProductOrderField) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalNRelayProductProviderType2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐProviderType(ctx context.Context, v any) (relayproduct.ProviderType, error) {
+	var res relayproduct.ProviderType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRelayProductProviderType2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐProviderType(ctx context.Context, sel ast.SelectionSet, v relayproduct.ProviderType) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNRelayProductStatus2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐStatus(ctx context.Context, v any) (relayproduct.Status, error) {
+	var res relayproduct.Status
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRelayProductStatus2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐStatus(ctx context.Context, sel ast.SelectionSet, v relayproduct.Status) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNRelayProductWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductWhereInput(ctx context.Context, v any) (*ent.RelayProductWhereInput, error) {
+	res, err := ec.unmarshalInputRelayProductWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRelayWalletLedgerEntryConnection2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryConnection(ctx context.Context, sel ast.SelectionSet, v *ent.RelayWalletLedgerEntryConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RelayWalletLedgerEntryConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNRelayWalletLedgerEntryDirection2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐDirection(ctx context.Context, v any) (relaywalletledgerentry.Direction, error) {
+	var res relaywalletledgerentry.Direction
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRelayWalletLedgerEntryDirection2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐDirection(ctx context.Context, sel ast.SelectionSet, v relaywalletledgerentry.Direction) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNRelayWalletLedgerEntryOrderField2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryOrderField(ctx context.Context, v any) (*ent.RelayWalletLedgerEntryOrderField, error) {
+	var res = new(ent.RelayWalletLedgerEntryOrderField)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRelayWalletLedgerEntryOrderField2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryOrderField(ctx context.Context, sel ast.SelectionSet, v *ent.RelayWalletLedgerEntryOrderField) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalNRelayWalletLedgerEntryScene2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐScene(ctx context.Context, v any) (relaywalletledgerentry.Scene, error) {
+	var res relaywalletledgerentry.Scene
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRelayWalletLedgerEntryScene2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐScene(ctx context.Context, sel ast.SelectionSet, v relaywalletledgerentry.Scene) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNRelayWalletLedgerEntryWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryWhereInput(ctx context.Context, v any) (*ent.RelayWalletLedgerEntryWhereInput, error) {
+	res, err := ec.unmarshalInputRelayWalletLedgerEntryWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNRelayWalletOrderField2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletOrderField(ctx context.Context, v any) (*ent.RelayWalletOrderField, error) {
+	var res = new(ent.RelayWalletOrderField)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRelayWalletOrderField2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletOrderField(ctx context.Context, sel ast.SelectionSet, v *ent.RelayWalletOrderField) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalNRelayWalletWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletWhereInput(ctx context.Context, v any) (*ent.RelayWalletWhereInput, error) {
+	res, err := ec.unmarshalInputRelayWalletWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNRemoveUserFromProjectInput2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋserverᚋgqlᚐRemoveUserFromProjectInput(ctx context.Context, v any) (RemoveUserFromProjectInput, error) {
 	res, err := ec.unmarshalInputRemoveUserFromProjectInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -99176,6 +113656,19 @@ func (ec *executionContext) marshalOAPIKeyType2ᚖgithubᚗcomᚋloopljᚋaxonhu
 	return v
 }
 
+func (ec *executionContext) unmarshalOAPIKeyUseStrategy2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐAPIKeyUseStrategy(ctx context.Context, v any) (objects.APIKeyUseStrategy, error) {
+	tmp, err := graphql.UnmarshalString(v)
+	res := objects.APIKeyUseStrategy(tmp)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOAPIKeyUseStrategy2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐAPIKeyUseStrategy(ctx context.Context, sel ast.SelectionSet, v objects.APIKeyUseStrategy) graphql.Marshaler {
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalString(string(v))
+	return res
+}
+
 func (ec *executionContext) unmarshalOAPIKeyWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐAPIKeyWhereInputᚄ(ctx context.Context, v any) ([]*ent.APIKeyWhereInput, error) {
 	if v == nil {
 		return nil, nil
@@ -101256,6 +115749,24 @@ func (ec *executionContext) marshalOJSONRawMessageInput2ᚕgithubᚗcomᚋlooplj
 	return ret
 }
 
+func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v any) (map[string]any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalMap(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOMap2map(ctx context.Context, sel ast.SelectionSet, v map[string]any) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalMap(v)
+	return res
+}
+
 func (ec *executionContext) marshalOModel2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐModel(ctx context.Context, sel ast.SelectionSet, v *ent.Model) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -102828,6 +117339,1261 @@ func (ec *executionContext) unmarshalORegexAssociationInput2ᚖgithubᚗcomᚋlo
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputRegexAssociationInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalORelayDailyUsageSummary2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummary(ctx context.Context, sel ast.SelectionSet, v *ent.RelayDailyUsageSummary) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._RelayDailyUsageSummary(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalORelayDailyUsageSummaryEdge2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryEdge(ctx context.Context, sel ast.SelectionSet, v []*ent.RelayDailyUsageSummaryEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalORelayDailyUsageSummaryEdge2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalORelayDailyUsageSummaryEdge2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryEdge(ctx context.Context, sel ast.SelectionSet, v *ent.RelayDailyUsageSummaryEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._RelayDailyUsageSummaryEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalORelayDailyUsageSummaryOrder2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryOrder(ctx context.Context, v any) (*ent.RelayDailyUsageSummaryOrder, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputRelayDailyUsageSummaryOrder(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalORelayDailyUsageSummaryWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryWhereInputᚄ(ctx context.Context, v any) ([]*ent.RelayDailyUsageSummaryWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*ent.RelayDailyUsageSummaryWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNRelayDailyUsageSummaryWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalORelayDailyUsageSummaryWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayDailyUsageSummaryWhereInput(ctx context.Context, v any) (*ent.RelayDailyUsageSummaryWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputRelayDailyUsageSummaryWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalORelayKey2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKey(ctx context.Context, sel ast.SelectionSet, v *ent.RelayKey) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._RelayKey(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalORelayKeyBalanceMode2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐBalanceModeᚄ(ctx context.Context, v any) ([]relaykey.BalanceMode, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]relaykey.BalanceMode, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNRelayKeyBalanceMode2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐBalanceMode(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalORelayKeyBalanceMode2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐBalanceModeᚄ(ctx context.Context, sel ast.SelectionSet, v []relaykey.BalanceMode) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNRelayKeyBalanceMode2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐBalanceMode(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalORelayKeyBalanceMode2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐBalanceMode(ctx context.Context, v any) (*relaykey.BalanceMode, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(relaykey.BalanceMode)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalORelayKeyBalanceMode2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐBalanceMode(ctx context.Context, sel ast.SelectionSet, v *relaykey.BalanceMode) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) marshalORelayKeyEdge2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyEdge(ctx context.Context, sel ast.SelectionSet, v []*ent.RelayKeyEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalORelayKeyEdge2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalORelayKeyEdge2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyEdge(ctx context.Context, sel ast.SelectionSet, v *ent.RelayKeyEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._RelayKeyEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalORelayKeyOrder2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyOrder(ctx context.Context, v any) (*ent.RelayKeyOrder, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputRelayKeyOrder(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalORelayKeyStatus2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐStatusᚄ(ctx context.Context, v any) ([]relaykey.Status, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]relaykey.Status, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNRelayKeyStatus2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐStatus(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalORelayKeyStatus2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐStatusᚄ(ctx context.Context, sel ast.SelectionSet, v []relaykey.Status) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNRelayKeyStatus2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐStatus(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalORelayKeyStatus2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐStatus(ctx context.Context, v any) (*relaykey.Status, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(relaykey.Status)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalORelayKeyStatus2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaykeyᚐStatus(ctx context.Context, sel ast.SelectionSet, v *relaykey.Status) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalORelayKeyWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyWhereInputᚄ(ctx context.Context, v any) ([]*ent.RelayKeyWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*ent.RelayKeyWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNRelayKeyWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalORelayKeyWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayKeyWhereInput(ctx context.Context, v any) (*ent.RelayKeyWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputRelayKeyWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalORelayProduct2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProduct(ctx context.Context, sel ast.SelectionSet, v *ent.RelayProduct) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._RelayProduct(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalORelayProductAccessMode2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐAccessModeᚄ(ctx context.Context, v any) ([]relayproduct.AccessMode, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]relayproduct.AccessMode, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNRelayProductAccessMode2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐAccessMode(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalORelayProductAccessMode2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐAccessModeᚄ(ctx context.Context, sel ast.SelectionSet, v []relayproduct.AccessMode) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNRelayProductAccessMode2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐAccessMode(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalORelayProductAccessMode2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐAccessMode(ctx context.Context, v any) (*relayproduct.AccessMode, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(relayproduct.AccessMode)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalORelayProductAccessMode2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐAccessMode(ctx context.Context, sel ast.SelectionSet, v *relayproduct.AccessMode) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalORelayProductBillingMode2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐBillingModeᚄ(ctx context.Context, v any) ([]relayproduct.BillingMode, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]relayproduct.BillingMode, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNRelayProductBillingMode2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐBillingMode(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalORelayProductBillingMode2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐBillingModeᚄ(ctx context.Context, sel ast.SelectionSet, v []relayproduct.BillingMode) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNRelayProductBillingMode2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐBillingMode(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalORelayProductBillingMode2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐBillingMode(ctx context.Context, v any) (*relayproduct.BillingMode, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(relayproduct.BillingMode)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalORelayProductBillingMode2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐBillingMode(ctx context.Context, sel ast.SelectionSet, v *relayproduct.BillingMode) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) marshalORelayProductChannel2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannel(ctx context.Context, sel ast.SelectionSet, v *ent.RelayProductChannel) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._RelayProductChannel(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalORelayProductChannelEdge2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelEdge(ctx context.Context, sel ast.SelectionSet, v []*ent.RelayProductChannelEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalORelayProductChannelEdge2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalORelayProductChannelEdge2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelEdge(ctx context.Context, sel ast.SelectionSet, v *ent.RelayProductChannelEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._RelayProductChannelEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalORelayProductChannelOrder2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelOrder(ctx context.Context, v any) (*ent.RelayProductChannelOrder, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputRelayProductChannelOrder(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalORelayProductChannelStatus2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductchannelᚐStatusᚄ(ctx context.Context, v any) ([]relayproductchannel.Status, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]relayproductchannel.Status, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNRelayProductChannelStatus2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductchannelᚐStatus(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalORelayProductChannelStatus2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductchannelᚐStatusᚄ(ctx context.Context, sel ast.SelectionSet, v []relayproductchannel.Status) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNRelayProductChannelStatus2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductchannelᚐStatus(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalORelayProductChannelStatus2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductchannelᚐStatus(ctx context.Context, v any) (*relayproductchannel.Status, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(relayproductchannel.Status)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalORelayProductChannelStatus2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductchannelᚐStatus(ctx context.Context, sel ast.SelectionSet, v *relayproductchannel.Status) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalORelayProductChannelWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelWhereInputᚄ(ctx context.Context, v any) ([]*ent.RelayProductChannelWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*ent.RelayProductChannelWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNRelayProductChannelWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalORelayProductChannelWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductChannelWhereInput(ctx context.Context, v any) (*ent.RelayProductChannelWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputRelayProductChannelWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalORelayProductEdge2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductEdge(ctx context.Context, sel ast.SelectionSet, v []*ent.RelayProductEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalORelayProductEdge2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalORelayProductEdge2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductEdge(ctx context.Context, sel ast.SelectionSet, v *ent.RelayProductEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._RelayProductEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalORelayProductOrder2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductOrder(ctx context.Context, v any) (*ent.RelayProductOrder, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputRelayProductOrder(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalORelayProductProviderType2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐProviderTypeᚄ(ctx context.Context, v any) ([]relayproduct.ProviderType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]relayproduct.ProviderType, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNRelayProductProviderType2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐProviderType(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalORelayProductProviderType2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐProviderTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []relayproduct.ProviderType) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNRelayProductProviderType2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐProviderType(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalORelayProductProviderType2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐProviderType(ctx context.Context, v any) (*relayproduct.ProviderType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(relayproduct.ProviderType)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalORelayProductProviderType2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐProviderType(ctx context.Context, sel ast.SelectionSet, v *relayproduct.ProviderType) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalORelayProductStatus2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐStatusᚄ(ctx context.Context, v any) ([]relayproduct.Status, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]relayproduct.Status, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNRelayProductStatus2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐStatus(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalORelayProductStatus2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐStatusᚄ(ctx context.Context, sel ast.SelectionSet, v []relayproduct.Status) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNRelayProductStatus2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐStatus(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalORelayProductStatus2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐStatus(ctx context.Context, v any) (*relayproduct.Status, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(relayproduct.Status)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalORelayProductStatus2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelayproductᚐStatus(ctx context.Context, sel ast.SelectionSet, v *relayproduct.Status) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalORelayProductWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductWhereInputᚄ(ctx context.Context, v any) ([]*ent.RelayProductWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*ent.RelayProductWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNRelayProductWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalORelayProductWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayProductWhereInput(ctx context.Context, v any) (*ent.RelayProductWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputRelayProductWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalORelayWallet2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWallet(ctx context.Context, sel ast.SelectionSet, v *ent.RelayWallet) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._RelayWallet(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalORelayWalletEdge2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletEdge(ctx context.Context, sel ast.SelectionSet, v []*ent.RelayWalletEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalORelayWalletEdge2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalORelayWalletEdge2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletEdge(ctx context.Context, sel ast.SelectionSet, v *ent.RelayWalletEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._RelayWalletEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalORelayWalletLedgerEntry2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntry(ctx context.Context, sel ast.SelectionSet, v *ent.RelayWalletLedgerEntry) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._RelayWalletLedgerEntry(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalORelayWalletLedgerEntryDirection2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐDirectionᚄ(ctx context.Context, v any) ([]relaywalletledgerentry.Direction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]relaywalletledgerentry.Direction, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNRelayWalletLedgerEntryDirection2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐDirection(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalORelayWalletLedgerEntryDirection2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐDirectionᚄ(ctx context.Context, sel ast.SelectionSet, v []relaywalletledgerentry.Direction) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNRelayWalletLedgerEntryDirection2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐDirection(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalORelayWalletLedgerEntryDirection2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐDirection(ctx context.Context, v any) (*relaywalletledgerentry.Direction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(relaywalletledgerentry.Direction)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalORelayWalletLedgerEntryDirection2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐDirection(ctx context.Context, sel ast.SelectionSet, v *relaywalletledgerentry.Direction) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) marshalORelayWalletLedgerEntryEdge2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryEdge(ctx context.Context, sel ast.SelectionSet, v []*ent.RelayWalletLedgerEntryEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalORelayWalletLedgerEntryEdge2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalORelayWalletLedgerEntryEdge2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryEdge(ctx context.Context, sel ast.SelectionSet, v *ent.RelayWalletLedgerEntryEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._RelayWalletLedgerEntryEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalORelayWalletLedgerEntryOrder2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryOrder(ctx context.Context, v any) (*ent.RelayWalletLedgerEntryOrder, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputRelayWalletLedgerEntryOrder(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalORelayWalletLedgerEntryScene2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐSceneᚄ(ctx context.Context, v any) ([]relaywalletledgerentry.Scene, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]relaywalletledgerentry.Scene, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNRelayWalletLedgerEntryScene2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐScene(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalORelayWalletLedgerEntryScene2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐSceneᚄ(ctx context.Context, sel ast.SelectionSet, v []relaywalletledgerentry.Scene) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNRelayWalletLedgerEntryScene2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐScene(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalORelayWalletLedgerEntryScene2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐScene(ctx context.Context, v any) (*relaywalletledgerentry.Scene, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(relaywalletledgerentry.Scene)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalORelayWalletLedgerEntryScene2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋrelaywalletledgerentryᚐScene(ctx context.Context, sel ast.SelectionSet, v *relaywalletledgerentry.Scene) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalORelayWalletLedgerEntryWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryWhereInputᚄ(ctx context.Context, v any) ([]*ent.RelayWalletLedgerEntryWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*ent.RelayWalletLedgerEntryWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNRelayWalletLedgerEntryWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalORelayWalletLedgerEntryWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletLedgerEntryWhereInput(ctx context.Context, v any) (*ent.RelayWalletLedgerEntryWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputRelayWalletLedgerEntryWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalORelayWalletWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletWhereInputᚄ(ctx context.Context, v any) ([]*ent.RelayWalletWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*ent.RelayWalletWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNRelayWalletWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalORelayWalletWhereInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐRelayWalletWhereInput(ctx context.Context, v any) (*ent.RelayWalletWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputRelayWalletWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

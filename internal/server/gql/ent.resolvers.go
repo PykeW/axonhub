@@ -378,6 +378,16 @@ func (r *queryResolver) PromptProtectionRules(ctx context.Context, after *entgql
 	)
 }
 
+// RelayProducts is the resolver for the relayProducts field.
+func (r *queryResolver) RelayProducts(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RelayProductOrder, where *ent.RelayProductWhereInput) (*ent.RelayProductConnection, error) {
+	panic(fmt.Errorf("not implemented: RelayProducts - relayProducts"))
+}
+
+// RelayProductChannels is the resolver for the relayProductChannels field.
+func (r *queryResolver) RelayProductChannels(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RelayProductChannelOrder, where *ent.RelayProductChannelWhereInput) (*ent.RelayProductChannelConnection, error) {
+	panic(fmt.Errorf("not implemented: RelayProductChannels - relayProductChannels"))
+}
+
 // Requests is the resolver for the requests field.
 func (r *queryResolver) Requests(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.RequestOrder, where *ent.RequestWhereInput) (*ent.RequestConnection, error) {
 	if err := validatePaginationArgs(first, last); err != nil {
@@ -484,6 +494,81 @@ func (r *queryResolver) Users(ctx context.Context, after *entgql.Cursor[int], fi
 		ent.WithUserOrder(orderBy),
 		ent.WithUserFilter(where.Filter),
 	)
+}
+
+// ID is the resolver for the id field.
+func (r *relayDailyUsageSummaryResolver) ID(ctx context.Context, obj *ent.RelayDailyUsageSummary) (*objects.GUID, error) {
+	panic(fmt.Errorf("not implemented: ID - id"))
+}
+
+// RelayKeyID is the resolver for the relayKeyID field.
+func (r *relayDailyUsageSummaryResolver) RelayKeyID(ctx context.Context, obj *ent.RelayDailyUsageSummary) (*objects.GUID, error) {
+	panic(fmt.Errorf("not implemented: RelayKeyID - relayKeyID"))
+}
+
+// ID is the resolver for the id field.
+func (r *relayKeyResolver) ID(ctx context.Context, obj *ent.RelayKey) (*objects.GUID, error) {
+	panic(fmt.Errorf("not implemented: ID - id"))
+}
+
+// APIKeyID is the resolver for the apiKeyID field.
+func (r *relayKeyResolver) APIKeyID(ctx context.Context, obj *ent.RelayKey) (*objects.GUID, error) {
+	panic(fmt.Errorf("not implemented: APIKeyID - apiKeyID"))
+}
+
+// ProjectID is the resolver for the projectID field.
+func (r *relayKeyResolver) ProjectID(ctx context.Context, obj *ent.RelayKey) (*objects.GUID, error) {
+	panic(fmt.Errorf("not implemented: ProjectID - projectID"))
+}
+
+// ProductID is the resolver for the productID field.
+func (r *relayKeyResolver) ProductID(ctx context.Context, obj *ent.RelayKey) (*objects.GUID, error) {
+	panic(fmt.Errorf("not implemented: ProductID - productID"))
+}
+
+// OwnerUserID is the resolver for the ownerUserID field.
+func (r *relayKeyResolver) OwnerUserID(ctx context.Context, obj *ent.RelayKey) (*objects.GUID, error) {
+	panic(fmt.Errorf("not implemented: OwnerUserID - ownerUserID"))
+}
+
+// ID is the resolver for the id field.
+func (r *relayProductResolver) ID(ctx context.Context, obj *ent.RelayProduct) (*objects.GUID, error) {
+	panic(fmt.Errorf("not implemented: ID - id"))
+}
+
+// ID is the resolver for the id field.
+func (r *relayProductChannelResolver) ID(ctx context.Context, obj *ent.RelayProductChannel) (*objects.GUID, error) {
+	panic(fmt.Errorf("not implemented: ID - id"))
+}
+
+// ProductID is the resolver for the productID field.
+func (r *relayProductChannelResolver) ProductID(ctx context.Context, obj *ent.RelayProductChannel) (*objects.GUID, error) {
+	panic(fmt.Errorf("not implemented: ProductID - productID"))
+}
+
+// ChannelID is the resolver for the channelID field.
+func (r *relayProductChannelResolver) ChannelID(ctx context.Context, obj *ent.RelayProductChannel) (*objects.GUID, error) {
+	panic(fmt.Errorf("not implemented: ChannelID - channelID"))
+}
+
+// ID is the resolver for the id field.
+func (r *relayWalletResolver) ID(ctx context.Context, obj *ent.RelayWallet) (*objects.GUID, error) {
+	panic(fmt.Errorf("not implemented: ID - id"))
+}
+
+// RelayKeyID is the resolver for the relayKeyID field.
+func (r *relayWalletResolver) RelayKeyID(ctx context.Context, obj *ent.RelayWallet) (*objects.GUID, error) {
+	panic(fmt.Errorf("not implemented: RelayKeyID - relayKeyID"))
+}
+
+// ID is the resolver for the id field.
+func (r *relayWalletLedgerEntryResolver) ID(ctx context.Context, obj *ent.RelayWalletLedgerEntry) (*objects.GUID, error) {
+	panic(fmt.Errorf("not implemented: ID - id"))
+}
+
+// RelayKeyID is the resolver for the relayKeyID field.
+func (r *relayWalletLedgerEntryResolver) RelayKeyID(ctx context.Context, obj *ent.RelayWalletLedgerEntry) (*objects.GUID, error) {
+	panic(fmt.Errorf("not implemented: RelayKeyID - relayKeyID"))
 }
 
 // ID is the resolver for the id field.
@@ -893,6 +978,30 @@ func (r *Resolver) ProviderQuotaStatus() ProviderQuotaStatusResolver {
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// RelayDailyUsageSummary returns RelayDailyUsageSummaryResolver implementation.
+func (r *Resolver) RelayDailyUsageSummary() RelayDailyUsageSummaryResolver {
+	return &relayDailyUsageSummaryResolver{r}
+}
+
+// RelayKey returns RelayKeyResolver implementation.
+func (r *Resolver) RelayKey() RelayKeyResolver { return &relayKeyResolver{r} }
+
+// RelayProduct returns RelayProductResolver implementation.
+func (r *Resolver) RelayProduct() RelayProductResolver { return &relayProductResolver{r} }
+
+// RelayProductChannel returns RelayProductChannelResolver implementation.
+func (r *Resolver) RelayProductChannel() RelayProductChannelResolver {
+	return &relayProductChannelResolver{r}
+}
+
+// RelayWallet returns RelayWalletResolver implementation.
+func (r *Resolver) RelayWallet() RelayWalletResolver { return &relayWalletResolver{r} }
+
+// RelayWalletLedgerEntry returns RelayWalletLedgerEntryResolver implementation.
+func (r *Resolver) RelayWalletLedgerEntry() RelayWalletLedgerEntryResolver {
+	return &relayWalletLedgerEntryResolver{r}
+}
+
 // Request returns RequestResolver implementation.
 func (r *Resolver) Request() RequestResolver { return &requestResolver{r} }
 
@@ -936,6 +1045,12 @@ type promptResolver struct{ *Resolver }
 type promptProtectionRuleResolver struct{ *Resolver }
 type providerQuotaStatusResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type relayDailyUsageSummaryResolver struct{ *Resolver }
+type relayKeyResolver struct{ *Resolver }
+type relayProductResolver struct{ *Resolver }
+type relayProductChannelResolver struct{ *Resolver }
+type relayWalletResolver struct{ *Resolver }
+type relayWalletLedgerEntryResolver struct{ *Resolver }
 type requestResolver struct{ *Resolver }
 type requestExecutionResolver struct{ *Resolver }
 type roleResolver struct{ *Resolver }
