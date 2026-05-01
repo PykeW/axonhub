@@ -89,6 +89,22 @@ export const routeConfigs: RouteGroup[] = [
     ],
   },
   {
+    title: 'Share/Use',
+    scopeLevel: 'any',
+    routes: [
+      {
+        path: '/share',
+        requiredScopes: ['read_channels'],
+        mode: 'hidden',
+      },
+      {
+        path: '/use',
+        requiredScopes: ['read_api_keys'],
+        mode: 'hidden',
+      },
+    ],
+  },
+  {
     title: 'Project',
     scopeLevel: 'any', // Project 路由组可以通过 system-level 或 project-level 权限访问
     routes: [

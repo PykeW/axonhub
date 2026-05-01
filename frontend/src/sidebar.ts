@@ -119,6 +119,7 @@ export function useSidebarData(): SidebarData {
     },
     {
       title: t('sidebar.groups.shareUse'),
+      routeConfigTitle: 'Share/Use',
       items: [
         {
           title: t('sidebar.items.share'),
