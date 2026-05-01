@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useChannels } from '../context/channels-context';
+import { useChannels } from '../context/use-channels-context';
 import { useClearChannelErrorMessage } from '../data/channels';
 
 interface ChannelsErrorResolvedDialogProps {
@@ -23,7 +23,7 @@ export function ChannelsErrorResolvedDialog({ open, onOpenChange }: ChannelsErro
       });
       setOpen(null);
       onOpenChange(false);
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by the mutation hook
     }
   };

@@ -18,18 +18,12 @@ import { Channel } from '../data/schema';
 import { mergeChannelSettingsForUpdate } from '../utils/merge';
 import { ErrorDisplay } from '../utils/error-formatter';
 import { useProxyPresets, useSaveProxyPreset } from '@/features/system/data/system';
+import { ProxyType } from './proxy-type';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentRow: Channel;
-}
-
-// Proxy type enum
-export enum ProxyType {
-  DISABLED = 'disabled',
-  ENVIRONMENT = 'environment',
-  URL = 'url',
 }
 
 // Proxy configuration schema

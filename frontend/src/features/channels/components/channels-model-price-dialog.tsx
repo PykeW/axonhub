@@ -18,7 +18,7 @@ import { ModelPriceEditor } from '@/components/model-price-editor';
 import { type ProviderModel, type ProvidersData } from '@/features/models/data/providers.schema';
 import { useProvidersData } from '@/features/models/data/providers';
 import { useGeneralSettings } from '@/features/system/data/system';
-import { useChannels } from '../context/channels-context';
+import { useChannels } from '../context/use-channels-context';
 import { useChannelModelPrices, useSaveChannelModelPrices } from '../data/channels';
 import { PricingMode, PriceItemCode } from '../data/schema';
 

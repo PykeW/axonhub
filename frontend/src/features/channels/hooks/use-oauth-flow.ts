@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
-import { ProxyType } from '../components/channels-proxy-dialog';
+import { ProxyType } from '../components/proxy-type';
 
 export interface ProxyConfig {
   type: ProxyType;

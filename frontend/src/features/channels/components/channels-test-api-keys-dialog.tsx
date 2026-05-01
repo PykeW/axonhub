@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useChannels } from '../context/channels-context';
+import { useChannels } from '../context/use-channels-context';
 import { useDeleteDisabledChannelAPIKeys, useDisableChannelAPIKey, useTestChannelAPIKeys, useUpdateChannel } from '../data/channels';
 import { TestAPIKeyResult } from '../data/schema';
 

@@ -1,52 +1,10 @@
-import React, { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import useDialogState from '@/hooks/use-dialog-state';
-import { Channel } from '../data/schema';
-
-type ChannelsDialogType =
-  | 'add'
-  | 'duplicate'
-  | 'edit'
-  | 'delete'
-  | 'settings'
-  | 'channelSettings'
-  | 'modelMapping'
-  | 'overrides'
-  | 'proxy'
-  | 'status'
-  | 'test'
-  | 'testHistory'
-  | 'bulkImport'
-  | 'archive'
-  | 'bulkOrdering'
-  | 'bulkArchive'
-  | 'bulkDisable'
-  | 'bulkEnable'
-  | 'bulkTest'
-  | 'bulkDelete'
-  | 'bulkApplyTemplate'
-  | 'errorResolved'
-  | 'viewModels'
-  | 'price'
-  | 'transformOptions'
-  | 'rateLimit'
-  | 'testAPIKeys'
-  | 'disabledAPIKeys';
-
-interface ChannelsContextType {
-  open: ChannelsDialogType | null;
-  setOpen: (str: ChannelsDialogType | null) => void;
-  currentRow: Channel | null;
-  setCurrentRow: React.Dispatch<React.SetStateAction<Channel | null>>;
-  selectedChannels: Channel[];
-  setSelectedChannels: React.Dispatch<React.SetStateAction<Channel[]>>;
-  resetRowSelection: () => void;
-  setResetRowSelection: (fn: () => void) => void;
-}
-
-const ChannelsContext = React.createContext<ChannelsContextType | null>(null);
+import type { Channel } from '../data/schema';
+import { ChannelsContext, type ChannelsDialogType } from './channels-context-state';
 
 interface Props {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export default function ChannelsProvider({ children }: Props) {
@@ -74,14 +32,3 @@ export default function ChannelsProvider({ children }: Props) {
     </ChannelsContext.Provider>
   );
 }
-
-// eslint-disable-next-line react-refresh/only-export-components
-export const useChannels = () => {
-  const channelsContext = React.useContext(ChannelsContext);
-
-  if (!channelsContext) {
-    throw new Error('useChannels has to be used within <ChannelsContext>');
-  }
-
-  return channelsContext;
-};

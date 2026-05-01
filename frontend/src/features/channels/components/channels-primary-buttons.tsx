@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/components/permission-guard';
-import { useChannels } from '../context/channels-context';
+import { useChannels } from '../context/use-channels-context';
 
 export function ChannelsPrimaryButtons() {
   const { t } = useTranslation();

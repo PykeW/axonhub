@@ -22,7 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { ServerSidePagination } from '@/components/server-side-pagination';
 import { ChannelExpandedRow } from './channel-expanded-row';
-import { useChannels } from '../context/channels-context';
+import { useChannels } from '../context/use-channels-context';
 import { Channel, ChannelConnection } from '../data/schema';
 import { DataTableToolbar } from './data-table-toolbar';
 
@@ -234,10 +234,7 @@ export function ChannelsTable({
     manualFiltering: true, // Enable manual filtering for server-side filtering
   });
 
-  const filteredSelectedRows = useMemo(
-    () => table.getFilteredSelectedRowModel().rows,
-    [table.getState().rowSelection, table.getFilteredRowModel().rows]
-  );
+  const filteredSelectedRows = useMemo(() => table.getFilteredSelectedRowModel().rows, [table]);
 
   const getApiFormatLabel = useCallback(
     (apiFormat?: string) => {

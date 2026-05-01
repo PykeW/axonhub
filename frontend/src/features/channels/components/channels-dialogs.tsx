@@ -1,4 +1,4 @@
-import { useChannels } from '../context/channels-context';
+import { useChannels } from '../context/use-channels-context';
 import { ChannelsActionDialog } from './channels-action-dialog';
 import { ChannelsArchiveDialog } from './channels-archive-dialog';
 import { ChannelsBulkApplyTemplateDialog } from './channels-bulk-apply-template-dialog';
