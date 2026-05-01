@@ -12,15 +12,51 @@ type APIKeyProfiles struct {
 }
 
 type APIKeyProfile struct {
-	Name                string         `json:"name"`
-	ModelMappings       []ModelMapping `json:"modelMappings"`
-	Quota               *APIKeyQuota   `json:"quota,omitempty"`
-	LoadBalanceStrategy *string        `json:"loadBalanceStrategy,omitempty"`
+	Name                string            `json:"name"`
+	ModelMappings       []ModelMapping    `json:"modelMappings"`
+	Quota               *APIKeyQuota      `json:"quota,omitempty"`
+	LoadBalanceStrategy *string           `json:"loadBalanceStrategy,omitempty"`
+	UseStrategy         APIKeyUseStrategy `json:"useStrategy,omitempty"`
 
 	ChannelIDs           []int                `json:"channelIDs,omitempty"`
 	ChannelTags          []string             `json:"channelTags,omitempty"`
 	ChannelTagsMatchMode ChannelTagsMatchMode `json:"channelTagsMatchMode,omitempty"`
 	ModelIDs             []string             `json:"modelIDs,omitempty"`
+}
+
+// APIKeyUseStrategy controls how API-key traffic can use owned and shared channels.
+type APIKeyUseStrategy string
+
+const (
+	APIKeyUseStrategyPreferOwn   APIKeyUseStrategy = "prefer_own"
+	APIKeyUseStrategyOnlyOwn     APIKeyUseStrategy = "only_own"
+	APIKeyUseStrategyAllowShared APIKeyUseStrategy = "allow_shared"
+)
+
+func (s APIKeyUseStrategy) IsValid() bool {
+	switch s {
+	case "", APIKeyUseStrategyPreferOwn, APIKeyUseStrategyOnlyOwn, APIKeyUseStrategyAllowShared:
+		return true
+	default:
+		return false
+	}
+}
+
+func (s APIKeyUseStrategy) OrDefault() APIKeyUseStrategy {
+	switch s {
+	case APIKeyUseStrategyOnlyOwn, APIKeyUseStrategyAllowShared:
+		return s
+	default:
+		return APIKeyUseStrategyPreferOwn
+	}
+}
+
+func (p *APIKeyProfile) UseStrategyOrDefault() APIKeyUseStrategy {
+	if p == nil {
+		return APIKeyUseStrategyPreferOwn
+	}
+
+	return p.UseStrategy.OrDefault()
 }
 
 // ChannelTagsMatchMode controls how profile channel tags are matched.

@@ -393,6 +393,8 @@ func (s *APIKeyService) UpdateAPIKeyProfiles(ctx context.Context, id int, profil
 		return nil, err
 	}
 
+	normalizeProfileDefaults(&profiles)
+
 	apiKey, err := client.APIKey.UpdateOneID(id).
 		SetProfiles(&profiles).
 		Save(ctx)
@@ -442,9 +444,23 @@ func validateProfileFilters(profiles []objects.APIKeyProfile) error {
 		if !profile.ChannelTagsMatchMode.IsValid() {
 			return fmt.Errorf("profile '%s' channelTagsMatchMode is invalid", profile.Name)
 		}
+
+		if !profile.UseStrategy.IsValid() {
+			return fmt.Errorf("profile '%s' useStrategy is invalid", profile.Name)
+		}
 	}
 
 	return nil
+}
+
+func normalizeProfileDefaults(profiles *objects.APIKeyProfiles) {
+	if profiles == nil {
+		return
+	}
+
+	for i := range profiles.Profiles {
+		profiles.Profiles[i].UseStrategy = profiles.Profiles[i].UseStrategy.OrDefault()
+	}
 }
 
 func validateProfileQuota(profiles []objects.APIKeyProfile) error {
