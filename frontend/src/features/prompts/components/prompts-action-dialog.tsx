@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { AutoComplete } from '@/components/auto-complete';
 import { useQueryModels } from '@/gql/models';
 import { useApiKeys } from '@/features/apikeys/data/apikeys';
-import { usePrompts } from '../context/prompts-context';
+import { usePrompts } from '../context/use-prompts-context';
 import { useCreatePrompt, useUpdatePrompt } from '../data/prompts';
 import { CreatePromptInput, UpdatePromptInput } from '../data/schema';
 import { useSelectedProjectId } from '@/stores/projectStore';

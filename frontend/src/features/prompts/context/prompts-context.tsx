@@ -1,29 +1,8 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
-import { Prompt } from '../data/schema';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import type { Prompt } from '../data/schema';
+import { PromptsContext, type DialogType } from './prompts-context-state';
 
-type DialogType =
-  | 'create'
-  | 'edit'
-  | 'delete'
-  | 'bulkEnable'
-  | 'bulkDisable'
-  | 'bulkDelete'
-  | null;
-
-interface PromptsContextType {
-  open: DialogType;
-  setOpen: (open: DialogType) => void;
-  currentRow: Prompt | null;
-  setCurrentRow: (row: Prompt | null) => void;
-  selectedPrompts: Prompt[];
-  setSelectedPrompts: (prompts: Prompt[]) => void;
-  resetRowSelection: (() => void) | null;
-  setResetRowSelection: (fn: (() => void) | null) => void;
-}
-
-const PromptsContext = createContext<PromptsContextType | undefined>(undefined);
-
-export function PromptsProvider({ children }: { children: React.ReactNode }) {
+export function PromptsProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState<DialogType>(null);
   const [currentRow, setCurrentRow] = useState<Prompt | null>(null);
   const [selectedPrompts, setSelectedPrompts] = useState<Prompt[]>([]);
@@ -56,27 +35,10 @@ export function PromptsProvider({ children }: { children: React.ReactNode }) {
       resetRowSelection,
       setResetRowSelection: handleSetResetRowSelection,
     }),
-    [
-      open,
-      handleSetOpen,
-      currentRow,
-      handleSetCurrentRow,
-      selectedPrompts,
-      handleSetSelectedPrompts,
-      resetRowSelection,
-      handleSetResetRowSelection,
-    ]
+    [open, handleSetOpen, currentRow, handleSetCurrentRow, selectedPrompts, handleSetSelectedPrompts, resetRowSelection, handleSetResetRowSelection]
   );
 
   return <PromptsContext.Provider value={value}>{children}</PromptsContext.Provider>;
-}
-
-export function usePrompts() {
-  const context = useContext(PromptsContext);
-  if (context === undefined) {
-    throw new Error('usePrompts must be used within a PromptsProvider');
-  }
-  return context;
 }
 
 export default PromptsProvider;

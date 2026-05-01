@@ -21,7 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { PermissionGuard } from '@/components/permission-guard';
 import { ServerSidePagination } from '@/components/server-side-pagination';
-import { usePrompts } from '../context/prompts-context';
+import { usePrompts } from '../context/use-prompts-context';
 import { Prompt, PromptConnection } from '../data/schema';
 
 interface PromptsTableProps {
@@ -107,7 +107,7 @@ export function PromptsTable({
     manualFiltering: true,
   });
 
-  const filteredSelectedRows = useMemo(() => table.getFilteredSelectedRowModel().rows, [table, rowSelection, data]);
+  const filteredSelectedRows = useMemo(() => table.getFilteredSelectedRowModel().rows, [table]);
 
   const selectedCount = filteredSelectedRows.length;
 

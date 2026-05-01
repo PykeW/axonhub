@@ -10,7 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { usePrompts } from '../context/prompts-context';
+import { usePrompts } from '../context/use-prompts-context';
 import { useBulkEnablePrompts } from '../data/prompts';
 
 export function PromptsBulkEnableDialog() {
