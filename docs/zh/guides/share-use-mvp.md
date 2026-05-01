@@ -1,15 +1,31 @@
 # 共享/使用 MVP 指南
 
-本文记录简化版“共享/使用”方案的产品边界、数据约定、调度规则、验收标准和测试矩阵。目标是用最少架构完成用户自助接入：用户在 **共享** 页面上传自己的渠道，在 **使用** 页面创建只选择模型和使用策略的 API Key。
+本文记录简化版“共享/使用”方案的产品边界、数据约定、调度规则、目标验收标准和测试矩阵。它是一份产品计划与后续验收清单，不表示当前 `snow-m1` 合并内容已经完整交付所有能力。
+
+当前合并内容是低冲突基础切片：文档页、前端 `/share` 与 `/use` 指南包装路由、后端 JSON-only `APIKeyProfile.useStrategy` 以及 `ChannelSettings.Share` 元数据/默认值。完整后端路由、配额/刷新窗口强约束和真实 Share/Use 表单仍是后续工作。
 
 ## 范围
 
 ### 页面
 
-| 页面 | 用户目标 | MVP 能力 |
-|------|----------|----------|
+| 页面 | 用户目标                            | 目标 MVP 能力（后续验收）                                                 |
+| ---- | ----------------------------------- | ------------------------------------------------------------------------- |
 | 共享 | 把自己的上游账号贡献给 AxonHub 使用 | 创建/编辑/归档自己的渠道，设置 `private` 或 `shared`，查看 5 小时刷新窗口 |
-| 使用 | 用简单 API Key 调用可用模型 | 创建 API Key，选择 `modelIDs`，选择 `useStrategy` |
+| 使用 | 用简单 API Key 调用可用模型         | 创建 API Key，选择 `modelIDs`，选择 `useStrategy`                         |
+
+### 当前已合并低冲突切片
+
+- 文档：新增本指南，作为产品计划、联调边界和后续验收入口。
+- 前端：新增 `/share` 与 `/use` 指南包装路由和导航入口；这些页面用于引导现有渠道/API Key 能力，不是最终创建/编辑表单。
+- 后端：在 JSON 配置层增加 `APIKeyProfile.useStrategy` 默认值/合法值约定，以及 `ChannelSettings.Share` 元数据/默认值；未改变实际请求路由链路。
+- 兼容性：现有渠道管理、API Key Profile、配额、模型映射、负载均衡和重试行为保持原状。
+
+### 尚未实现的完整行为
+
+- Share 页面真实创建/编辑/归档表单、所有者权限、敏感字段脱敏、5 小时刷新窗口与并发刷新控制。
+- Use 页面真实 API Key 创建表单、模型多选必填校验、生成后展示/复制和保存失败提示。
+- 请求路由按 `useStrategy` 做自有/共享候选过滤、own-first、soonest-refresh-first、配额强制和可观测日志。
+- 面向共享容量的端到端测试、前端 E2E 和完整后端 selector/orchestrator 回归。
 
 ### 不做的事
 
@@ -23,21 +39,21 @@
 
 ### 字段约定
 
-| 字段 | 要求 |
-|------|------|
-| `ownerUserID` | 渠道所有者；普通用户只能管理自己的渠道 |
-| `visibility` | `private` 或 `shared`；默认建议为 `private` |
-| `supportedModels` | 该渠道可承载的模型列表，必须至少包含一个模型 |
-| `defaultTestModel` | 测试连接默认模型，必须属于 `supportedModels` |
-| `lastRefreshedAt` | 最近一次用户主动刷新时间 |
-| `nextRefreshAt` | 下一次允许刷新时间，等于最近一次成功刷新后 5 小时 |
+| 字段               | 要求                                              |
+| ------------------ | ------------------------------------------------- |
+| `ownerUserID`      | 渠道所有者；普通用户只能管理自己的渠道            |
+| `visibility`       | `private` 或 `shared`；默认建议为 `private`       |
+| `supportedModels`  | 该渠道可承载的模型列表，必须至少包含一个模型      |
+| `defaultTestModel` | 测试连接默认模型，必须属于 `supportedModels`      |
+| `lastRefreshedAt`  | 最近一次用户主动刷新时间                          |
+| `nextRefreshAt`    | 下一次允许刷新时间，等于最近一次成功刷新后 5 小时 |
 
 ### 可见性
 
-| 可见性 | 路由范围 | 凭据可见性 | 可编辑者 |
-|--------|----------|------------|----------|
-| `private` | 仅渠道所有者自己的 Use API Key 可用 | 仅所有者和有权限的管理员可见 | 所有者或管理员 |
-| `shared` | 所有允许使用共享容量的用户可作为候选渠道 | 非所有者不得看到凭据、完整错误细节或敏感备注 | 所有者或管理员 |
+| 可见性    | 路由范围                                 | 凭据可见性                                   | 可编辑者       |
+| --------- | ---------------------------------------- | -------------------------------------------- | -------------- |
+| `private` | 仅渠道所有者自己的 Use API Key 可用      | 仅所有者和有权限的管理员可见                 | 所有者或管理员 |
+| `shared`  | 所有允许使用共享容量的用户可作为候选渠道 | 非所有者不得看到凭据、完整错误细节或敏感备注 | 所有者或管理员 |
 
 ### 5 小时刷新窗口
 
@@ -54,12 +70,12 @@
 
 ### API Key 配置
 
-| 字段 | 要求 |
-|------|------|
-| `modelIDs` | 用户显式选择的模型列表；请求模型不在列表内时必须拒绝 |
-| `useStrategy` | 使用策略：`prefer_own`、`only_own`、`allow_shared` |
-| `quota` | 可沿用 API Key Profile 配额；不是 MVP 必填项 |
-| `modelMappings` | 默认空；高级兼容场景可继续沿用现有 Profile 能力 |
+| 字段            | 要求                                                 |
+| --------------- | ---------------------------------------------------- |
+| `modelIDs`      | 用户显式选择的模型列表；请求模型不在列表内时必须拒绝 |
+| `useStrategy`   | 使用策略：`prefer_own`、`only_own`、`allow_shared`   |
+| `quota`         | 可沿用 API Key Profile 配额；不是 MVP 必填项         |
+| `modelMappings` | 默认空；高级兼容场景可继续沿用现有 Profile 能力      |
 
 示例：
 
@@ -79,11 +95,11 @@
 
 ### 使用策略
 
-| `useStrategy` | 含义 | 无匹配自有渠道时 |
-|---------------|------|------------------|
-| `prefer_own` | 优先使用自己的渠道，自己的渠道不可用时允许使用共享渠道 | 回退到共享渠道 |
-| `only_own` | 只使用自己的渠道，不使用其他人的共享渠道 | 返回无可用渠道错误 |
-| `allow_shared` | 自有和共享渠道都可以作为候选 | 在所有候选中继续排序 |
+| `useStrategy`  | 含义                                                   | 无匹配自有渠道时     |
+| -------------- | ------------------------------------------------------ | -------------------- |
+| `prefer_own`   | 优先使用自己的渠道，自己的渠道不可用时允许使用共享渠道 | 回退到共享渠道       |
+| `only_own`     | 只使用自己的渠道，不使用其他人的共享渠道               | 返回无可用渠道错误   |
+| `allow_shared` | 自有和共享渠道都可以作为候选                           | 在所有候选中继续排序 |
 
 建议默认值为 `prefer_own`，因为它兼顾用户自有资源优先和共享兜底。
 
@@ -119,9 +135,16 @@
 
 ## 验收标准
 
-### 产品验收
+本节区分“当前切片可验收”和“目标 MVP 后续验收”。除当前切片条目外，下列产品、后端和前端验收标准均表示后续完成项，不代表当前合并已经具备完整行为。
 
-- 用户能在导航中看到 **共享** 和 **使用** 两个入口。
+### 当前切片可验收
+
+- 用户能在导航中看到 **共享** 和 **使用** 两个入口，但页面是指南包装入口，不是最终 Share/Use 业务表单。
+- `/share` 和 `/use` 不阻塞现有渠道管理、API Key 管理、模型映射、配额、负载均衡和重试能力。
+- 后端 JSON 配置能表达 `useStrategy` 目标值和 `ChannelSettings.Share` 元数据/默认值；实际请求仍沿用现有路由链路。
+
+### 目标产品验收（后续完成）
+
 - 共享页面只能展示和管理当前用户自己的渠道；管理员视角不破坏现有渠道管理能力。
 - 用户创建渠道时必须选择 `private` 或 `shared`；未选择时使用默认 `private`。
 - 共享渠道可被其他用户路由使用，但其他用户无法读取凭据、敏感备注和完整错误细节。
@@ -134,7 +157,7 @@
 - `only_own` 不使用共享渠道，且无自有候选时返回明确无可用渠道错误。
 - `allow_shared` 可以使用自有和共享候选，并继续遵守模型、配额、健康、重试规则。
 
-### 后端验收
+### 目标后端验收（后续完成）
 
 - 渠道有所有者和可见性默认值；历史渠道迁移或默认行为有明确兼容策略。
 - 普通用户不能读取或修改其他用户的 private 渠道。
@@ -145,43 +168,45 @@
 - 路由选择输出可观测日志，至少包含策略、候选数量、自有/共享桶数量和最终渠道 ID。
 - 现有 API Key Profile 的 `modelIDs`、`quota`、`loadBalanceStrategy` 行为保持兼容。
 
-### 前端验收
+### 目标前端验收（真实表单后续补齐）
 
-- 共享页面表单包含渠道名称、类型、Base URL、API Key、支持模型、默认测试模型、可见性。
-- 使用页面表单包含名称、模型多选、使用策略、生成后的 API Key 展示/复制。
+- 共享页面真实表单包含渠道名称、类型、Base URL、API Key、支持模型、默认测试模型、可见性。
+- 使用页面真实表单包含名称、模型多选、使用策略、生成后的 API Key 展示/复制。
 - 中英文文案清楚区分“私有”“共享”“优先自有”“仅自有”“允许共享”。
 - 保存失败、刷新冷却、无可用渠道、模型未授权都有明确错误提示。
 - 页面可在无后端新增字段时优雅降级，不阻塞现有渠道/API Key 管理页面。
 
 ## 测试矩阵
 
-| 模块 | 场景 | 预期 | 建议命令/位置 |
-|------|------|------|---------------|
-| Schema/验证 | `visibility=private/shared` | 合法值通过，非法值拒绝 | `go test ./internal/server/biz -run Channel` |
-| Schema/验证 | `useStrategy` 非法值 | 保存 API Key Profile 失败 | `go test ./internal/server/biz -run APIKey` |
-| Schema/验证 | `modelIDs` 为空 | Use API Key 创建/保存失败 | `go test ./internal/server/biz -run APIKey` |
-| 权限 | 用户 A 读取用户 B 的 private 渠道 | 拒绝或返回空 | `go test ./internal/scopes ./internal/server/biz -run Channel` |
-| 权限 | 用户 A 读取用户 B 的 shared 渠道 | 可作为候选，但凭据脱敏 | `go test ./internal/server/gql ./internal/server/biz -run Channel` |
-| 刷新窗口 | 首次刷新 | 成功并写入 `nextRefreshAt` | `go test ./internal/server/biz -run Refresh` |
-| 刷新窗口 | 5 小时内重复刷新 | 拒绝并返回下一次时间 | `go test ./internal/server/biz -run Refresh` |
-| 刷新窗口 | 正好到达 5 小时 | 允许刷新 | `go test ./internal/server/biz -run Refresh` |
-| 刷新窗口 | 并发刷新同一渠道 | 只有一个成功 | `go test ./internal/server/biz -run Refresh -count=20` |
-| 模型访问 | 请求模型不在 `modelIDs` | 返回模型无权限错误 | `go test ./internal/server/orchestrator -run TestCheckApiKeyModelAccess` |
-| 路由 | `only_own` 有自有候选 | 只返回自有渠道 | `go test ./internal/server/orchestrator -run 'Selector|Share|Use'` |
-| 路由 | `only_own` 只有共享候选 | 返回无可用渠道 | `go test ./internal/server/orchestrator -run 'Selector|Share|Use'` |
-| 路由 | `prefer_own` 同时有自有和共享 | 自有渠道排在共享前 | `go test ./internal/server/orchestrator -run 'Selector|LoadBalanced'` |
-| 路由 | `prefer_own` 无自有候选 | 回退共享渠道 | `go test ./internal/server/orchestrator -run 'Selector|LoadBalanced'` |
-| 路由 | 同桶多个候选 | `nextRefreshAt` 最早的排前 | `go test ./internal/server/orchestrator -run 'Refresh|Selector'` |
-| 配额 | API Key Profile quota 命中 | 请求被拒绝，错误为 quota exceeded | `go test ./internal/server/orchestrator -run Quota` |
-| 回归 | APIKeyProfile `channelIDs/channelTags/modelIDs` | 旧行为不变 | `go test ./internal/server/biz -run TestModelService_ListEnabledModels` |
-| 回归 | Profile `loadBalanceStrategy` | 旧策略派生不变 | `go test ./internal/server/orchestrator -run TestDeriveLoadBalancerStrategy` |
-| 前端 | 共享页创建/编辑/归档 | 表单可用，列表更新 | `cd frontend && pnpm test:e2e -- channels.spec.ts` 加新增 share spec |
-| 前端 | 使用页创建 API Key | 模型和策略保存成功 | `cd frontend && pnpm test:e2e -- apikeys/share-use.spec.ts` |
-| 前端 | 基础质量 | lint/build 通过 | `cd frontend && pnpm lint && pnpm build` |
+以下矩阵覆盖目标 MVP。当前低冲突切片只要求验证文档、包装路由和 JSON/defaults 相关检查；完整路由、配额、刷新窗口和真实表单测试需在对应实现补齐后启用。
+
+| 模块        | 场景                                            | 预期                              | 建议命令/位置                                                                |
+| ----------- | ----------------------------------------------- | --------------------------------- | ---------------------------------------------------------------------------- |
+| Schema/验证 | `visibility=private/shared`                     | 合法值通过，非法值拒绝            | `go test ./internal/server/biz -run Channel`                                 |
+| Schema/验证 | `useStrategy` 非法值                            | 保存 API Key Profile 失败         | `go test ./internal/server/biz -run APIKey`                                  |
+| Schema/验证 | `modelIDs` 为空                                 | Use API Key 创建/保存失败         | `go test ./internal/server/biz -run APIKey`                                  |
+| 权限        | 用户 A 读取用户 B 的 private 渠道               | 拒绝或返回空                      | `go test ./internal/scopes ./internal/server/biz -run Channel`               |
+| 权限        | 用户 A 读取用户 B 的 shared 渠道                | 可作为候选，但凭据脱敏            | `go test ./internal/server/gql ./internal/server/biz -run Channel`           |
+| 刷新窗口    | 首次刷新                                        | 成功并写入 `nextRefreshAt`        | `go test ./internal/server/biz -run Refresh`                                 |
+| 刷新窗口    | 5 小时内重复刷新                                | 拒绝并返回下一次时间              | `go test ./internal/server/biz -run Refresh`                                 |
+| 刷新窗口    | 正好到达 5 小时                                 | 允许刷新                          | `go test ./internal/server/biz -run Refresh`                                 |
+| 刷新窗口    | 并发刷新同一渠道                                | 只有一个成功                      | `go test ./internal/server/biz -run Refresh -count=20`                       |
+| 模型访问    | 请求模型不在 `modelIDs`                         | 返回模型无权限错误                | `go test ./internal/server/orchestrator -run TestCheckApiKeyModelAccess`     |
+| 路由        | `only_own` 有自有候选                           | 只返回自有渠道                    | `go test ./internal/server/orchestrator -run 'Selector\|Share\|Use'`         |
+| 路由        | `only_own` 只有共享候选                         | 返回无可用渠道                    | `go test ./internal/server/orchestrator -run 'Selector\|Share\|Use'`         |
+| 路由        | `prefer_own` 同时有自有和共享                   | 自有渠道排在共享前                | `go test ./internal/server/orchestrator -run 'Selector\|LoadBalanced'`       |
+| 路由        | `prefer_own` 无自有候选                         | 回退共享渠道                      | `go test ./internal/server/orchestrator -run 'Selector\|LoadBalanced'`       |
+| 路由        | 同桶多个候选                                    | `nextRefreshAt` 最早的排前        | `go test ./internal/server/orchestrator -run 'Refresh\|Selector'`            |
+| 配额        | API Key Profile quota 命中                      | 请求被拒绝，错误为 quota exceeded | `go test ./internal/server/orchestrator -run Quota`                          |
+| 回归        | APIKeyProfile `channelIDs/channelTags/modelIDs` | 旧行为不变                        | `go test ./internal/server/biz -run TestModelService_ListEnabledModels`      |
+| 回归        | Profile `loadBalanceStrategy`                   | 旧策略派生不变                    | `go test ./internal/server/orchestrator -run TestDeriveLoadBalancerStrategy` |
+| 前端        | 共享页创建/编辑/归档                            | 表单可用，列表更新                | `cd frontend && pnpm test:e2e -- channels.spec.ts` 加新增 share spec         |
+| 前端        | 使用页创建 API Key                              | 模型和策略保存成功                | `cd frontend && pnpm test:e2e -- apikeys/share-use.spec.ts`                  |
+| 前端        | 基础质量                                        | lint/build 通过                   | `cd frontend && pnpm lint && pnpm build`                                     |
 
 ## 建议验证命令
 
-MVP 合并前建议至少运行：
+目标 MVP 完成前建议至少运行：
 
 ```bash
 go test ./internal/server/biz -run 'TestAPIKeyService_UpdateAPIKeyProfiles|TestValidateProfileQuota|TestQuotaService|TestQuotaWindow|TestModelService_ListEnabledModels'
