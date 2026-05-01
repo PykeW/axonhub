@@ -21,13 +21,15 @@
 - 渠道绑定状态：`active`、`paused`
 - 默认值：`USD`、`shared_capacity`、`prepaid`、`draft`、超时 `600`、绑定权重 `100`
 
-## 当前收口状态（2026-05-01 P0 全量验收已通过；P1 MonthlyCostLimit hard cap 待验证）
+## 当前收口状态（2026-05-01 P0 全量验收与 P1 MonthlyCostLimit hard cap 已通过）
 
 - 数据基础：6 个 Relay Ent schema 已存在（`RelayProduct`、`RelayProductChannel`、`RelayKey`、`RelayWallet`、`RelayWalletLedgerEntry`、`RelayDailyUsageSummary`），且对应生成资产已存在：`internal/ent/relayproduct*`、`internal/ent/relayproductchannel*`、`internal/ent/relaykey*`、`internal/ent/relaywallet*`、`internal/ent/relaywalletledgerentry*`、`internal/ent/relaydailyusagesummary*`。
 - 工具链：Go 1.26 已就绪（`$HOME/.local/go/bin/go`，version `go1.26.2`）；本地不再有 toolchain 阻塞。**禁止降级** `go.mod` 的 `go 1.26.0` 或 `tool` directive。
 - 后端验收（2026-05-01 已通过）：
   - `make test-backend-all` exit 0（含 llm 模块全部 transformer）。
   - `go test ./internal/server/biz -run 'Relay(Product|Key|Wallet|Admin|Runtime|Access|Router|Settlement|Auth)' -count=1` PASS。
+  - `go test ./internal/server/biz -run 'TestRelaySettlementService|RelaySettlement|RelayAccess|RelayRouter|RelayRuntime|RelayAuth' -count=1` PASS（hard-cap merge 后复验）。
+  - `go test ./internal/server/biz -run 'TestRelaySettlementService_SettleUsage(Concurrent)?Idempotent|TestRelaySettlementService_SettleUsageDifferentConcurrentMonthlyHardCap' -count=20` PASS，覆盖幂等与并发 hard-cap 回归。
   - `go test ./internal/server/api -run Relay -count=1` PASS。
   - `go test ./internal/server/middleware -run 'Relay|RequireProjectScopes' -count=1` PASS。
   - `go test ./internal/server/orchestrator -count=1` PASS。
@@ -38,7 +40,7 @@
 - Runtime 接入：`RelayRuntimeService` Fx wiring + `AuthenticateRelayAPIKey -> ResolveAndCheckAccess` + `UsageLogService -> RecordRelayUsage -> RelaySettlementService` 已接入；orchestrator `select_candidates` 已叠加产品池、绑定状态、模型过滤、渠道状态、`ProviderQuotaStatus.ready` 过滤；结算 idempotency 在 unique conflict 后回滚钱包。
 - 前端 REST 接入：`VITE_RELAY_SUBKEYS_API_MODE=rest` 时 401/403/contract 错误进入错误态、不 fallback；REST 模式缺 projectId 抛错而非 mock；`filterKeysByProject` 不再回退 `project-alpha`；项目侧详情页 keyId 不存在不再回退首条 key；route permission 已对齐后端 all-scopes 语义；admin Relay 路由 `scopeLevel='system'` 显式标注；运营详情页写操作（产品激活/绑定/Pause/Resume/Remove/Suspend/Archive/Increase concurrency/Recharge）已按 `write_channels`/`write_api_keys` 在组件级隐藏。
 - 已决策限制 / 已知语义：
-  - `MonthlyCostLimit` P1 选项 1 已改为“入口 preflight guard + settlement hard cap”：入口仍基于 `relay_daily_usage_summaries` 月度聚合做快速拒绝；结算事务内以 `relay_keys` 按 Key 串行化/原子检查为准，`current_monthly + charge == limit` 允许，`>` 拒绝。
+  - `MonthlyCostLimit` P1 选项 1 已落地并通过复验：“入口 preflight guard + settlement hard cap”；入口仍基于 `relay_daily_usage_summaries` 月度聚合做快速拒绝，结算事务内以 `relay_keys` 按 Key 串行化/原子检查为准，`current_monthly + charge == limit` 允许，`>` 拒绝。
   - 正向 `ConcurrencyLimit` 当前语义为 preview/config-only，不强制阻塞超额 in-flight；`<= 0` 仍可表达拒绝/停用语义，Post-MVP 通过 inflight Begin/Release tracker 才能变成硬阻塞。
 - 仍需关注的已知风险：
   - `PromptTokens` / `CompletionTokens` 字段语义不完美：后端目前只有 totals 摘要，前端聚合 token 总量可用但分项语义不准。
@@ -61,14 +63,15 @@
 - 权限契约：前端 route-permission 对 Relay 页面使用与后端 `RequireScopes`/`RequireProjectScopes` 一致的 all-scopes 语义。
 - 失败分层：余额不足、Key 暂停、Key 归档、产品池不可用、上游失败和结算失败需要返回可区分错误，方便页面展示。
 
-## P1 MonthlyCostLimit hard cap 验收口径（待后端实现/验证）
+## P1 MonthlyCostLimit hard cap 验收口径（已通过）
 
 - 边界语义：正向 charge 下，`current_monthly + charge == MonthlyCostLimit` 必须允许；`>` 必须返回 `ErrRelayQuotaExceeded` / `relay_monthly_cost_quota_exceeded`，且不得产生 ledger、daily summary、wallet debit 或 `last_used_at` 副作用。
 - 既有超限：月度聚合已等于或超过 `MonthlyCostLimit` 时，新的正向未结算 `usageLog.ID` 必须被拒绝；入口 preflight 可提前拒绝，settlement hard cap 是最终兜底。
 - 幂等重试：已成功结算的同一 `usageLog.ID` 在达到或超过 cap 后重试仍应成功 no-op；首次被 cap 拒绝的 `usageLog.ID` 不写幂等标记，后续重试在数据不变时继续拒绝。
 - 并发：同一 `usageLog.ID` 并发结算只允许一次扣费/汇总；不同 `usageLog.ID` 并发结算在合计会超 cap 时，最终月度总额不得超过 cap。
 - 计费模式：`quota_only` 与 `prepaid` 一样执行 `MonthlyCostLimit` hard cap；`quota_only` 继续跳过钱包扣减，`prepaid` 在 cap 检查通过后才扣钱包。
-- 推荐测试：覆盖 exact cap、exceeds cap、existing already over cap、same usageLog.ID idempotent retry、same usageLog.ID concurrency、different usageLog.ID concurrency，以及 quota_only exact/reject 行为。
+- 已验证测试：`TestRelaySettlementService_SettleUsageMonthlyHardCapExactAllowed`、`TestRelaySettlementService_SettleUsageMonthlyHardCapRejectsOverflow`、`TestRelaySettlementService_SettleUsageIdempotentRetryAfterMonthlyHardCap`、`TestRelaySettlementService_SettleUsageConcurrentIdempotent`、`TestRelaySettlementService_SettleUsageDifferentConcurrentMonthlyHardCap`，并通过 `-count=20` 幂等/并发回归。
+- 后续补强：可继续补 explicit existing-already-over cap 与 quota_only reject 用例，当前复验未发现 hard-cap merge 回归。
 
 ## 轻量验证命令
 
