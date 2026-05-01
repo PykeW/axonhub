@@ -17,7 +17,8 @@ export function useRequestPermissions(): RequestPermissions {
 
   // Use data from me query if available, otherwise fall back to auth store
   const user = meData || authUser;
-  const systemScopes = user?.scopes || [];
+  const userSystemScopes = user?.scopes;
+  const systemScopes = useMemo(() => userSystemScopes ?? [], [userSystemScopes]);
   const isOwner = user?.isOwner || false;
 
   // Get project-level scopes for the selected project

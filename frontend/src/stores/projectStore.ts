@@ -12,22 +12,24 @@ interface ProjectState {
 export const getProjectIdFromStorage = (): string | null => {
   try {
     return localStorage.getItem(PROJECT_STORAGE_KEY);
-  } catch (error) {
-        return null;
-      }
+  } catch (_error) {
+    return null;
+  }
 };
 
 const setProjectIdToStorage = (projectId: string): void => {
   try {
     localStorage.setItem(PROJECT_STORAGE_KEY, projectId);
-  } catch (error) {
+  } catch (_error) {
+    // localStorage can be unavailable in restricted contexts.
   }
 };
 
 const removeProjectIdFromStorage = (): void => {
   try {
     localStorage.removeItem(PROJECT_STORAGE_KEY);
-  } catch (error) {
+  } catch (_error) {
+    // localStorage can be unavailable in restricted contexts.
   }
 };
 
