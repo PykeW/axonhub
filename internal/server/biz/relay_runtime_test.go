@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -154,6 +156,63 @@ func TestRelayRuntimeService_ResolveAndCheckAccess_DoesNotBeginOnDeniedAccess(t 
 	require.NotNil(t, relay)
 	require.False(t, decision.Allowed)
 	require.Equal(t, int64(0), tracker.Current(relay.RelayKeyID))
+}
+
+func TestRelayRuntimeService_ResolveAndCheckAccess_NonPositiveConcurrencyDoesNotBegin(t *testing.T) {
+	tracker := NewRelayInflightTracker()
+	svc := NewRelayRuntimeService()
+	svc.SetInflightTracker(tracker)
+	limit := int64(0)
+	svc.SetResolver(relayRuntimeResolverFunc(func(ctx context.Context, got *ent.APIKey) (*RelayAuthContext, error) {
+		return &RelayAuthContext{RelayKeyID: 102, Status: RelayKeyStatusActive, Quota: RelayKeyQuotaSnapshot{ConcurrencyLimit: &limit}}, nil
+	}))
+
+	relay, decision, err := svc.ResolveAndCheckAccess(context.Background(), &ent.APIKey{ID: 1, ProjectID: 2})
+	require.NoError(t, err)
+	require.NotNil(t, relay)
+	require.False(t, decision.Allowed)
+	require.Equal(t, "relay_concurrency_quota_exceeded", decision.Code)
+	require.ErrorIs(t, decision.ErrorOrNil(), ErrRelayQuotaExceeded)
+	require.Equal(t, int64(0), tracker.Current(relay.RelayKeyID))
+}
+
+func TestRelayInflightTracker_BeginIsThreadSafe(t *testing.T) {
+	tracker := NewRelayInflightTracker()
+	const workers = 32
+	const limit = int64(3)
+	relay := &RelayAuthContext{RelayKeyID: 103, Quota: RelayKeyQuotaSnapshot{ConcurrencyLimit: ptrInt64(limit)}}
+
+	start := make(chan struct{})
+	releases := make(chan *RelayInflightLease, workers)
+	var allowed int64
+	var wg sync.WaitGroup
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			lease, decision := tracker.Begin(context.Background(), relay)
+			if decision == nil && lease != nil {
+				atomic.AddInt64(&allowed, 1)
+				releases <- lease
+			}
+		}()
+	}
+	close(start)
+	wg.Wait()
+	close(releases)
+
+	require.Equal(t, limit, allowed)
+	require.Equal(t, limit, tracker.Current(relay.RelayKeyID))
+	for release := range releases {
+		release.Release()
+		release.Release()
+	}
+	require.Equal(t, int64(0), tracker.Current(relay.RelayKeyID))
+}
+
+func ptrInt64(value int64) *int64 {
+	return &value
 }
 
 func TestRelayAuthErrorPreservesDecisionDiagnostics(t *testing.T) {
