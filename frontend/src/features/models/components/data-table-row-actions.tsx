@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { PermissionGuard } from '@/components/permission-guard';
-import { useModels } from '../context/models-context';
+import { useModels } from '../context/use-models-context';
 import { Model } from '../data/schema';
 
 interface DataTableRowActionsProps {

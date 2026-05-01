@@ -1,4 +1,4 @@
-import { useModels } from '../context/models-context';
+import { useModels } from '../context/use-models-context';
 import { ModelsActionDialog } from './models-action-dialog';
 import { ModelsAssociationDialog } from './models-association-dialog';
 import { ModelsBatchCreateDialog } from './models-batch-create-dialog';

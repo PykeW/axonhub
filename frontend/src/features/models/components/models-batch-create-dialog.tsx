@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AutoComplete } from '@/components/auto-complete';
 import { AutoCompleteSelect } from '@/components/auto-complete-select';
-import { useModels } from '../context/models-context';
+import { useModels } from '../context/use-models-context';
 import { DEVELOPER_IDS, DEVELOPER_ICONS } from '../data/constants';
 import { useBulkCreateModels } from '../data/models';
 import { useDevelopersData } from '../data/providers';
@@ -76,17 +76,12 @@ export function ModelsBatchCreateDialog() {
   }, []);
 
   const iconOptions = useMemo(() => {
-    return (
-      Object.entries(toc)
-        // @ts-ignore
-        .filter(([_, value]) => value.group == 'provider' || value.group == 'model')
-        .map(([_, value]) => ({
-          // @ts-ignore
-          value: value.id,
-          // @ts-ignore
-          label: value.id,
-        }))
-    );
+    return Object.entries(toc)
+      .filter(([, value]) => value.group === 'provider' || value.group === 'model')
+      .map(([, value]) => ({
+        value: value.id,
+        label: value.id,
+      }));
   }, []);
 
   useEffect(() => {
@@ -242,6 +237,12 @@ export function ModelsBatchCreateDialog() {
     [validationErrors]
   );
 
+  const handleClose = useCallback(() => {
+    setOpen(null);
+    setRows([]);
+    setValidationErrors({});
+  }, [setOpen]);
+
   const handleSubmit = useCallback(async () => {
     const errors: ValidationErrors = {};
     rows.forEach((row) => {
@@ -303,13 +304,7 @@ export function ModelsBatchCreateDialog() {
     } catch (_error) {
       // Error is handled by mutation
     }
-  }, [rows, bulkCreateModels, t]);
-
-  const handleClose = useCallback(() => {
-    setOpen(null);
-    setRows([]);
-    setValidationErrors({});
-  }, [setOpen]);
+  }, [rows, bulkCreateModels, handleClose]);
 
   const getModelIdOptions = useCallback(
     (developer: string) => {

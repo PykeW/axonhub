@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { AutoComplete } from '@/components/auto-complete';
 import { AutoCompleteSelect } from '@/components/auto-complete-select';
-import { useModels } from '../context/models-context';
+import { useModels } from '../context/use-models-context';
 import { DEVELOPER_IDS, DEVELOPER_ICONS } from '../data/constants';
 import { useCreateModel, useUpdateModel } from '../data/models';
 import { useDevelopersData } from '../data/providers';
@@ -79,17 +79,12 @@ export function ModelsActionDialog() {
   }, [selectedProviderModels]);
 
   const iconOptions = useMemo(() => {
-    return (
-      Object.entries(toc)
-        // @ts-ignore
-        .filter(([_, value]) => value.group == 'provider' || value.group == 'model')
-        .map(([_, value]) => ({
-          // @ts-ignore
-          value: value.id,
-          // @ts-ignore
-          label: value.id,
-        }))
-    );
+    return Object.entries(toc)
+      .filter(([, value]) => value.group === 'provider' || value.group === 'model')
+      .map(([, value]) => ({
+        value: value.id,
+        label: value.id,
+      }));
   }, []);
 
   const form = useForm<CreateModelInput>({

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useModels } from '../context/models-context';
+import { useModels } from '../context/use-models-context';
 import { useQueryUnassociatedChannels } from '../data/models';
 import { ChannelModelsList } from './channel-models-list';
 

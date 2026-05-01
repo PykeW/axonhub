@@ -3,7 +3,7 @@
 import { IconAlertTriangle, IconBan } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { ConfirmDialog } from '@/components/confirm-dialog';
-import { useModels } from '../context/models-context';
+import { useModels } from '../context/use-models-context';
 import { useBulkDisableModels } from '../data/models';
 
 export function ModelsBulkDisableDialog() {
@@ -29,7 +29,8 @@ export function ModelsBulkDisableDialog() {
       resetRowSelection?.();
       setSelectedModels([]);
       setOpen(null);
-    } catch (error) {
+    } catch (_error) {
+      // Mutation errors are surfaced by the caller.
     }
   };
 

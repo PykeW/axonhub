@@ -19,7 +19,7 @@ import { AutoComplete } from '@/components/auto-complete';
 import { AutoCompleteSelect } from '@/components/auto-complete-select';
 import { FilterBuilder, type FilterBuilderCondition, type FilterBuilderField, type FilterBuilderGroupListValue } from '@/components/filter-builder';
 import { useAllChannelSummarys, useAllChannelTags } from '@/features/channels/data/channels';
-import { useModels } from '../context/models-context';
+import { useModels } from '../context/use-models-context';
 import { useQueryModelChannelConnections, ModelAssociationInput, ModelChannelConnection } from '../data/models';
 import { useUpdateModel } from '../data/models';
 import { ModelAssociation } from '../data/schema';
@@ -414,14 +414,14 @@ export function ModelsAssociationDialog() {
         } else {
           setConnections([]);
         }
-      } catch (error) {
+      } catch (_error) {
         toast.error(t('common.errors.loadFailed'));
         setConnections([]);
       }
     };
 
     fetchConnections();
-  }, [debouncedAssociationsString, isOpen, queryConnections]);
+  }, [debouncedAssociationsString, isOpen, queryConnections, t]);
 
   useEffect(() => {
     if (isOpen && currentRow) {

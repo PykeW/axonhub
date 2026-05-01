@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
+import { useDeveloperLabel } from './use-developer-label';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -25,21 +26,10 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { PermissionGuard } from '@/components/permission-guard';
-import { useModels } from '../context/models-context';
+import { useModels } from '../context/use-models-context';
 import { Model } from '../data/schema';
 
 const MotionTableRow = motion.create(TableRow);
-
-export function useDeveloperLabel() {
-  const { t, i18n } = useTranslation();
-  return useCallback(
-    (developer: string) => {
-      const key = `models.developers.${developer}`;
-      return i18n.exists(key) ? t(key) : developer;
-    },
-    [t, i18n]
-  );
-}
 
 interface ModelsTableProps {
   columns: ColumnDef<Model>[];
@@ -129,7 +119,7 @@ export function ModelsTable({
       groups.get(developer)!.push(row);
     });
     return new Map([...groups.entries()].sort(([a], [b]) => a.localeCompare(b)));
-  }, [table, data, sorting]);
+  }, [table]);
 
   const allGroupsCollapsed = groupedRows.size > 0 && collapsedGroups.size === groupedRows.size;
 
@@ -153,7 +143,7 @@ export function ModelsTable({
     }
   }, [allGroupsCollapsed, groupedRows]);
 
-  const filteredSelectedRows = useMemo(() => table.getFilteredSelectedRowModel().rows, [table, rowSelection, data]);
+  const filteredSelectedRows = useMemo(() => table.getFilteredSelectedRowModel().rows, [table]);
 
   const selectedCount = filteredSelectedRows.length;
 
