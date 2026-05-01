@@ -21,11 +21,20 @@
 - 渠道绑定状态：`active`、`paused`
 - 默认值：`USD`、`shared_capacity`、`prepaid`、`draft`、超时 `600`、绑定权重 `100`
 
-## 当前收口状态（2026-05-01 Relay 限额语义收口）
+## 当前收口状态（2026-05-01 Relay 限额语义收口 + 全量验收已通过）
 
 - 数据基础：6 个 Relay Ent schema 已存在（`RelayProduct`、`RelayProductChannel`、`RelayKey`、`RelayWallet`、`RelayWalletLedgerEntry`、`RelayDailyUsageSummary`），且对应生成资产已存在：`internal/ent/relayproduct*`、`internal/ent/relayproductchannel*`、`internal/ent/relaykey*`、`internal/ent/relaywallet*`、`internal/ent/relaywalletledgerentry*`、`internal/ent/relaydailyusagesummary*`。
-- 工具链：当前环境 PATH 未找到 `go`/`gofmt`，因此本轮无法执行 `go fmt`/`go test`；**不要降级** `go.mod` 的 `go 1.26.0` 或 `tool` directive。后端 targeted tests 与 `gofmt` 必须在 Go 1.26 环境补跑（命令见末尾）。
-- 产品/运营 REST 最小闭环：已落地 product-channel PATCH/DELETE 路由与 contract、归档/未启用渠道拦截、`CreateKey` 一次性 `plaintextKey`、`RechargeWallet` finite + exhausted 恢复；剩余 `RelayProductService` 是否完全替换 raw SQL 至 Ent 路径需在补跑时复核。
+- 工具链：Go 1.26 已就绪（`$HOME/.local/go/bin/go`，version `go1.26.2`）；本地不再有 toolchain 阻塞。**禁止降级** `go.mod` 的 `go 1.26.0` 或 `tool` directive。
+- 后端验收（2026-05-01 已通过）：
+  - `make test-backend-all` exit 0（含 llm 模块全部 transformer）。
+  - `go test ./internal/server/biz -run 'Relay(Product|Key|Wallet|Admin|Runtime|Access|Router|Settlement|Auth)' -count=1` PASS。
+  - `go test ./internal/server/api -run Relay -count=1` PASS。
+  - `go test ./internal/server/middleware -run 'Relay|RequireProjectScopes' -count=1` PASS。
+  - `go test ./internal/server/orchestrator -count=1` PASS。
+- E2E 验收（2026-05-01 已通过）：
+  - Default mode：`VITE_PORT=9528 scripts/e2e/e2e-test.sh --keep-db tests/relay-subkeys.spec.ts` → setup + 4 passed / 1 skipped (REST-only)。
+  - REST mode：`VITE_PORT=9528 VITE_RELAY_SUBKEYS_API_MODE=rest scripts/e2e/e2e-test.sh --keep-db tests/relay-subkeys.spec.ts` → setup + 5 passed（含 forced 500 不 fallback）。
+- 产品/运营 REST 最小闭环：已落地 product-channel PATCH/DELETE 路由与 contract、归档/未启用渠道拦截、`CreateKey` 一次性 `plaintextKey`、`RechargeWallet` finite + exhausted 恢复。
 - Runtime 接入：`RelayRuntimeService` Fx wiring + `AuthenticateRelayAPIKey -> ResolveAndCheckAccess` + `UsageLogService -> RecordRelayUsage -> RelaySettlementService` 已接入；orchestrator `select_candidates` 已叠加产品池、绑定状态、模型过滤、渠道状态、`ProviderQuotaStatus.ready` 过滤；结算 idempotency 在 unique conflict 后回滚钱包。
 - 前端 REST 接入：`VITE_RELAY_SUBKEYS_API_MODE=rest` 时 401/403/contract 错误进入错误态、不 fallback；REST 模式缺 projectId 抛错而非 mock；`filterKeysByProject` 不再回退 `project-alpha`；项目侧详情页 keyId 不存在不再回退首条 key；route permission 已对齐后端 all-scopes 语义；admin Relay 路由 `scopeLevel='system'` 显式标注；运营详情页写操作（产品激活/绑定/Pause/Resume/Remove/Suspend/Archive/Increase concurrency/Recharge）已按 `write_channels`/`write_api_keys` 在组件级隐藏。
 - 已决策限制 / 已知语义：
