@@ -373,6 +373,14 @@ func (s *RelaySettlementService) SettleUsage(ctx context.Context, relay *RelayAc
 		return fmt.Errorf("usage log id must be greater than 0 for relay settlement")
 	}
 
+	charge := decimal.Zero
+	if input.UsageLog.TotalCost != nil {
+		charge = decimal.NewFromFloat(*input.UsageLog.TotalCost)
+	}
+	if charge.IsNegative() {
+		return fmt.Errorf("relay settlement charge cannot be negative")
+	}
+
 	db, dialectName, err := relaySQLDB(s.db)
 	if err != nil {
 		return err
@@ -389,6 +397,11 @@ func (s *RelaySettlementService) SettleUsage(ctx context.Context, relay *RelayAc
 		}
 	}()
 
+	monthlyCostLimitRaw, err := lockRelayKeyMonthlyCostLimit(ctx, tx, dialectName, relay.RelayKeyID)
+	if err != nil {
+		return err
+	}
+
 	idempotencyKey := fmt.Sprintf("usage_log:%d", input.UsageLog.ID)
 	exists, err := relayLedgerEntryExists(ctx, tx, dialectName, idempotencyKey)
 	if err != nil {
@@ -399,12 +412,18 @@ func (s *RelaySettlementService) SettleUsage(ctx context.Context, relay *RelayAc
 		return tx.Commit()
 	}
 
-	charge := decimal.Zero
-	if input.UsageLog.TotalCost != nil {
-		charge = decimal.NewFromFloat(*input.UsageLog.TotalCost)
+	monthlyCostLimit, err := parseRelayMonthlyCostLimit(monthlyCostLimitRaw)
+	if err != nil {
+		return err
 	}
-	if charge.IsNegative() {
-		return fmt.Errorf("relay settlement charge cannot be negative")
+	if monthlyCostLimit != nil {
+		monthlyTotalCharge, err := loadRelayMonthlyTotalCharge(ctx, tx, dialectName, relay.RelayKeyID, time.Now().UTC())
+		if err != nil {
+			return err
+		}
+		if monthlyTotalCharge.Add(charge).GreaterThan(*monthlyCostLimit) {
+			return fmt.Errorf("%w: relay key monthly cost limit exceeded", ErrRelayQuotaExceeded)
+		}
 	}
 
 	balanceBefore := decimal.Zero
@@ -455,6 +474,69 @@ func (s *RelaySettlementService) SettleUsage(ctx context.Context, relay *RelayAc
 	committed = true
 
 	return nil
+}
+
+func lockRelayKeyMonthlyCostLimit(ctx context.Context, tx *sql.Tx, dialectName string, relayKeyID int) (sql.NullString, error) {
+	var monthlyCostLimit sql.NullString
+	if dialectName == dialect.SQLite {
+		query := fmt.Sprintf("UPDATE relay_keys SET updated_at = updated_at WHERE id = %s", relayPlaceholder(dialectName, 1))
+		if _, err := tx.ExecContext(ctx, query, relayKeyID); err != nil {
+			return monthlyCostLimit, fmt.Errorf("failed to lock relay key for settlement: %w", err)
+		}
+
+		query = fmt.Sprintf("SELECT monthly_cost_limit FROM relay_keys WHERE id = %s", relayPlaceholder(dialectName, 1))
+		if err := tx.QueryRowContext(ctx, query, relayKeyID).Scan(&monthlyCostLimit); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return monthlyCostLimit, fmt.Errorf("relay key %d not found for settlement", relayKeyID)
+			}
+			return monthlyCostLimit, fmt.Errorf("failed to load relay key monthly cost limit: %w", err)
+		}
+
+		return monthlyCostLimit, nil
+	}
+
+	query := fmt.Sprintf("SELECT monthly_cost_limit FROM relay_keys WHERE id = %s FOR UPDATE", relayPlaceholder(dialectName, 1))
+	if err := tx.QueryRowContext(ctx, query, relayKeyID).Scan(&monthlyCostLimit); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return monthlyCostLimit, fmt.Errorf("relay key %d not found for settlement", relayKeyID)
+		}
+		return monthlyCostLimit, fmt.Errorf("failed to lock relay key for settlement: %w", err)
+	}
+
+	return monthlyCostLimit, nil
+}
+
+func parseRelayMonthlyCostLimit(value sql.NullString) (*decimal.Decimal, error) {
+	if !value.Valid || strings.TrimSpace(value.String) == "" {
+		return nil, nil
+	}
+
+	parsed, err := decimal.NewFromString(value.String)
+	if err != nil {
+		return nil, fmt.Errorf("invalid relay monthly cost limit %q: %w", value.String, err)
+	}
+
+	return &parsed, nil
+}
+
+func loadRelayMonthlyTotalCharge(ctx context.Context, tx *sql.Tx, dialectName string, relayKeyID int, now time.Time) (decimal.Decimal, error) {
+	monthStart := time.Date(now.UTC().Year(), now.UTC().Month(), 1, 0, 0, 0, 0, time.UTC)
+	totalChargeExpr := relayAdminDecimalCast(dialectName, "total_charge")
+	query := fmt.Sprintf(`SELECT COALESCE(SUM(%s), 0)
+FROM relay_daily_usage_summaries
+WHERE relay_key_id = %s AND stat_date >= %s`, totalChargeExpr, relayPlaceholder(dialectName, 1), relayPlaceholder(dialectName, 2))
+
+	var totalCharge sql.NullString
+	if err := tx.QueryRowContext(ctx, query, relayKeyID, monthStart).Scan(&totalCharge); err != nil {
+		return decimal.Zero, fmt.Errorf("failed to load relay monthly total charge: %w", err)
+	}
+
+	monthlyTotalCharge, err := parseRelayDecimal(totalCharge, "monthly total charge")
+	if err != nil {
+		return decimal.Zero, err
+	}
+
+	return monthlyTotalCharge, nil
 }
 
 type relayScanner interface {

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -139,20 +140,228 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 5001, 4001, 7, "USD", "10", "0", "0", 1)
 	require.NoError(t, svc.SettleUsage(ctx, relay, RelayUsageSettlementInput{UsageLog: usageLog}))
 	require.NoError(t, svc.SettleUsage(ctx, relay, RelayUsageSettlementInput{UsageLog: usageLog}))
 
+	assertRelaySettlementChargedOnce(t, db, relay.RelayKeyID, "8.75", 123, "1.25")
+}
+
+func TestRelaySettlementService_SettleUsageConcurrentIdempotent(t *testing.T) {
+	ctx := context.Background()
+	client := newRelayServicesTestClient(t)
+	db := relayServicesTestDB(t, client)
+
+	relayServicesTestExec(t, db, `INSERT INTO relay_keys (id, api_key_id, project_id, product_id, display_name, status, balance_mode, deleted_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, 0)`, 4002, 5002, 7, 2001, "concurrent sub key", "active", "prepaid")
+	relayServicesTestExec(t, db, `INSERT INTO relay_wallets (id, relay_key_id, project_id, currency, available_amount, frozen_amount, overdraft_limit, version)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 5002, 4002, 7, "USD", "10", "0", "0", 1)
+
+	charge := 1.25
+	relay := &RelayAccessContext{
+		RelayKeyID:  4002,
+		ProjectID:   7,
+		BalanceMode: RelayKeyBalanceModePrepaid,
+		Wallet:      &RelayWalletSnapshot{AvailableAmount: decimal.NewFromInt(10)},
+	}
+	usageLog := &ent.UsageLog{ID: 6002, RequestID: 7002, TotalTokens: 123, TotalCost: &charge}
+	svc := NewRelaySettlementService(RelaySettlementServiceParams{Ent: client})
+
+	const workers = 8
+	start := make(chan struct{})
+	errs := make(chan error, workers)
+	var wg sync.WaitGroup
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			errs <- svc.SettleUsage(ctx, relay, RelayUsageSettlementInput{UsageLog: usageLog})
+		}()
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		require.NoError(t, err)
+	}
+	assertRelaySettlementChargedOnce(t, db, relay.RelayKeyID, "8.75", 123, "1.25")
+}
+
+func TestRelaySettlementService_SettleUsageMonthlyHardCapExactAllowed(t *testing.T) {
+	ctx := context.Background()
+	client := newRelayServicesTestClient(t)
+	db := relayServicesTestDB(t, client)
+
+	relayServicesTestExec(t, db, `INSERT INTO relay_keys (id, api_key_id, project_id, product_id, display_name, status, balance_mode, monthly_cost_limit, deleted_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`, 4003, 5003, 7, 2001, "quota exact cap", "active", "quota_only", "1")
+	relayServicesTestExec(t, db, `INSERT INTO relay_daily_usage_summaries (relay_key_id, project_id, stat_date, request_count, total_tokens, total_charge, total_upstream_cost)
+VALUES (?, ?, ?, ?, ?, ?, ?)`, 4003, 7, relayUTCDate(time.Now()), 1, 50, "0.75", "0.75")
+
+	charge := 0.25
+	relay := &RelayAccessContext{
+		RelayKeyID:  4003,
+		ProjectID:   7,
+		BalanceMode: RelayKeyBalanceModeQuotaOnly,
+	}
+	usageLog := &ent.UsageLog{ID: 6003, RequestID: 7003, TotalTokens: 25, TotalCost: &charge}
+
+	svc := NewRelaySettlementService(RelaySettlementServiceParams{Ent: client})
+	require.NoError(t, svc.SettleUsage(ctx, relay, RelayUsageSettlementInput{UsageLog: usageLog}))
+
+	assertRelayLedgerCount(t, db, relay.RelayKeyID, 1)
+	assertRelayUsageSummary(t, db, relay.RelayKeyID, 2, 75, "1")
+}
+
+func TestRelaySettlementService_SettleUsageMonthlyHardCapRejectsOverflow(t *testing.T) {
+	ctx := context.Background()
+	client := newRelayServicesTestClient(t)
+	db := relayServicesTestDB(t, client)
+
+	relayServicesTestExec(t, db, `INSERT INTO relay_keys (id, api_key_id, project_id, product_id, display_name, status, balance_mode, monthly_cost_limit, deleted_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`, 4004, 5004, 7, 2001, "cap overflow", "active", "prepaid", "1")
+	relayServicesTestExec(t, db, `INSERT INTO relay_wallets (id, relay_key_id, project_id, currency, available_amount, frozen_amount, overdraft_limit, version)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 5004, 4004, 7, "USD", "10", "0", "0", 1)
+
+	charge := 1.01
+	relayLimitFallback := decimal.NewFromInt(100)
+	relay := &RelayAccessContext{
+		RelayKeyID:  4004,
+		ProjectID:   7,
+		BalanceMode: RelayKeyBalanceModePrepaid,
+		Wallet:      &RelayWalletSnapshot{AvailableAmount: decimal.NewFromInt(10)},
+		Quota:       RelayKeyQuotaSnapshot{MonthlyCostLimit: &relayLimitFallback},
+	}
+	usageLog := &ent.UsageLog{ID: 6004, RequestID: 7004, TotalTokens: 101, TotalCost: &charge}
+
+	svc := NewRelaySettlementService(RelaySettlementServiceParams{Ent: client})
+	requireRelayError(t, svc.SettleUsage(ctx, relay, RelayUsageSettlementInput{UsageLog: usageLog}), ErrRelayQuotaExceeded)
+
+	assertRelayWalletBalance(t, db, relay.RelayKeyID, "10")
+	assertRelayLedgerCount(t, db, relay.RelayKeyID, 0)
+	assertRelayNoUsageSummary(t, db, relay.RelayKeyID)
+}
+
+func TestRelaySettlementService_SettleUsageIdempotentRetryAfterMonthlyHardCap(t *testing.T) {
+	ctx := context.Background()
+	client := newRelayServicesTestClient(t)
+	db := relayServicesTestDB(t, client)
+
+	relayServicesTestExec(t, db, `INSERT INTO relay_keys (id, api_key_id, project_id, product_id, display_name, status, balance_mode, monthly_cost_limit, deleted_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`, 4005, 5005, 7, 2001, "retry at cap", "active", "prepaid", "1.25")
+	relayServicesTestExec(t, db, `INSERT INTO relay_wallets (id, relay_key_id, project_id, currency, available_amount, frozen_amount, overdraft_limit, version)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 5005, 4005, 7, "USD", "10", "0", "0", 1)
+
+	charge := 1.25
+	relay := &RelayAccessContext{
+		RelayKeyID:  4005,
+		ProjectID:   7,
+		BalanceMode: RelayKeyBalanceModePrepaid,
+		Wallet:      &RelayWalletSnapshot{AvailableAmount: decimal.NewFromInt(10)},
+	}
+	usageLog := &ent.UsageLog{ID: 6005, RequestID: 7005, TotalTokens: 125, TotalCost: &charge}
+
+	svc := NewRelaySettlementService(RelaySettlementServiceParams{Ent: client})
+	require.NoError(t, svc.SettleUsage(ctx, relay, RelayUsageSettlementInput{UsageLog: usageLog}))
+	require.NoError(t, svc.SettleUsage(ctx, relay, RelayUsageSettlementInput{UsageLog: usageLog}))
+
+	assertRelaySettlementChargedOnce(t, db, relay.RelayKeyID, "8.75", 125, "1.25")
+}
+
+func TestRelaySettlementService_SettleUsageDifferentConcurrentMonthlyHardCap(t *testing.T) {
+	ctx := context.Background()
+	client := newRelayServicesTestClient(t)
+	db := relayServicesTestDB(t, client)
+
+	relayServicesTestExec(t, db, `INSERT INTO relay_keys (id, api_key_id, project_id, product_id, display_name, status, balance_mode, monthly_cost_limit, deleted_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`, 4006, 5006, 7, 2001, "different usage cap", "active", "prepaid", "1.25")
+	relayServicesTestExec(t, db, `INSERT INTO relay_wallets (id, relay_key_id, project_id, currency, available_amount, frozen_amount, overdraft_limit, version)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 5006, 4006, 7, "USD", "10", "0", "0", 1)
+
+	charge := 0.75
+	relay := &RelayAccessContext{
+		RelayKeyID:  4006,
+		ProjectID:   7,
+		BalanceMode: RelayKeyBalanceModePrepaid,
+		Wallet:      &RelayWalletSnapshot{AvailableAmount: decimal.NewFromInt(10)},
+	}
+	usageLogs := []*ent.UsageLog{
+		{ID: 6006, RequestID: 7006, TotalTokens: 75, TotalCost: &charge},
+		{ID: 6007, RequestID: 7007, TotalTokens: 75, TotalCost: &charge},
+	}
+	svc := NewRelaySettlementService(RelaySettlementServiceParams{Ent: client})
+
+	start := make(chan struct{})
+	errs := make(chan error, len(usageLogs))
+	var wg sync.WaitGroup
+	for _, usageLog := range usageLogs {
+		usageLog := usageLog
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			errs <- svc.SettleUsage(ctx, relay, RelayUsageSettlementInput{UsageLog: usageLog})
+		}()
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+
+	successes := 0
+	quotaExceeded := 0
+	for err := range errs {
+		if err == nil {
+			successes++
+			continue
+		}
+		if errors.Is(err, ErrRelayQuotaExceeded) {
+			quotaExceeded++
+			continue
+		}
+		require.NoError(t, err)
+	}
+	require.Equal(t, 1, successes)
+	require.Equal(t, 1, quotaExceeded)
+	assertRelaySettlementChargedOnce(t, db, relay.RelayKeyID, "9.25", 75, "0.75")
+}
+
+func assertRelaySettlementChargedOnce(t *testing.T, db *sql.DB, relayKeyID int, expectedBalance string, expectedTokens int64, expectedCharge string) {
+	t.Helper()
+	assertRelayWalletBalance(t, db, relayKeyID, expectedBalance)
+	assertRelayLedgerCount(t, db, relayKeyID, 1)
+	assertRelayUsageSummary(t, db, relayKeyID, 1, expectedTokens, expectedCharge)
+}
+
+func assertRelayWalletBalance(t *testing.T, db *sql.DB, relayKeyID int, expectedBalance string) {
+	t.Helper()
 	var walletBalance string
-	require.NoError(t, db.QueryRowContext(ctx, "SELECT available_amount FROM relay_wallets WHERE relay_key_id = ?", relay.RelayKeyID).Scan(&walletBalance))
-	require.Equal(t, "8.75", walletBalance)
+	require.NoError(t, db.QueryRowContext(context.Background(), "SELECT available_amount FROM relay_wallets WHERE relay_key_id = ?", relayKeyID).Scan(&walletBalance))
+	require.Equal(t, expectedBalance, walletBalance)
+}
 
+func assertRelayLedgerCount(t *testing.T, db *sql.DB, relayKeyID int, expectedCount int) {
+	t.Helper()
 	var ledgerCount int
-	require.NoError(t, db.QueryRowContext(ctx, "SELECT COUNT(*) FROM relay_wallet_ledger_entries WHERE relay_key_id = ?", relay.RelayKeyID).Scan(&ledgerCount))
-	require.Equal(t, 1, ledgerCount)
+	require.NoError(t, db.QueryRowContext(context.Background(), "SELECT COUNT(*) FROM relay_wallet_ledger_entries WHERE relay_key_id = ?", relayKeyID).Scan(&ledgerCount))
+	require.Equal(t, expectedCount, ledgerCount)
+}
 
+func assertRelayUsageSummary(t *testing.T, db *sql.DB, relayKeyID int, expectedRequestCount, expectedTokens int64, expectedCharge string) {
+	t.Helper()
 	var requestCount, totalTokens int64
-	var totalCharge string
-	require.NoError(t, db.QueryRowContext(ctx, "SELECT request_count, total_tokens, total_charge FROM relay_daily_usage_summaries WHERE relay_key_id = ?", relay.RelayKeyID).Scan(&requestCount, &totalTokens, &totalCharge))
-	require.Equal(t, int64(1), requestCount)
-	require.Equal(t, int64(123), totalTokens)
-	require.Equal(t, "1.25", totalCharge)
+	var totalChargeRaw string
+	require.NoError(t, db.QueryRowContext(context.Background(), "SELECT request_count, total_tokens, total_charge FROM relay_daily_usage_summaries WHERE relay_key_id = ?", relayKeyID).Scan(&requestCount, &totalTokens, &totalChargeRaw))
+	require.Equal(t, expectedRequestCount, requestCount)
+	require.Equal(t, expectedTokens, totalTokens)
+	totalCharge, err := decimal.NewFromString(totalChargeRaw)
+	require.NoError(t, err)
+	expectedTotalCharge, err := decimal.NewFromString(expectedCharge)
+	require.NoError(t, err)
+	require.True(t, totalCharge.Equal(expectedTotalCharge), "expected total_charge %s, got %s", expectedTotalCharge, totalCharge)
+}
+
+func assertRelayNoUsageSummary(t *testing.T, db *sql.DB, relayKeyID int) {
+	t.Helper()
+	var summaryCount int
+	require.NoError(t, db.QueryRowContext(context.Background(), "SELECT COUNT(*) FROM relay_daily_usage_summaries WHERE relay_key_id = ?", relayKeyID).Scan(&summaryCount))
+	require.Equal(t, 0, summaryCount)
 }
 
 func newRelayServicesTestClient(t *testing.T) *ent.Client {
