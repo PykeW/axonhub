@@ -36,7 +36,8 @@ export function ChannelsStatusDialog({ open, onOpenChange, currentRow }: Props) 
       });
       onOpenChange(false);
       setTestResult(null);
-    } catch (error) {
+    } catch (_error) {
+      // Mutation errors are surfaced by the caller.
     }
   };
 

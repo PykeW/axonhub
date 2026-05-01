@@ -45,7 +45,7 @@ export function ChannelsBulkApplyTemplateDialog({ open, onOpenChange, selectedCh
       });
       onOpenChange(false);
       setSelectedTemplateId(null);
-    } catch (error) {
+    } catch (_error) {
       // Error already handled by mutation
     }
   };

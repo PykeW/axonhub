@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { z } from 'zod';
 import { useForm, useFieldArray, useWatch, Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -425,7 +425,7 @@ export function ChannelsOverrideDialog({ open, onOpenChange, currentRow }: Props
     }
   );
 
-  const templates = templatesData?.edges?.map((edge) => edge.node) || [];
+  const templates = useMemo(() => templatesData?.edges?.map((edge) => edge.node) || [], [templatesData]);
 
   const form = useForm<OverrideFormValues>({
     resolver: zodResolver(overrideFormSchema),
@@ -594,7 +594,7 @@ export function ChannelsOverrideDialog({ open, onOpenChange, currentRow }: Props
         replaceBodies(mergedBodyOps);
 
         toast.success(t('channels.templates.messages.applied'));
-      } catch (error) {
+      } catch (_error) {
         toast.error(t('common.errors.internalServerError'));
       } finally {
         setIsApplyingTemplate(false);
@@ -625,11 +625,11 @@ export function ChannelsOverrideDialog({ open, onOpenChange, currentRow }: Props
           bodyOverrideOperations: validBodyOps,
         });
         setShowSaveTemplateDialog(false);
-      } catch (error) {
+      } catch (_error) {
         // Error already handled by mutation
       }
     },
-    [form, currentRow.type, createTemplate]
+    [form, createTemplate]
   );
 
   const handleDeleteTemplate = useCallback(

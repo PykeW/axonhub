@@ -163,7 +163,7 @@ export function ChannelsTestDialog({ open, onOpenChange, channel }: Props) {
       setLocalSupportedModels(newSupportedModels);
       setSelectedModels((prev) => prev.filter((model) => !failedModelNames.has(model)));
       setIsRemovePopoverOpen(false);
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by useUpdateChannel toast
     }
   };

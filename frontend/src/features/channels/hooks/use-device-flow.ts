@@ -90,35 +90,8 @@ export function useDeviceFlow(
     onSuccessRef.current = onSuccess;
   }, [onSuccess]);
 
-  const start = useCallback(async () => {
-    if (pollingTimeoutRef.current) {
-      clearTimeout(pollingTimeoutRef.current);
-      pollingTimeoutRef.current = null;
-    }
-
-    setIsPolling(true);
-    setError(null);
-
-    try {
-      const result: DeviceFlowStartResult = await copilotOAuthStart();
-
-      setUserCode(result.user_code);
-      setVerificationUri(result.verification_uri);
-      setSessionId(result.session_id);
-      setExpiresAt(Date.now() + result.expires_in * 1000);
-      setInterval(result.interval);
-      currentIntervalRef.current = result.interval;
-
-      poll(result.session_id, Date.now() + result.expires_in * 1000);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      setError(errorMessage);
-      setIsPolling(false);
-    }
-  }, [t]);
-
   const poll = useCallback(
-    async (sessionId: string, expiry: number) => {
+    async function pollDeviceFlow(sessionId: string, expiry: number) {
       if (Date.now() >= expiry) {
         setIsPolling(false);
         setError(t('channels.dialogs.oauth.errors.deviceFlowExpired'));
@@ -142,7 +115,7 @@ export function useDeviceFlow(
         } else if (result.status) {
           if (result.status === 'pending') {
             pollingTimeoutRef.current = window.setTimeout(() => {
-              poll(sessionId, expiry);
+              void pollDeviceFlow(sessionId, expiry);
             }, currentIntervalRef.current * 1000);
           } else if (result.status === 'slow_down') {
             const newInterval = currentIntervalRef.current * 2;
@@ -150,7 +123,7 @@ export function useDeviceFlow(
             setInterval(newInterval);
 
             pollingTimeoutRef.current = window.setTimeout(() => {
-              poll(sessionId, expiry);
+              void pollDeviceFlow(sessionId, expiry);
             }, newInterval * 1000);
           } else {
             setIsPolling(false);
@@ -163,8 +136,35 @@ export function useDeviceFlow(
         setError(errorMessage);
       }
     },
-    [t, onSuccessRef]
+    [t]
   );
+
+  const start = useCallback(async () => {
+    if (pollingTimeoutRef.current) {
+      clearTimeout(pollingTimeoutRef.current);
+      pollingTimeoutRef.current = null;
+    }
+
+    setIsPolling(true);
+    setError(null);
+
+    try {
+      const result: DeviceFlowStartResult = await copilotOAuthStart();
+
+      setUserCode(result.user_code);
+      setVerificationUri(result.verification_uri);
+      setSessionId(result.session_id);
+      setExpiresAt(Date.now() + result.expires_in * 1000);
+      setInterval(result.interval);
+      currentIntervalRef.current = result.interval;
+
+      void poll(result.session_id, Date.now() + result.expires_in * 1000);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(errorMessage);
+      setIsPolling(false);
+    }
+  }, [poll]);
 
   const reset = useCallback(() => {
     if (pollingTimeoutRef.current) {
