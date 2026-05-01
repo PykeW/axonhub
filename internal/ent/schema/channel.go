@@ -29,6 +29,10 @@ func (Channel) Indexes() []ent.Index {
 		index.Fields("name", "deleted_at").
 			StorageKey("channels_by_name").
 			Unique(),
+		index.Fields("owner_user_id", "visibility", "status").
+			StorageKey("channels_by_owner_visibility_status"),
+		index.Fields("visibility", "status").
+			StorageKey("channels_by_visibility_status"),
 	}
 }
 
@@ -96,6 +100,42 @@ func (Channel) Fields() []ent.Field {
 				entgql.Skip(entgql.SkipMutationCreateInput),
 				entgql.OrderField("STATUS"),
 			),
+		field.Int("owner_user_id").
+			Optional().
+			Comment("User ID that owns this channel. Zero or null means legacy/system-owned channel.").
+			Annotations(
+				entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),
+			),
+		field.Enum("visibility").Values("private", "shared").Default("private").
+			Comment("Share/Use visibility: private channels are owner-only; shared channels can be used by other users.").
+			Annotations(
+				entgql.OrderField("VISIBILITY"),
+			),
+		field.Int("share_refresh_window_seconds").
+			Default(5 * 60 * 60).
+			Comment("Share quota refresh window in seconds. Default is 5 hours."),
+		field.Int("share_refresh_quota").
+			Default(1).
+			Comment("Maximum shared-use quota restored each refresh window."),
+		field.Time("share_next_refresh_at").
+			Optional().
+			Nillable().
+			Comment("Next time the shared-use quota can be lazily refreshed.").
+			Annotations(
+				entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),
+			),
+		field.Int("share_remaining_quota").
+			Default(1).
+			Comment("Remaining shared-use quota in the current refresh window.").
+			Annotations(
+				entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),
+			),
+		field.Int("share_recent_error_count").
+			Default(0).
+			Comment("Recent shared-use routing error count for health-aware sorting.").
+			Annotations(
+				entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),
+			),
 		field.JSON("credentials", objects.ChannelCredentials{}).Sensitive(),
 		field.JSON("disabled_api_keys", []objects.DisabledAPIKey{}).
 			Default([]objects.DisabledAPIKey{}).
@@ -141,6 +181,13 @@ func (Channel) Fields() []ent.Field {
 
 func (Channel) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.From("owner_user", User.Type).
+			Ref("channels").
+			Field("owner_user_id").
+			Unique().
+			Annotations(
+				entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),
+			),
 		edge.To("requests", Request.Type).
 			Annotations(
 				entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),

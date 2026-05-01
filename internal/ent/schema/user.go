@@ -69,6 +69,11 @@ func (User) Edges() []ent.Edge {
 				entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),
 				entgql.RelayConnection(),
 			),
+		edge.To("channels", Channel.Type).
+			Annotations(
+				entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),
+				entgql.RelayConnection(),
+			),
 		edge.To("relay_keys", RelayKey.Type).
 			Annotations(
 				entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),

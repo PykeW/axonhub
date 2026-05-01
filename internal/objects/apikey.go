@@ -12,10 +12,11 @@ type APIKeyProfiles struct {
 }
 
 type APIKeyProfile struct {
-	Name                string         `json:"name"`
-	ModelMappings       []ModelMapping `json:"modelMappings"`
-	Quota               *APIKeyQuota   `json:"quota,omitempty"`
-	LoadBalanceStrategy *string        `json:"loadBalanceStrategy,omitempty"`
+	Name                string            `json:"name"`
+	ModelMappings       []ModelMapping    `json:"modelMappings"`
+	Quota               *APIKeyQuota      `json:"quota,omitempty"`
+	LoadBalanceStrategy *string           `json:"loadBalanceStrategy,omitempty"`
+	UseStrategy         APIKeyUseStrategy `json:"useStrategy,omitempty"`
 
 	ChannelIDs           []int                `json:"channelIDs,omitempty"`
 	ChannelTags          []string             `json:"channelTags,omitempty"`
@@ -27,10 +28,16 @@ type APIKeyProfile struct {
 // If this enum is changed, update MatchChannelTags in this file.
 type ChannelTagsMatchMode string
 
+type APIKeyUseStrategy string
+
 const (
 	ChannelTagsMatchModeAny  ChannelTagsMatchMode = "any"
 	ChannelTagsMatchModeAll  ChannelTagsMatchMode = "all"
 	ChannelTagsMatchModeNone ChannelTagsMatchMode = "none"
+
+	APIKeyUseStrategyPreferOwn  APIKeyUseStrategy = "prefer_own"
+	APIKeyUseStrategyOnlyOwn    APIKeyUseStrategy = "only_own"
+	APIKeyUseStrategyAllowShared APIKeyUseStrategy = "allow_shared"
 )
 
 func (m ChannelTagsMatchMode) IsValid() bool {
@@ -47,6 +54,18 @@ func (m ChannelTagsMatchMode) OrDefault() ChannelTagsMatchMode {
 	}
 
 	return ChannelTagsMatchModeAny
+}
+
+func (s APIKeyUseStrategy) IsValid() bool {
+	return s == "" || s == APIKeyUseStrategyPreferOwn || s == APIKeyUseStrategyOnlyOwn || s == APIKeyUseStrategyAllowShared
+}
+
+func (s APIKeyUseStrategy) OrDefault() APIKeyUseStrategy {
+	if s == APIKeyUseStrategyOnlyOwn || s == APIKeyUseStrategyAllowShared {
+		return s
+	}
+
+	return APIKeyUseStrategyPreferOwn
 }
 
 func (p *APIKeyProfile) MatchChannelTags(tags []string) bool {

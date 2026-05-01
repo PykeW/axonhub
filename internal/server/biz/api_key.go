@@ -374,6 +374,8 @@ func (s *APIKeyService) UpdateAPIKeyProfiles(ctx context.Context, id int, profil
 		return nil, fmt.Errorf("noauth type API key profiles cannot be updated")
 	}
 
+	normalizeAPIKeyProfileDefaults(&profiles)
+
 	// Validate that profile names are unique (case-insensitive)
 	if err := validateProfileNames(profiles.Profiles); err != nil {
 		return nil, err
@@ -404,6 +406,18 @@ func (s *APIKeyService) UpdateAPIKeyProfiles(ctx context.Context, id int, profil
 	s.invalidateAPIKeyCaches(ctx, apiKey.Key)
 
 	return apiKey, nil
+}
+
+func normalizeAPIKeyProfileDefaults(profiles *objects.APIKeyProfiles) {
+	if profiles == nil {
+		return
+	}
+
+	for i := range profiles.Profiles {
+		if profiles.Profiles[i].UseStrategy == "" {
+			profiles.Profiles[i].UseStrategy = objects.APIKeyUseStrategyPreferOwn
+		}
+	}
 }
 
 // validateProfileNames checks that all profile names are unique (case-insensitive).
@@ -441,6 +455,10 @@ func validateProfileFilters(profiles []objects.APIKeyProfile) error {
 	for _, profile := range profiles {
 		if !profile.ChannelTagsMatchMode.IsValid() {
 			return fmt.Errorf("profile '%s' channelTagsMatchMode is invalid", profile.Name)
+		}
+
+		if !profile.UseStrategy.IsValid() {
+			return fmt.Errorf("profile '%s' useStrategy is invalid", profile.Name)
 		}
 	}
 

@@ -225,6 +225,9 @@ models:
   ChannelTagsMatchMode:
     model:
       - github.com/looplj/axonhub/internal/objects.ChannelTagsMatchMode
+  APIKeyUseStrategy:
+    model:
+      - github.com/looplj/axonhub/internal/objects.APIKeyUseStrategy
   APIKeyQuotaInput:
     model:
       - github.com/looplj/axonhub/internal/objects.APIKeyQuota
