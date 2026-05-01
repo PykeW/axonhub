@@ -38,6 +38,8 @@ func TestRelayAccessService_CheckAccessValidation(t *testing.T) {
 	now := time.Date(2026, 4, 28, 8, 0, 0, 0, time.UTC)
 	dailyRequestLimit := int64(3)
 	dailyTokenLimit := int64(100)
+	zeroConcurrencyLimit := int64(0)
+	positiveConcurrencyLimit := int64(1)
 
 	require.NoError(t, svc.CheckAccess(context.Background(), nil, RelayAccessCheckInput{Now: now}))
 
@@ -84,6 +86,24 @@ func TestRelayAccessService_CheckAccessValidation(t *testing.T) {
 			DailyUsage:  RelayUsageSnapshot{TotalTokens: dailyTokenLimit},
 		}, RelayAccessCheckInput{Now: now})
 		require.ErrorIs(t, err, ErrRelayQuotaExceeded)
+	})
+
+	t.Run("zero concurrency limit", func(t *testing.T) {
+		err := svc.CheckAccess(context.Background(), &RelayAccessContext{
+			Status:      RelayKeyStatusActive,
+			BalanceMode: RelayKeyBalanceModeQuotaOnly,
+			Quota:       RelayKeyQuotaSnapshot{ConcurrencyLimit: &zeroConcurrencyLimit},
+		}, RelayAccessCheckInput{Now: now})
+		require.ErrorIs(t, err, ErrRelayQuotaExceeded)
+	})
+
+	t.Run("positive concurrency limit allows access preflight", func(t *testing.T) {
+		err := svc.CheckAccess(context.Background(), &RelayAccessContext{
+			Status:      RelayKeyStatusActive,
+			BalanceMode: RelayKeyBalanceModeQuotaOnly,
+			Quota:       RelayKeyQuotaSnapshot{ConcurrencyLimit: &positiveConcurrencyLimit},
+		}, RelayAccessCheckInput{Now: now})
+		require.NoError(t, err)
 	})
 }
 

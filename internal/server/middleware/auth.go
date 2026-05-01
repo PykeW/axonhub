@@ -60,6 +60,7 @@ func WithAPIKeyConfig(auth *biz.AuthService, config *APIKeyConfig) gin.HandlerFu
 			abortRelayAuthError(c, err)
 			return
 		}
+		defer releaseRelayInflight(ctx)
 
 		ctx, err = withAPIKeyPrincipal(ctx, apiKey)
 		if err != nil {
@@ -193,6 +194,7 @@ func WithGeminiKeyAuth(auth *biz.AuthService) gin.HandlerFunc {
 			abortRelayAuthError(c, err)
 			return
 		}
+		defer releaseRelayInflight(ctx)
 
 		ctx, err = withAPIKeyPrincipal(ctx, apiKey)
 		if err != nil {
@@ -230,6 +232,19 @@ func attachRelayAuthContext(ctx context.Context, auth *biz.AuthService, apiKey *
 	}
 
 	return ctx, nil
+}
+
+func releaseRelayInflight(ctx context.Context) {
+	value, ok := contexts.GetRelayAuthContext(ctx)
+	if !ok || value == nil {
+		return
+	}
+
+	relayAuthContext, ok := value.(*biz.RelayAuthContext)
+	if !ok || relayAuthContext == nil {
+		return
+	}
+	relayAuthContext.ReleaseInflight()
 }
 
 func abortRelayAuthError(c *gin.Context, err error) {

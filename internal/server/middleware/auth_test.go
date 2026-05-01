@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -8,6 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/looplj/axonhub/internal/contexts"
+	"github.com/looplj/axonhub/internal/ent"
 	"github.com/looplj/axonhub/internal/server/biz"
 )
 
@@ -62,6 +65,37 @@ func TestWithAPIKeyConfig_AllowsMissingAuthorizationWhenNoAuthAllowed(t *testing
 
 	if recorder.Code != http.StatusNoContent {
 		t.Fatalf("expected status %d, got %d", http.StatusNoContent, recorder.Code)
+	}
+}
+
+type relayAuthResolverFunc func(context.Context, *ent.APIKey) (*biz.RelayAuthContext, error)
+
+func (f relayAuthResolverFunc) ResolveRelayAuth(ctx context.Context, apiKey *ent.APIKey) (*biz.RelayAuthContext, error) {
+	return f(ctx, apiKey)
+}
+
+func TestReleaseRelayInflight(t *testing.T) {
+	tracker := biz.NewRelayInflightTracker()
+	svc := biz.NewRelayRuntimeService()
+	svc.SetInflightTracker(tracker)
+	limit := int64(1)
+	svc.SetResolver(relayAuthResolverFunc(func(ctx context.Context, apiKey *ent.APIKey) (*biz.RelayAuthContext, error) {
+		return &biz.RelayAuthContext{RelayKeyID: 9001, Quota: biz.RelayKeyQuotaSnapshot{ConcurrencyLimit: &limit}}, nil
+	}))
+
+	relay, decision, err := svc.ResolveAndCheckAccess(context.Background(), &ent.APIKey{ID: 1, ProjectID: 2})
+	if err != nil || decision == nil || !decision.Allowed || relay == nil {
+		t.Fatalf("expected allowed relay, decision=%v relay=%v err=%v", decision, relay, err)
+	}
+	if got := tracker.Current(relay.RelayKeyID); got != 1 {
+		t.Fatalf("expected inflight begin, got %d", got)
+	}
+
+	ctx := contexts.WithRelayAuthContext(context.Background(), relay)
+	releaseRelayInflight(ctx)
+	releaseRelayInflight(ctx)
+	if got := tracker.Current(relay.RelayKeyID); got != 0 {
+		t.Fatalf("expected middleware release to clear inflight once, got %d", got)
 	}
 }
 

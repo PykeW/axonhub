@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -48,6 +49,111 @@ func TestRelayRuntimeService_ResolveAndCheckAccess_FillsAPIKeyScope(t *testing.T
 	require.Equal(t, apiKey.ProjectID, relay.ProjectID)
 	require.Same(t, apiKey, accessInput.APIKey)
 	require.False(t, accessInput.Now.IsZero())
+}
+
+func TestRelayInflightTracker_BeginReleaseEnforcesLimit(t *testing.T) {
+	tracker := NewRelayInflightTracker()
+	limit := int64(2)
+	relay := &RelayAuthContext{RelayKeyID: 77, Quota: RelayKeyQuotaSnapshot{ConcurrencyLimit: &limit}}
+
+	first, decision := tracker.Begin(context.Background(), relay)
+	require.Nil(t, decision)
+	require.NotNil(t, first)
+	second, decision := tracker.Begin(context.Background(), relay)
+	require.Nil(t, decision)
+	require.NotNil(t, second)
+	require.Equal(t, int64(2), tracker.Current(relay.RelayKeyID))
+
+	third, decision := tracker.Begin(context.Background(), relay)
+	require.Nil(t, third)
+	require.NotNil(t, decision)
+	require.False(t, decision.Allowed)
+	require.ErrorIs(t, decision.ErrorOrNil(), ErrRelayQuotaExceeded)
+	require.Equal(t, int64(2), tracker.Current(relay.RelayKeyID))
+
+	otherRelay := &RelayAuthContext{RelayKeyID: 78, Quota: RelayKeyQuotaSnapshot{ConcurrencyLimit: &limit}}
+	otherLease, decision := tracker.Begin(context.Background(), otherRelay)
+	require.Nil(t, decision)
+	require.NotNil(t, otherLease)
+	require.Equal(t, int64(1), tracker.Current(otherRelay.RelayKeyID))
+
+	first.Release()
+	first.Release()
+	require.Equal(t, int64(1), tracker.Current(relay.RelayKeyID))
+	second.Release()
+	otherLease.Release()
+	require.Equal(t, int64(0), tracker.Current(relay.RelayKeyID))
+	require.Equal(t, int64(0), tracker.Current(otherRelay.RelayKeyID))
+}
+
+func TestRelayInflightTracker_BeginReleasesOnContextCancel(t *testing.T) {
+	tracker := NewRelayInflightTracker()
+	limit := int64(1)
+	relay := &RelayAuthContext{RelayKeyID: 88, Quota: RelayKeyQuotaSnapshot{ConcurrencyLimit: &limit}}
+	ctx, cancel := context.WithCancel(context.Background())
+
+	lease, decision := tracker.Begin(ctx, relay)
+	require.Nil(t, decision)
+	require.NotNil(t, lease)
+	require.Equal(t, int64(1), tracker.Current(relay.RelayKeyID))
+
+	cancel()
+	require.Eventually(t, func() bool {
+		return tracker.Current(relay.RelayKeyID) == 0
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestRelayRuntimeService_ResolveAndCheckAccess_EnforcesConcurrencyLimit(t *testing.T) {
+	tracker := NewRelayInflightTracker()
+	svc := NewRelayRuntimeService()
+	svc.SetInflightTracker(tracker)
+	apiKey := &ent.APIKey{ID: 12, ProjectID: 34}
+	limit := int64(1)
+	svc.SetResolver(relayRuntimeResolverFunc(func(ctx context.Context, got *ent.APIKey) (*RelayAuthContext, error) {
+		require.Same(t, apiKey, got)
+		return &RelayAuthContext{RelayKeyID: 99, Quota: RelayKeyQuotaSnapshot{ConcurrencyLimit: &limit}}, nil
+	}))
+	svc.SetAccessChecker(relayRuntimeAccessFunc(func(ctx context.Context, relay *RelayAuthContext, input RelayAccessCheckInput) (*RelayAccessDecision, error) {
+		return allowRelayAccess(), nil
+	}))
+
+	relay, decision, err := svc.ResolveAndCheckAccess(context.Background(), apiKey)
+	require.NoError(t, err)
+	require.True(t, decision.Allowed)
+	require.Equal(t, int64(1), tracker.Current(relay.RelayKeyID))
+
+	blockedRelay, decision, err := svc.ResolveAndCheckAccess(context.Background(), apiKey)
+	require.NoError(t, err)
+	require.NotNil(t, blockedRelay)
+	require.False(t, decision.Allowed)
+	require.Equal(t, "relay_concurrency_quota_exceeded", decision.Code)
+	require.ErrorIs(t, decision.ErrorOrNil(), ErrRelayQuotaExceeded)
+	require.Equal(t, int64(1), tracker.Current(relay.RelayKeyID))
+
+	relay.ReleaseInflight()
+	relay.ReleaseInflight()
+	require.Equal(t, int64(0), tracker.Current(relay.RelayKeyID))
+
+	relay, decision, err = svc.ResolveAndCheckAccess(context.Background(), apiKey)
+	require.NoError(t, err)
+	require.True(t, decision.Allowed)
+	relay.ReleaseInflight()
+}
+
+func TestRelayRuntimeService_ResolveAndCheckAccess_DoesNotBeginOnDeniedAccess(t *testing.T) {
+	tracker := NewRelayInflightTracker()
+	svc := NewRelayRuntimeService()
+	svc.SetInflightTracker(tracker)
+	limit := int64(1)
+	svc.SetResolver(relayRuntimeResolverFunc(func(ctx context.Context, got *ent.APIKey) (*RelayAuthContext, error) {
+		return &RelayAuthContext{RelayKeyID: 101, Status: RelayKeyStatusSuspended, Quota: RelayKeyQuotaSnapshot{ConcurrencyLimit: &limit}}, nil
+	}))
+
+	relay, decision, err := svc.ResolveAndCheckAccess(context.Background(), &ent.APIKey{ID: 1, ProjectID: 2})
+	require.NoError(t, err)
+	require.NotNil(t, relay)
+	require.False(t, decision.Allowed)
+	require.Equal(t, int64(0), tracker.Current(relay.RelayKeyID))
 }
 
 func TestRelayAuthErrorPreservesDecisionDiagnostics(t *testing.T) {

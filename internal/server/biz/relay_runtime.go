@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -24,12 +25,13 @@ type RelayRuntimeService struct {
 	resolver   RelayAuthResolver
 	access     RelayAccessChecker
 	settlement RelaySettlementRecorder
+	inflight   *RelayInflightTracker
 }
 
 type RelayRuntimeOption func(*RelayRuntimeService)
 
 func NewRelayRuntimeService() *RelayRuntimeService {
-	return &RelayRuntimeService{}
+	return &RelayRuntimeService{inflight: NewRelayInflightTracker()}
 }
 
 func (s *RelayRuntimeService) SetResolver(resolver RelayAuthResolver) {
@@ -47,6 +49,12 @@ func (s *RelayRuntimeService) SetAccessChecker(access RelayAccessChecker) {
 func (s *RelayRuntimeService) SetSettlementRecorder(settlement RelaySettlementRecorder) {
 	if s != nil {
 		s.settlement = settlement
+	}
+}
+
+func (s *RelayRuntimeService) SetInflightTracker(inflight *RelayInflightTracker) {
+	if s != nil {
+		s.inflight = inflight
 	}
 }
 
@@ -81,6 +89,8 @@ type RelayAuthContext struct {
 	MonthlyUsage  RelayUsageSnapshot
 	ChannelPool   RelayChannelPool
 	Metadata      map[string]any
+
+	inflightLease *RelayInflightLease
 }
 
 type RelayKeyStatus string
@@ -231,6 +241,90 @@ type RelayUsageSettlementInput struct {
 	Request  *ent.Request
 }
 
+type RelayInflightTracker struct {
+	mu     sync.Mutex
+	counts map[int]int64
+}
+
+type RelayInflightLease struct {
+	tracker    *RelayInflightTracker
+	relayKeyID int
+	once       sync.Once
+}
+
+func NewRelayInflightTracker() *RelayInflightTracker {
+	return &RelayInflightTracker{counts: make(map[int]int64)}
+}
+
+func (t *RelayInflightTracker) Begin(ctx context.Context, relay *RelayAuthContext) (*RelayInflightLease, *RelayAccessDecision) {
+	if t == nil || relay == nil || relay.Quota.ConcurrencyLimit == nil || relay.RelayKeyID <= 0 {
+		return nil, nil
+	}
+
+	limit := *relay.Quota.ConcurrencyLimit
+	if limit <= 0 {
+		return nil, denyRelayAccess(http.StatusForbidden, "relay_concurrency_quota_exceeded", "relay key concurrency quota exceeded")
+	}
+
+	t.mu.Lock()
+	if t.counts == nil {
+		t.counts = make(map[int]int64)
+	}
+	current := t.counts[relay.RelayKeyID]
+	if current >= limit {
+		t.mu.Unlock()
+		return nil, denyRelayAccess(http.StatusForbidden, "relay_concurrency_quota_exceeded", "relay key concurrency quota exceeded")
+	}
+	t.counts[relay.RelayKeyID] = current + 1
+	t.mu.Unlock()
+
+	lease := &RelayInflightLease{tracker: t, relayKeyID: relay.RelayKeyID}
+	if ctx != nil && ctx.Done() != nil {
+		go func() {
+			<-ctx.Done()
+			lease.Release()
+		}()
+	}
+
+	return lease, nil
+}
+
+func (t *RelayInflightTracker) Current(relayKeyID int) int64 {
+	if t == nil || relayKeyID <= 0 {
+		return 0
+	}
+
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	return t.counts[relayKeyID]
+}
+
+func (l *RelayInflightLease) Release() {
+	if l == nil || l.tracker == nil || l.relayKeyID <= 0 {
+		return
+	}
+
+	l.once.Do(func() {
+		l.tracker.mu.Lock()
+		defer l.tracker.mu.Unlock()
+
+		current := l.tracker.counts[l.relayKeyID]
+		if current <= 1 {
+			delete(l.tracker.counts, l.relayKeyID)
+			return
+		}
+		l.tracker.counts[l.relayKeyID] = current - 1
+	})
+}
+
+func (c *RelayAuthContext) ReleaseInflight() {
+	if c == nil || c.inflightLease == nil {
+		return
+	}
+	c.inflightLease.Release()
+}
+
 func (s *RelayRuntimeService) ResolveAndCheckAccess(ctx context.Context, apiKey *ent.APIKey) (*RelayAuthContext, *RelayAccessDecision, error) {
 	if s == nil || s.resolver == nil || apiKey == nil {
 		return nil, nil, nil
@@ -261,6 +355,19 @@ func (s *RelayRuntimeService) ResolveAndCheckAccess(ctx context.Context, apiKey 
 		if decision == nil {
 			decision = allowRelayAccess()
 		}
+	}
+	if decision == nil {
+		decision = allowRelayAccess()
+	}
+	if !decision.Allowed {
+		return relay, decision, nil
+	}
+	if s.inflight != nil {
+		lease, inflightDecision := s.inflight.Begin(ctx, relay)
+		if inflightDecision != nil && !inflightDecision.Allowed {
+			return relay, inflightDecision, nil
+		}
+		relay.inflightLease = lease
 	}
 
 	return relay, decision, nil
@@ -304,7 +411,6 @@ func (s *RelayRuntimeService) defaultAccessDecision(relay *RelayAuthContext, now
 	if relay.Quota.ConcurrencyLimit != nil && *relay.Quota.ConcurrencyLimit <= 0 {
 		return denyRelayAccess(http.StatusForbidden, "relay_concurrency_quota_exceeded", "relay key concurrency quota exceeded")
 	}
-	// MVP: positive concurrency is contract/UI data until an inflight tracker is wired.
 	return allowRelayAccess()
 }
 
