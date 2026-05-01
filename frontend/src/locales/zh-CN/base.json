@@ -4,6 +4,8 @@
   "sidebar.groups.settings": "设置",
   "sidebar.items.dashboard": "仪表板",
   "sidebar.items.channels": "渠道",
+  "sidebar.items.share": "共享",
+  "sidebar.items.use": "使用",
   "sidebar.items.models": "模型",
   "sidebar.items.promptProtectionRules": "提示保护",
   "sidebar.items.prompts": "提示词",

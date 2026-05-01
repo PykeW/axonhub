@@ -80,6 +80,11 @@ export function useSidebarData(): SidebarData {
           icon: IconAi,
         } as NavLink,
         {
+          title: t('sidebar.items.share'),
+          url: '/share',
+          icon: IconAi,
+        } as NavLink,
+        {
           title: t('sidebar.items.relaySubkeys'),
           url: '/relay-subkeys',
           icon: IconKey,
@@ -123,6 +128,11 @@ export function useSidebarData(): SidebarData {
         {
           title: t('sidebar.items.apiKeys'),
           url: '/project/api-keys',
+          icon: IconKey,
+        } as NavLink,
+        {
+          title: t('sidebar.items.use'),
+          url: '/use',
           icon: IconKey,
         } as NavLink,
         {
