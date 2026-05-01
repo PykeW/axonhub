@@ -1,10 +1,11 @@
 # API Key Profile 指南
 
-本文介绍如何配置 API Key Profile，实现模型映射、访问控制和多 Profile 切换。
+本文介绍如何配置 API Key Profile，实现模型映射、访问控制和多 Profile 切换。当前 Share / Use 方向里，`/use` 最小表单正是通过写入单一 `APIKeyProfile` 的 `modelIDs` 与 `useStrategy` 来完成模型白名单和使用策略保存。
 
 ## 什么是 API Key Profile？
 
 **API Key Profile** 让你可以：
+
 - **模型映射**：把客户端请求的模型名改成另一个模型
 - **渠道限制**：限制 API Key 只能使用特定渠道
 - **模型限制**：限制 API Key 只能访问特定模型
@@ -27,7 +28,7 @@ API Key Profile 的模型映射是三层流水线中的**第一步**。完整说
 ```json
 {
   "modelMappings": [
-    {"from": "claude-sonnet-4-5", "to": "anthropic/claude-3.5-sonnet"}
+    { "from": "claude-sonnet-4-5", "to": "anthropic/claude-3.5-sonnet" }
   ]
 }
 ```
@@ -37,8 +38,8 @@ API Key Profile 的模型映射是三层流水线中的**第一步**。完整说
 ```json
 {
   "modelMappings": [
-    {"from": "gpt4", "to": "gpt-4o"},
-    {"from": "gpt-4-turbo", "to": "gpt-4o"}
+    { "from": "gpt4", "to": "gpt-4o" },
+    { "from": "gpt-4-turbo", "to": "gpt-4o" }
   ]
 }
 ```
@@ -49,6 +50,31 @@ API Key Profile 的模型映射是三层流水线中的**第一步**。完整说
 {
   "channelTags": ["production"],
   "modelIDs": ["gpt-4o", "claude-3-sonnet"]
+}
+```
+
+### 场景 4：作为 `/use` 最小表单的配置落点
+
+当前 `/use` 页面恢复后的最小可用表单会做两件事：
+
+1. 创建一个新的 API Key。
+2. 为该 Key 写入单一 `APIKeyProfile`，其中至少包含：
+   - `modelIDs`：允许调用的模型列表
+   - `useStrategy`：`prefer_own` / `only_own` / `allow_shared`
+
+示例：
+
+```json
+{
+  "activeProfile": "Use MVP",
+  "profiles": [
+    {
+      "name": "Use MVP",
+      "modelIDs": ["gpt-4o", "claude-3-5-sonnet"],
+      "useStrategy": "prefer_own",
+      "modelMappings": []
+    }
+  ]
 }
 ```
 
@@ -67,10 +93,12 @@ API Key Profile 的模型映射是三层流水线中的**第一步**。完整说
 1. 点击 **新增配置**
 2. 输入 Profile 名称
 3. 配置模型映射、渠道限制或模型限制
+4. 如果用于 Share / Use 最小方案，至少设置 `modelIDs`；需要共享使用语义时再设置 `useStrategy`
 
 ### 步骤 3：配置模型映射
 
 每个映射包含：
+
 - **From（源模型）**：客户端请求的模型名称
 - **To（目标模型）**：实际使用的模型名称
 
@@ -79,13 +107,13 @@ API Key Profile 的模型映射是三层流水线中的**第一步**。完整说
 #### 精确匹配
 
 ```json
-{"from": "gpt-4", "to": "claude-3-opus"}
+{ "from": "gpt-4", "to": "claude-3-opus" }
 ```
 
 #### 正则匹配
 
 ```json
-{"from": "gpt-.*", "to": "claude-3-sonnet"}
+{ "from": "gpt-.*", "to": "claude-3-sonnet" }
 ```
 
 ### 步骤 4：设置生效 Profile
@@ -105,6 +133,7 @@ API Key Profile 的模型映射是三层流水线中的**第一步**。完整说
 ### Q: 模型映射不生效？
 
 检查：
+
 1. 是否选择了正确的生效 Profile
 2. 模型名称是否匹配
 3. 正则表达式是否正确
@@ -121,10 +150,11 @@ API Key Profile 的模型映射是三层流水线中的**第一步**。完整说
 
 ## 最佳实践
 
-1. **使用描述性名称**：如 `production`、`openrouter-mapping`
+1. **使用描述性名称**：如 `production`、`openrouter-mapping`、`Use MVP`
 2. **具体规则在前**：把精确映射放前面，通用映射放后面
 3. **先测试再启用**：先验证映射结果是否符合预期
 4. **优先使用渠道标签**：比硬编码渠道 ID 更灵活
+5. **Share / Use 最小方案先从 `modelIDs + useStrategy` 开始**：先跑通模型白名单和使用策略，再逐步补更复杂的 quota / routing 规则
 
 ## 相关文档
 

@@ -13,18 +13,19 @@
 
 ### 📖 使用指南
 
-| 文档                                                | 描述                            |
-| --------------------------------------------------- | ------------------------------- |
-| [渠道管理](guides/channel-management.md)            | 配置和管理 AI 提供商渠道        |
-| [Antigravity 集成](guides/antigravity.md)           | 配置 Antigravity 渠道与端点回退 |
-| [模型管理](guides/model-management.md)              | 模型映射、关联和优先级配置      |
-| [API Key 配置文件](guides/api-key-profiles.md)      | 创建和管理 API Key 配置文件     |
-| [权限管理](guides/permissions.md)                   | 企业级 RBAC 访问控制配置        |
-| [负载均衡](guides/load-balance.md)                  | 智能路由和故障转移设置          |
-| [成本追踪](guides/cost-tracking.md)                 | 实时监控和用量分析              |
-| [请求追踪](guides/tracing.md)                       | 完整的请求链路追踪              |
-| [请求覆盖](guides/request-override.md)              | 动态修改请求参数                |
-| [提示词保护规则](guides/prompt-protection-rules.md) | 敏感信息过滤和保护              |
+| 文档                                                | 描述                                               |
+| --------------------------------------------------- | -------------------------------------------------- |
+| [渠道管理](guides/channel-management.md)            | 配置和管理 AI 提供商渠道                           |
+| [Antigravity 集成](guides/antigravity.md)           | 配置 Antigravity 渠道与端点回退                    |
+| [模型管理](guides/model-management.md)              | 模型映射、关联和优先级配置                         |
+| [API Key 配置文件](guides/api-key-profiles.md)      | 创建和管理 API Key 配置文件                        |
+| [共享/使用 MVP 指南](guides/share-use-mvp.md)       | Share / Use 方向的当前能力边界、验收口径与测试矩阵 |
+| [权限管理](guides/permissions.md)                   | 企业级 RBAC 访问控制配置                           |
+| [负载均衡](guides/load-balance.md)                  | 智能路由和故障转移设置                             |
+| [成本追踪](guides/cost-tracking.md)                 | 实时监控和用量分析                                 |
+| [请求追踪](guides/tracing.md)                       | 完整的请求链路追踪                                 |
+| [请求覆盖](guides/request-override.md)              | 动态修改请求参数                                   |
+| [提示词保护规则](guides/prompt-protection-rules.md) | 敏感信息过滤和保护                                 |
 
 ### 🤖 AI 编程工具集成
 
@@ -53,15 +54,18 @@
 
 ### 🛠️ 开发文档
 
-| 文档                                                                                                  | 描述                                           |
-| ----------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| [开发指南](development/development.md)                                                                | 本地开发环境搭建和贡献指南                     |
-| [Git 工作流](development/git-workflow.md)                                                             | 项目的 Git 分支和提交规范                      |
-| [实体关系图](development/erd.md)                                                                      | 数据库模型关系图                               |
-| [转换流程](development/transformation-flow.md)                                                        | 请求/响应转换流程详解                          |
-| [授权编码规范](development/authz-coding-guidelines.md)                                                | 权限相关代码编写规范                           |
-| [自托管 Relay + Sub-key 共享容量 MVP：页面清单与用户流程](development/relay-subkey-mvp-page-flows.md) | 面向产品与交互的页面范围、角色分工与端到端流程 |
-| [自托管 Relay + Sub-key 共享容量 MVP：后端与数据设计](development/relay-subkey-mvp-backend-design.md) | 后端模块、核心实体与 MVP 数据生命周期设计      |
+| 文档                                                                                                       | 描述                                           |
+| ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| [开发指南](development/development.md)                                                                     | 本地开发环境搭建和贡献指南                     |
+| [Git 工作流](development/git-workflow.md)                                                                  | 项目的 Git 分支和提交规范                      |
+| [实体关系图](development/erd.md)                                                                           | 数据库模型关系图                               |
+| [转换流程](development/transformation-flow.md)                                                             | 请求/响应转换流程详解                          |
+| [授权编码规范](development/authz-coding-guidelines.md)                                                     | 权限相关代码编写规范                           |
+| [自托管 Relay + Sub-key 共享容量 MVP：页面清单与用户流程](development/relay-subkey-mvp-page-flows.md)      | 面向产品与交互的页面范围、角色分工与端到端流程 |
+| [自托管 Relay + Sub-key 共享容量 MVP：后端与数据设计](development/relay-subkey-mvp-backend-design.md)      | 后端模块、核心实体与 MVP 数据生命周期设计      |
+| [自托管 Relay + Sub-Key 共享容量 MVP：QA 与测试清单](development/relay-subkey-mvp-qa-checklist.md)         | 当前收口状态、验证命令与 Post-MVP backlog      |
+| [用户贡献 API：模型真实性验证、随机抽检与积分奖惩设计](development/user-contributed-api-quality-plan.md)   | 共享容量积分化实验方向的产品与风控设计         |
+| [用户贡献 API 质量治理：QA 与小范围试点验收清单](development/user-contributed-api-quality-qa-checklist.md) | 对应实验方向的试点前置条件与验收清单           |
 
 ### ❓ 常见问题
 

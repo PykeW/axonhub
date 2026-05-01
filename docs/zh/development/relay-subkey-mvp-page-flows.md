@@ -215,20 +215,20 @@ AxonHub 已经具备 API 网关、渠道路由、请求审计与 API Key 鉴权�
 
 ## 实施优先级建议
 
-### Phase 1: 可上线最小闭环
+### 已完成范围（2026-05-02）
 
-1. 产品列表 + 产品详情（含渠道池配置）。
-2. Sub-Key 列表 + Key 详情。
-3. 充值/流水 Tab。
-4. 项目侧 Key 列表 + 接入说明。
+1. 产品列表 / 新建 / 详情（含渠道池配置）与 Sub-Key 列表 / 新建 / 详情 / 账务页已经落地。
+2. 运营侧请求跟踪页、渠道健康看板，以及项目侧 overview / products / keys / usage / get-started / verify 页面已经落地。
+3. REST 模式下的错误态、不 fallback 约束、项目侧 key not-found、组件级写权限隐藏等收口已经补齐。
+4. 入口 preflight guard + settlement hard cap、`ProviderQuotaStatus.ready` 过滤和一次性 `plaintextKey` 发放已经接入运行链路。
 
-### Phase 2: 运营稳定性补强
+### 下一步开发重点
 
-1. 请求跟踪页。
-2. 渠道健康看板。
-3. 更细的状态 badge 与失败原因透出。
-
-按这个顺序推进，可以先跑通“卖出共享容量并可被真实调用”的最小闭环，再补强排障与运营效率。
+1. 把项目侧“接入验证”从当前前端 readiness check 升级为真实联通验证与结果回显。
+2. 明确 Relay 管理台 GraphQL 主线与当前 REST 模式的长期收敛策略，避免双契约继续漂移。
+3. 继续补强请求排障与渠道池健康的 drill-down 视图，把失败阶段、扣费结果和上游 quota 信息串起来。
+4. 按文档后半段的 `validateSearch` / loader 草案收敛页面 search 参数、预取和筛选状态，减少页面内局部状态分叉。
+5. 在当前闭环稳定后，再推进 Post-MVP inflight tracker 与“用户贡献 API / 积分治理”实验方向。
 
 ## 前端路由树与页面拆解
 

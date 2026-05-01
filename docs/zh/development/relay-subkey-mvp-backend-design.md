@@ -354,31 +354,19 @@ MVP 推荐把“上游成本”和“下游销售金额”分开放：
 
 ## MVP 落地顺序
 
-### 阶段 1：数据结构
+### 已完成（2026-05-02）
 
-1. 新增 6 个 Ent schema。
-2. 跑 `make generate` 生成模型与迁移。
-3. 后台只先做最小 CRUD 与列表查询。
+1. 数据结构：6 个 Ent schema 与对应生成资产已经存在。
+2. 入口校验与路由：`RelayAccessService`、`RelayRouterService`、`ProviderQuotaStatus.ready` 过滤已经接入运行链路。
+3. 结算闭环：`RelaySettlementService` 已落地 `usage_log_id` 幂等、`monthly_cost_limit` preflight + settlement hard cap、钱包与日汇总更新。
+4. 运营台能力：产品、渠道池、Sub-Key、钱包、请求跟踪、渠道健康、项目侧接入页面均已具备最小闭环。
 
-### 阶段 2：入口校验与路由
+### 下一步开发重点
 
-1. 在现有 API Key 鉴权后加载 `relay_keys`。
-2. 新增 `RelayAccessService` 做状态、过期、余额、日级硬限额和月度成本 preflight guard 检查。
-3. 新增 `RelayRouterService`，在现有 `ChannelService` 之前按产品池过滤渠道。
-
-### 阶段 3：结算闭环
-
-1. `usage_logs` 成功写入后触发账本扣费。
-2. 用 `idempotency_key` 保证重试不重复扣费，已结算重试必须早于月度 hard cap 拒绝判定返回 no-op。
-3. 设置 `monthly_cost_limit` 时在 settlement 事务内按 Relay Key 加锁，原子判断月度聚合 + 本次 charge 不超过上限。
-4. 通过 cap 后同步更新钱包快照并 upsert 日汇总；`quota_only` 跳过钱包扣减但仍执行 cap。
-
-### 阶段 4：运营台能力
-
-1. 产品管理
-2. 渠道池绑定
-3. Sub-Key 管理
-4. 钱包充值 / 冻结 / 对账视图
+1. 把正向 `concurrency_limit` 从 preview/config-only 升级为基于 request-scoped Begin/Release tracker 的硬阻塞能力。
+2. 继续补齐 settlement / access / router 的边界回归，包括 existing-over-cap、`quota_only` reject、项目隔离和观测日志。
+3. 收敛 Relay 管理台 API 边界，明确 GraphQL 主线与当前 REST 模式的长期分工，避免双契约继续漂移。
+4. 在运营台稳定后，再补更深的排障 / 告警能力与“用户贡献 API / 积分治理”实验方向，而不是回头重做基础数据模型。
 
 ## 明确延期的能力
 

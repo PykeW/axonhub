@@ -1,8 +1,7 @@
 # 共享/使用 MVP 指南
 
-本文记录简化版“共享/使用”方案的产品边界、数据约定、调度规则、目标验收标准和测试矩阵。它是一份产品计划与后续验收清单，不表示当前 `snow-m1` 合并内容已经完整交付所有能力。
-
-当前合并内容是低冲突基础切片：文档页、前端 `/share` 与 `/use` 指南包装路由、后端 JSON-only `APIKeyProfile.useStrategy` 以及 `ChannelSettings.Share` 元数据/默认值。完整后端路由、配额/刷新窗口强约束和真实 Share/Use 表单仍是后续工作。
+本文记录简化版“共享/使用”方案的产品边界、数据约定、调度规则、当前实现状态与后续验收标准。它既是产品计划，也是当前仓库实现与后续工作之间的对照入口。
+当前仓库也分成两层状态：已提交的小切片已经打通 `APIKeyProfile.useStrategy` 的 GraphQL / schema 保存链路，并在对象层提供 `ChannelSettings.Share` 元数据与默认值；当前工作树又在其上恢复了 `/use` 最小可用表单。`/share` 仍是指南包装页，真正的共享路由、刷新窗口强约束和更完整的 Use 配置体验仍是后续工作。
 
 ## 范围
 
@@ -13,19 +12,21 @@
 | 共享 | 把自己的上游账号贡献给 AxonHub 使用 | 创建/编辑/归档自己的渠道，设置 `private` 或 `shared`，查看 5 小时刷新窗口 |
 | 使用 | 用简单 API Key 调用可用模型         | 创建 API Key，选择 `modelIDs`，选择 `useStrategy`                         |
 
-### 当前已合并低冲突切片
+### 当前已落地切片
 
-- 文档：新增本指南，作为产品计划、联调边界和后续验收入口。
-- 前端：新增 `/share` 与 `/use` 指南包装路由和导航入口；这些页面用于引导现有渠道/API Key 能力，不是最终创建/编辑表单。
-- 后端：在 JSON 配置层增加 `APIKeyProfile.useStrategy` 默认值/合法值约定，以及 `ChannelSettings.Share` 元数据/默认值；未改变实际请求路由链路。
+- 文档：本文作为产品计划、联调边界和后续验收入口继续保留。
+- 前端：`/share` 仍是指南包装路由；`/use` 已恢复为最小可用表单，支持创建 API Key、选择 `modelIDs`、选择 `useStrategy`、保存 profile 并复制生成结果。
+- 后端 / 数据契约：`APIKeyProfile.useStrategy` 已贯通 GraphQL schema、前端 Zod schema 和 update mutation；`ChannelSettings.Share` 元数据 / 默认值已存在于对象层，但渠道 schema / 前端表单尚未暴露 share 字段。
+
 - 兼容性：现有渠道管理、API Key Profile、配额、模型映射、负载均衡和重试行为保持原状。
 
 ### 尚未实现的完整行为
 
-- Share 页面真实创建/编辑/归档表单、所有者权限、敏感字段脱敏、5 小时刷新窗口与并发刷新控制。
-- Use 页面真实 API Key 创建表单、模型多选必填校验、生成后展示/复制和保存失败提示。
-- 请求路由按 `useStrategy` 做自有/共享候选过滤、own-first、soonest-refresh-first、配额强制和可观测日志。
-- 面向共享容量的端到端测试、前端 E2E 和完整后端 selector/orchestrator 回归。
+- Share 页面真实创建 / 编辑 / 归档表单、所有者权限、敏感字段脱敏、5 小时刷新窗口与并发刷新控制。
+- 渠道 schema / API / 前端表单尚未暴露 `ChannelSettings.Share`、owner/visibility、`nextRefreshAt` 等真实字段，因此 Share 语义仍未接入实体 CRUD。
+- 请求路由尚未按 `useStrategy` 做自有 / 共享候选过滤、own-first、soonest-refresh-first、配额强制和可观测日志。
+- `/use` 已恢复为最小可用表单；下一步再补“加载 / 编辑既有 Use API Key、回显当前 Profile 与高级配额配置”。
+- 面向共享容量的端到端测试、前端 E2E 和完整后端 selector / orchestrator 回归仍需补齐。
 
 ### 不做的事
 
@@ -139,46 +140,49 @@
 
 ### 当前切片可验收
 
-- 用户能在导航中看到 **共享** 和 **使用** 两个入口，但页面是指南包装入口，不是最终 Share/Use 业务表单。
-- `/share` 和 `/use` 不阻塞现有渠道管理、API Key 管理、模型映射、配额、负载均衡和重试能力。
-- 后端 JSON 配置能表达 `useStrategy` 目标值和 `ChannelSettings.Share` 元数据/默认值；实际请求仍沿用现有路由链路。
+- 用户能在导航中看到 **共享** 和 **使用** 两个入口；其中 `/share` 仍是指南包装页，`/use` 已恢复为最小可用表单。
+- `/use` 会强制至少选择一个 `modelIDs`，并把 `useStrategy` 保存到单一 `APIKeyProfile`；创建成功后可立即展示并复制生成的 key。
+- GraphQL schema 与前端校验都只接受 `prefer_own`、`only_own`、`allow_shared`；空值按 `prefer_own` 处理。
+
+- 后端对象层已具备 `ChannelSettings.Share` 元数据 / 默认值，但实际请求路由与渠道 CRUD 仍沿用现有链路，不影响当前渠道管理、API Key 管理、模型映射、配额、负载均衡和重试能力。
 
 ### 目标产品验收（后续完成）
 
 - 共享页面只能展示和管理当前用户自己的渠道；管理员视角不破坏现有渠道管理能力。
-- 用户创建渠道时必须选择 `private` 或 `shared`；未选择时使用默认 `private`。
+- 用户创建 / 编辑渠道时必须选择 `private` 或 `shared`；未选择时使用默认 `private`。
 - 共享渠道可被其他用户路由使用，但其他用户无法读取凭据、敏感备注和完整错误细节。
 - 刷新按钮展示当前状态：可刷新、冷却中、下一次可刷新时间。
-- 5 小时窗口内重复刷新被拒绝，到点后刷新成功。
-- 使用页面能创建 API Key，并把模型选择写入 `modelIDs`。
-- 使用页面能选择 `prefer_own`、`only_own`、`allow_shared`，保存后请求按策略路由。
-- 请求未选择模型时不能创建 Use API Key；请求未授权模型时返回明确错误。
+- 在当前最小可用 `/use` 表单基础上，再支持加载并编辑既有 API Key 的 `modelIDs` / `useStrategy`。
+- 请求未选择模型时不能保存 Use 配置；请求未授权模型时返回明确错误。
+
 - `prefer_own` 有自有候选时优先自有，无自有候选时可回退共享。
 - `only_own` 不使用共享渠道，且无自有候选时返回明确无可用渠道错误。
 - `allow_shared` 可以使用自有和共享候选，并继续遵守模型、配额、健康、重试规则。
 
 ### 目标后端验收（后续完成）
 
-- 渠道有所有者和可见性默认值；历史渠道迁移或默认行为有明确兼容策略。
+- 渠道 schema / API 能暴露所有者、可见性、刷新窗口与下一次可刷新时间，并给历史渠道明确兼容策略。
 - 普通用户不能读取或修改其他用户的 private 渠道。
 - 非所有者读取 shared 渠道时敏感字段被脱敏。
-- `useStrategy` 只接受 `prefer_own`、`only_own`、`allow_shared`。
-- `modelIDs` 为空时 Use API Key 创建/保存被拒绝，除非明确进入管理员高级模式。
+- 服务端继续只接受 `prefer_own`、`only_own`、`allow_shared`。
+- `modelIDs` 为空时 Use API Key 创建 / 保存被服务端拒绝，除非明确进入管理员高级模式。
 - 5 小时刷新窗口使用服务端时间计算，并处理并发请求。
-- 路由选择输出可观测日志，至少包含策略、候选数量、自有/共享桶数量和最终渠道 ID。
+- 路由选择输出可观测日志，至少包含策略、候选数量、自有 / 共享桶数量和最终渠道 ID。
 - 现有 API Key Profile 的 `modelIDs`、`quota`、`loadBalanceStrategy` 行为保持兼容。
 
-### 目标前端验收（真实表单后续补齐）
+### 目标前端验收（Share 页面与 Use 页增强后）
+
+- 第一阶段目标已完成：`/use` 已恢复为最小可用表单，支持名称、模型多选、`useStrategy` 选择和保存反馈。
 
 - 共享页面真实表单包含渠道名称、类型、Base URL、API Key、支持模型、默认测试模型、可见性。
-- 使用页面真实表单包含名称、模型多选、使用策略、生成后的 API Key 展示/复制。
+- 使用页面支持加载 / 编辑已有 Use API Key、展示当前 Profile 保存状态、失败原因和权限受限提示。
 - 中英文文案清楚区分“私有”“共享”“优先自有”“仅自有”“允许共享”。
 - 保存失败、刷新冷却、无可用渠道、模型未授权都有明确错误提示。
-- 页面可在无后端新增字段时优雅降级，不阻塞现有渠道/API Key 管理页面。
+- 页面可在无后端新增字段时优雅降级，不阻塞现有渠道 / API Key 管理页面。
 
 ## 测试矩阵
 
-以下矩阵覆盖目标 MVP。当前低冲突切片只要求验证文档、包装路由和 JSON/defaults 相关检查；完整路由、配额、刷新窗口和真实表单测试需在对应实现补齐后启用。
+以下矩阵覆盖目标 MVP。当前仓库应至少验证文档、`/share` 包装页、`/use` 最小创建流程，以及 `useStrategy` / `ChannelSettings.Share` 相关 schema 与保存链路；完整共享路由、刷新窗口和真实 Share 表单测试需在对应实现补齐后启用。
 
 | 模块        | 场景                                            | 预期                              | 建议命令/位置                                                                |
 | ----------- | ----------------------------------------------- | --------------------------------- | ---------------------------------------------------------------------------- |
@@ -226,8 +230,9 @@ make build
 ## 文档落点
 
 - 本文作为 MVP 验收和联调入口：`docs/zh/guides/share-use-mvp.md`。
-- `docs/zh/guides/api-key-profiles.md` 后续可补充 Use 页面与 `modelIDs/useStrategy` 的关系。
+- `docs/zh/guides/api-key-profiles.md` 已补充 `/use` 最小表单与 `modelIDs/useStrategy` 的关系。
 - `docs/zh/guides/channel-management.md` 后续可补充 Share 页面与 `private/shared` 的关系。
+
 - `docs/zh/getting-started/request-processing.md` 后续可补充 own-first 与 soonest-refresh-first 在请求链路中的位置。
 
 ## 风险和待确认
