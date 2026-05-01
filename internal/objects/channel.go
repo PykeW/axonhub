@@ -75,6 +75,58 @@ type TransformOptions struct {
 	ReplaceDeveloperRoleWithSystem bool `json:"replaceDeveloperRoleWithSystem"`
 }
 
+type ChannelVisibility string
+
+const (
+	ChannelVisibilityPrivate ChannelVisibility = "private"
+	ChannelVisibilityShared  ChannelVisibility = "shared"
+
+	DefaultShareRefreshWindowSeconds int64 = 5 * 60 * 60
+	DefaultShareRefreshQuota         int64 = 1
+)
+
+func (v ChannelVisibility) IsValid() bool {
+	return v == "" || v == ChannelVisibilityPrivate || v == ChannelVisibilityShared
+}
+
+func (v ChannelVisibility) OrDefault() ChannelVisibility {
+	if v == ChannelVisibilityShared {
+		return ChannelVisibilityShared
+	}
+
+	return ChannelVisibilityPrivate
+}
+
+type ChannelShareSettings struct {
+	Visibility           ChannelVisibility `json:"visibility,omitempty"`
+	RefreshWindowSeconds int64             `json:"refreshWindowSeconds,omitempty"`
+	RefreshQuota         int64             `json:"refreshQuota,omitempty"`
+}
+
+func (s *ChannelShareSettings) VisibilityOrDefault() ChannelVisibility {
+	if s == nil {
+		return ChannelVisibilityPrivate
+	}
+
+	return s.Visibility.OrDefault()
+}
+
+func (s *ChannelShareSettings) RefreshWindowSecondsOrDefault() int64 {
+	if s == nil || s.RefreshWindowSeconds <= 0 {
+		return DefaultShareRefreshWindowSeconds
+	}
+
+	return s.RefreshWindowSeconds
+}
+
+func (s *ChannelShareSettings) RefreshQuotaOrDefault() int64 {
+	if s == nil || s.RefreshQuota <= 0 {
+		return DefaultShareRefreshQuota
+	}
+
+	return s.RefreshQuota
+}
+
 type ChannelSettings struct {
 	// ExtraModelPrefix sets the channel accept the model with the extra prefix.
 	// e.g. a channel
@@ -142,6 +194,9 @@ type ChannelSettings struct {
 	// RateLimit configures the upstream rate limit for the channel.
 	// When configured, the load balancer will skip channels that have exceeded their rate limits.
 	RateLimit *ChannelRateLimit `json:"rateLimit,omitempty"`
+
+	// Share stores simplified Share/Use settings without requiring channel schema changes.
+	Share *ChannelShareSettings `json:"share,omitempty"`
 }
 
 type ChannelRateLimit struct {
