@@ -11,7 +11,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { ScopesSelect } from '@/components/scopes-select';
-import { useRolesContext } from '../context/roles-context';
+import { useRolesContext } from '../context/use-roles-context';
 import { useCreateRole, useUpdateRole, useDeleteRole, useBulkDeleteRoles } from '../data/roles';
 import { createRoleInputSchema, updateRoleInputSchema } from '../data/schema';
 

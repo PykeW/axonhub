@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { ServerSidePagination } from '@/components/server-side-pagination';
-import { useRolesContext } from '../context/roles-context';
+import { useRolesContext } from '../context/use-roles-context';
 import { Role, RoleConnection } from '../data/schema';
 import { DataTableToolbar } from './data-table-toolbar';
 
@@ -117,7 +117,7 @@ export function RolesTable({
     });
   }, [setResetRowSelection, table]);
 
-  const filteredSelectedRows = useMemo(() => table.getFilteredSelectedRowModel().rows, [table, rowSelection, data]);
+  const filteredSelectedRows = useMemo(() => table.getFilteredSelectedRowModel().rows, [table]);
   const selectedRoles = useMemo(() => filteredSelectedRows.map((row) => row.original as Role), [filteredSelectedRows]);
   const selectedCount = selectedRoles.length;
   const isFiltered = columnFilters.length > 0;

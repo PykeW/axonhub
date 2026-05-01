@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useRolesContext } from '../context/roles-context';
+import { useRolesContext } from '../context/use-roles-context';
 import { Role } from '../data/schema';
 
 interface DataTableRowActionsProps {
