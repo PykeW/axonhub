@@ -64,6 +64,10 @@ type Tx struct {
 	UsageLog *UsageLogClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
+	// UserPointAccount is the client for interacting with the UserPointAccount builders.
+	UserPointAccount *UserPointAccountClient
+	// UserPointLedgerEntry is the client for interacting with the UserPointLedgerEntry builders.
+	UserPointLedgerEntry *UserPointLedgerEntryClient
 	// UserProject is the client for interacting with the UserProject builders.
 	UserProject *UserProjectClient
 	// UserRole is the client for interacting with the UserRole builders.
@@ -225,6 +229,8 @@ func (tx *Tx) init() {
 	tx.Trace = NewTraceClient(tx.config)
 	tx.UsageLog = NewUsageLogClient(tx.config)
 	tx.User = NewUserClient(tx.config)
+	tx.UserPointAccount = NewUserPointAccountClient(tx.config)
+	tx.UserPointLedgerEntry = NewUserPointLedgerEntryClient(tx.config)
 	tx.UserProject = NewUserProjectClient(tx.config)
 	tx.UserRole = NewUserRoleClient(tx.config)
 }

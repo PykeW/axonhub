@@ -20,9 +20,10 @@ import (
 type UsageLogService struct {
 	*AbstractService
 
-	SystemService   *SystemService
-	ChannelService  *ChannelService
-	RelaySettlement RelaySettlementRecorder
+	SystemService      *SystemService
+	ChannelService     *ChannelService
+	RelaySettlement    RelaySettlementRecorder
+	ShareUseSettlement ShareUseSettlementRecorder
 
 	// OnUsageLogCreated is called after a usage log is successfully created.
 	// Used to invalidate caches that depend on usage log data.
@@ -78,16 +79,23 @@ func NewUsageLogService(ent *ent.Client, systemService *SystemService, channelSe
 		AbstractService: &AbstractService{
 			db: ent,
 		},
-		SystemService:     systemService,
-		ChannelService:    channelService,
-		RelaySettlement:   nil,
-		OnUsageLogCreated: nil,
+		SystemService:      systemService,
+		ChannelService:     channelService,
+		RelaySettlement:    nil,
+		ShareUseSettlement: nil,
+		OnUsageLogCreated:  nil,
 	}
 }
 
 func (s *UsageLogService) SetRelaySettlementRecorder(settlement RelaySettlementRecorder) {
 	if s != nil {
 		s.RelaySettlement = settlement
+	}
+}
+
+func (s *UsageLogService) SetShareUseSettlementRecorder(settlement ShareUseSettlementRecorder) {
+	if s != nil {
+		s.ShareUseSettlement = settlement
 	}
 }
 
@@ -112,6 +120,22 @@ func (s *UsageLogService) recordRelaySettlement(ctx context.Context, lookup func
 		log.Warn(settlementCtx, "failed to settle relay usage",
 			log.Int("usage_log_id", usageLog.ID),
 			log.Int("relay_key_id", relayAuthContext.RelayKeyID),
+			log.Cause(err))
+	}
+}
+
+func (s *UsageLogService) recordShareUseSettlement(ctx context.Context, usageLog *ent.UsageLog, request *ent.Request) {
+	if s == nil || s.ShareUseSettlement == nil || usageLog == nil {
+		return
+	}
+
+	settlementCtx, cancel := xcontext.DetachWithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	if err := s.ShareUseSettlement.RecordShareUseUsage(settlementCtx, ShareUseUsageSettlementInput{UsageLog: usageLog, Request: request}); err != nil {
+		log.Warn(settlementCtx, "failed to settle share/use usage",
+			log.Int("usage_log_id", usageLog.ID),
+			log.Int("channel_id", usageLog.ChannelID),
 			log.Cause(err))
 	}
 }
@@ -205,6 +229,9 @@ func (s *UsageLogService) CreateUsageLog(ctx context.Context, params CreateUsage
 	}
 
 	s.recordRelaySettlement(ctx, contexts.GetRelayAuthContext, usageLog, params.Request)
+	if params.Request != nil {
+		s.recordShareUseSettlement(ctx, usageLog, params.Request)
+	}
 
 	if s.OnUsageLogCreated != nil {
 		s.OnUsageLogCreated()

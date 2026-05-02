@@ -735,6 +735,54 @@ func (f UserMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) 
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.UserMutation", m)
 }
 
+// The UserPointAccountQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type UserPointAccountQueryRuleFunc func(context.Context, *ent.UserPointAccountQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f UserPointAccountQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.UserPointAccountQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.UserPointAccountQuery", q)
+}
+
+// The UserPointAccountMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type UserPointAccountMutationRuleFunc func(context.Context, *ent.UserPointAccountMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f UserPointAccountMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.UserPointAccountMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.UserPointAccountMutation", m)
+}
+
+// The UserPointLedgerEntryQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type UserPointLedgerEntryQueryRuleFunc func(context.Context, *ent.UserPointLedgerEntryQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f UserPointLedgerEntryQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.UserPointLedgerEntryQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.UserPointLedgerEntryQuery", q)
+}
+
+// The UserPointLedgerEntryMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type UserPointLedgerEntryMutationRuleFunc func(context.Context, *ent.UserPointLedgerEntryMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f UserPointLedgerEntryMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.UserPointLedgerEntryMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.UserPointLedgerEntryMutation", m)
+}
+
 // The UserProjectQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type UserProjectQueryRuleFunc func(context.Context, *ent.UserProjectQuery) error
@@ -870,6 +918,10 @@ func queryFilter(q ent.Query) (Filter, error) {
 		return q.Filter(), nil
 	case *ent.UserQuery:
 		return q.Filter(), nil
+	case *ent.UserPointAccountQuery:
+		return q.Filter(), nil
+	case *ent.UserPointLedgerEntryQuery:
+		return q.Filter(), nil
 	case *ent.UserProjectQuery:
 		return q.Filter(), nil
 	case *ent.UserRoleQuery:
@@ -932,6 +984,10 @@ func mutationFilter(m ent.Mutation) (Filter, error) {
 	case *ent.UsageLogMutation:
 		return m.Filter(), nil
 	case *ent.UserMutation:
+		return m.Filter(), nil
+	case *ent.UserPointAccountMutation:
+		return m.Filter(), nil
+	case *ent.UserPointLedgerEntryMutation:
 		return m.Filter(), nil
 	case *ent.UserProjectMutation:
 		return m.Filter(), nil

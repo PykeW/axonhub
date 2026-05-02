@@ -38,6 +38,8 @@ import (
 	"github.com/looplj/axonhub/internal/ent/trace"
 	"github.com/looplj/axonhub/internal/ent/usagelog"
 	"github.com/looplj/axonhub/internal/ent/user"
+	"github.com/looplj/axonhub/internal/ent/userpointaccount"
+	"github.com/looplj/axonhub/internal/ent/userpointledgerentry"
 	"github.com/looplj/axonhub/internal/ent/userproject"
 	"github.com/looplj/axonhub/internal/ent/userrole"
 	"github.com/looplj/axonhub/internal/objects"
@@ -78,6 +80,8 @@ const (
 	TypeTrace                    = "Trace"
 	TypeUsageLog                 = "UsageLog"
 	TypeUser                     = "User"
+	TypeUserPointAccount         = "UserPointAccount"
+	TypeUserPointLedgerEntry     = "UserPointLedgerEntry"
 	TypeUserProject              = "UserProject"
 	TypeUserRole                 = "UserRole"
 )
@@ -32419,6 +32423,2365 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)
+}
+
+// UserPointAccountMutation represents an operation that mutates the UserPointAccount nodes in the graph.
+type UserPointAccountMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *int
+	created_at       *time.Time
+	updated_at       *time.Time
+	user_id          *int
+	adduser_id       *int
+	available_points *string
+	pending_points   *string
+	frozen_points    *string
+	lifetime_earned  *string
+	lifetime_spent   *string
+	version          *int64
+	addversion       *int64
+	clearedFields    map[string]struct{}
+	done             bool
+	oldValue         func(context.Context) (*UserPointAccount, error)
+	predicates       []predicate.UserPointAccount
+}
+
+var _ ent.Mutation = (*UserPointAccountMutation)(nil)
+
+// userpointaccountOption allows management of the mutation configuration using functional options.
+type userpointaccountOption func(*UserPointAccountMutation)
+
+// newUserPointAccountMutation creates new mutation for the UserPointAccount entity.
+func newUserPointAccountMutation(c config, op Op, opts ...userpointaccountOption) *UserPointAccountMutation {
+	m := &UserPointAccountMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeUserPointAccount,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withUserPointAccountID sets the ID field of the mutation.
+func withUserPointAccountID(id int) userpointaccountOption {
+	return func(m *UserPointAccountMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *UserPointAccount
+		)
+		m.oldValue = func(ctx context.Context) (*UserPointAccount, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().UserPointAccount.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withUserPointAccount sets the old UserPointAccount of the mutation.
+func withUserPointAccount(node *UserPointAccount) userpointaccountOption {
+	return func(m *UserPointAccountMutation) {
+		m.oldValue = func(context.Context) (*UserPointAccount, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m UserPointAccountMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m UserPointAccountMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *UserPointAccountMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *UserPointAccountMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().UserPointAccount.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *UserPointAccountMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *UserPointAccountMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the UserPointAccount entity.
+// If the UserPointAccount object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointAccountMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *UserPointAccountMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *UserPointAccountMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *UserPointAccountMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the UserPointAccount entity.
+// If the UserPointAccount object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointAccountMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *UserPointAccountMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetUserID sets the "user_id" field.
+func (m *UserPointAccountMutation) SetUserID(i int) {
+	m.user_id = &i
+	m.adduser_id = nil
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *UserPointAccountMutation) UserID() (r int, exists bool) {
+	v := m.user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the UserPointAccount entity.
+// If the UserPointAccount object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointAccountMutation) OldUserID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// AddUserID adds i to the "user_id" field.
+func (m *UserPointAccountMutation) AddUserID(i int) {
+	if m.adduser_id != nil {
+		*m.adduser_id += i
+	} else {
+		m.adduser_id = &i
+	}
+}
+
+// AddedUserID returns the value that was added to the "user_id" field in this mutation.
+func (m *UserPointAccountMutation) AddedUserID() (r int, exists bool) {
+	v := m.adduser_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *UserPointAccountMutation) ResetUserID() {
+	m.user_id = nil
+	m.adduser_id = nil
+}
+
+// SetAvailablePoints sets the "available_points" field.
+func (m *UserPointAccountMutation) SetAvailablePoints(s string) {
+	m.available_points = &s
+}
+
+// AvailablePoints returns the value of the "available_points" field in the mutation.
+func (m *UserPointAccountMutation) AvailablePoints() (r string, exists bool) {
+	v := m.available_points
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAvailablePoints returns the old "available_points" field's value of the UserPointAccount entity.
+// If the UserPointAccount object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointAccountMutation) OldAvailablePoints(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAvailablePoints is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAvailablePoints requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAvailablePoints: %w", err)
+	}
+	return oldValue.AvailablePoints, nil
+}
+
+// ResetAvailablePoints resets all changes to the "available_points" field.
+func (m *UserPointAccountMutation) ResetAvailablePoints() {
+	m.available_points = nil
+}
+
+// SetPendingPoints sets the "pending_points" field.
+func (m *UserPointAccountMutation) SetPendingPoints(s string) {
+	m.pending_points = &s
+}
+
+// PendingPoints returns the value of the "pending_points" field in the mutation.
+func (m *UserPointAccountMutation) PendingPoints() (r string, exists bool) {
+	v := m.pending_points
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPendingPoints returns the old "pending_points" field's value of the UserPointAccount entity.
+// If the UserPointAccount object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointAccountMutation) OldPendingPoints(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPendingPoints is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPendingPoints requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPendingPoints: %w", err)
+	}
+	return oldValue.PendingPoints, nil
+}
+
+// ResetPendingPoints resets all changes to the "pending_points" field.
+func (m *UserPointAccountMutation) ResetPendingPoints() {
+	m.pending_points = nil
+}
+
+// SetFrozenPoints sets the "frozen_points" field.
+func (m *UserPointAccountMutation) SetFrozenPoints(s string) {
+	m.frozen_points = &s
+}
+
+// FrozenPoints returns the value of the "frozen_points" field in the mutation.
+func (m *UserPointAccountMutation) FrozenPoints() (r string, exists bool) {
+	v := m.frozen_points
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFrozenPoints returns the old "frozen_points" field's value of the UserPointAccount entity.
+// If the UserPointAccount object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointAccountMutation) OldFrozenPoints(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFrozenPoints is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFrozenPoints requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFrozenPoints: %w", err)
+	}
+	return oldValue.FrozenPoints, nil
+}
+
+// ResetFrozenPoints resets all changes to the "frozen_points" field.
+func (m *UserPointAccountMutation) ResetFrozenPoints() {
+	m.frozen_points = nil
+}
+
+// SetLifetimeEarned sets the "lifetime_earned" field.
+func (m *UserPointAccountMutation) SetLifetimeEarned(s string) {
+	m.lifetime_earned = &s
+}
+
+// LifetimeEarned returns the value of the "lifetime_earned" field in the mutation.
+func (m *UserPointAccountMutation) LifetimeEarned() (r string, exists bool) {
+	v := m.lifetime_earned
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLifetimeEarned returns the old "lifetime_earned" field's value of the UserPointAccount entity.
+// If the UserPointAccount object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointAccountMutation) OldLifetimeEarned(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLifetimeEarned is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLifetimeEarned requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLifetimeEarned: %w", err)
+	}
+	return oldValue.LifetimeEarned, nil
+}
+
+// ResetLifetimeEarned resets all changes to the "lifetime_earned" field.
+func (m *UserPointAccountMutation) ResetLifetimeEarned() {
+	m.lifetime_earned = nil
+}
+
+// SetLifetimeSpent sets the "lifetime_spent" field.
+func (m *UserPointAccountMutation) SetLifetimeSpent(s string) {
+	m.lifetime_spent = &s
+}
+
+// LifetimeSpent returns the value of the "lifetime_spent" field in the mutation.
+func (m *UserPointAccountMutation) LifetimeSpent() (r string, exists bool) {
+	v := m.lifetime_spent
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLifetimeSpent returns the old "lifetime_spent" field's value of the UserPointAccount entity.
+// If the UserPointAccount object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointAccountMutation) OldLifetimeSpent(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLifetimeSpent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLifetimeSpent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLifetimeSpent: %w", err)
+	}
+	return oldValue.LifetimeSpent, nil
+}
+
+// ResetLifetimeSpent resets all changes to the "lifetime_spent" field.
+func (m *UserPointAccountMutation) ResetLifetimeSpent() {
+	m.lifetime_spent = nil
+}
+
+// SetVersion sets the "version" field.
+func (m *UserPointAccountMutation) SetVersion(i int64) {
+	m.version = &i
+	m.addversion = nil
+}
+
+// Version returns the value of the "version" field in the mutation.
+func (m *UserPointAccountMutation) Version() (r int64, exists bool) {
+	v := m.version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVersion returns the old "version" field's value of the UserPointAccount entity.
+// If the UserPointAccount object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointAccountMutation) OldVersion(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVersion: %w", err)
+	}
+	return oldValue.Version, nil
+}
+
+// AddVersion adds i to the "version" field.
+func (m *UserPointAccountMutation) AddVersion(i int64) {
+	if m.addversion != nil {
+		*m.addversion += i
+	} else {
+		m.addversion = &i
+	}
+}
+
+// AddedVersion returns the value that was added to the "version" field in this mutation.
+func (m *UserPointAccountMutation) AddedVersion() (r int64, exists bool) {
+	v := m.addversion
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetVersion resets all changes to the "version" field.
+func (m *UserPointAccountMutation) ResetVersion() {
+	m.version = nil
+	m.addversion = nil
+}
+
+// Where appends a list predicates to the UserPointAccountMutation builder.
+func (m *UserPointAccountMutation) Where(ps ...predicate.UserPointAccount) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the UserPointAccountMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *UserPointAccountMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.UserPointAccount, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *UserPointAccountMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *UserPointAccountMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (UserPointAccount).
+func (m *UserPointAccountMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *UserPointAccountMutation) Fields() []string {
+	fields := make([]string, 0, 9)
+	if m.created_at != nil {
+		fields = append(fields, userpointaccount.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, userpointaccount.FieldUpdatedAt)
+	}
+	if m.user_id != nil {
+		fields = append(fields, userpointaccount.FieldUserID)
+	}
+	if m.available_points != nil {
+		fields = append(fields, userpointaccount.FieldAvailablePoints)
+	}
+	if m.pending_points != nil {
+		fields = append(fields, userpointaccount.FieldPendingPoints)
+	}
+	if m.frozen_points != nil {
+		fields = append(fields, userpointaccount.FieldFrozenPoints)
+	}
+	if m.lifetime_earned != nil {
+		fields = append(fields, userpointaccount.FieldLifetimeEarned)
+	}
+	if m.lifetime_spent != nil {
+		fields = append(fields, userpointaccount.FieldLifetimeSpent)
+	}
+	if m.version != nil {
+		fields = append(fields, userpointaccount.FieldVersion)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *UserPointAccountMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case userpointaccount.FieldCreatedAt:
+		return m.CreatedAt()
+	case userpointaccount.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case userpointaccount.FieldUserID:
+		return m.UserID()
+	case userpointaccount.FieldAvailablePoints:
+		return m.AvailablePoints()
+	case userpointaccount.FieldPendingPoints:
+		return m.PendingPoints()
+	case userpointaccount.FieldFrozenPoints:
+		return m.FrozenPoints()
+	case userpointaccount.FieldLifetimeEarned:
+		return m.LifetimeEarned()
+	case userpointaccount.FieldLifetimeSpent:
+		return m.LifetimeSpent()
+	case userpointaccount.FieldVersion:
+		return m.Version()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *UserPointAccountMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case userpointaccount.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case userpointaccount.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case userpointaccount.FieldUserID:
+		return m.OldUserID(ctx)
+	case userpointaccount.FieldAvailablePoints:
+		return m.OldAvailablePoints(ctx)
+	case userpointaccount.FieldPendingPoints:
+		return m.OldPendingPoints(ctx)
+	case userpointaccount.FieldFrozenPoints:
+		return m.OldFrozenPoints(ctx)
+	case userpointaccount.FieldLifetimeEarned:
+		return m.OldLifetimeEarned(ctx)
+	case userpointaccount.FieldLifetimeSpent:
+		return m.OldLifetimeSpent(ctx)
+	case userpointaccount.FieldVersion:
+		return m.OldVersion(ctx)
+	}
+	return nil, fmt.Errorf("unknown UserPointAccount field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *UserPointAccountMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case userpointaccount.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case userpointaccount.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case userpointaccount.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case userpointaccount.FieldAvailablePoints:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAvailablePoints(v)
+		return nil
+	case userpointaccount.FieldPendingPoints:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPendingPoints(v)
+		return nil
+	case userpointaccount.FieldFrozenPoints:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFrozenPoints(v)
+		return nil
+	case userpointaccount.FieldLifetimeEarned:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLifetimeEarned(v)
+		return nil
+	case userpointaccount.FieldLifetimeSpent:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLifetimeSpent(v)
+		return nil
+	case userpointaccount.FieldVersion:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVersion(v)
+		return nil
+	}
+	return fmt.Errorf("unknown UserPointAccount field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *UserPointAccountMutation) AddedFields() []string {
+	var fields []string
+	if m.adduser_id != nil {
+		fields = append(fields, userpointaccount.FieldUserID)
+	}
+	if m.addversion != nil {
+		fields = append(fields, userpointaccount.FieldVersion)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *UserPointAccountMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case userpointaccount.FieldUserID:
+		return m.AddedUserID()
+	case userpointaccount.FieldVersion:
+		return m.AddedVersion()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *UserPointAccountMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case userpointaccount.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUserID(v)
+		return nil
+	case userpointaccount.FieldVersion:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddVersion(v)
+		return nil
+	}
+	return fmt.Errorf("unknown UserPointAccount numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *UserPointAccountMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *UserPointAccountMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *UserPointAccountMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown UserPointAccount nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *UserPointAccountMutation) ResetField(name string) error {
+	switch name {
+	case userpointaccount.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case userpointaccount.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case userpointaccount.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case userpointaccount.FieldAvailablePoints:
+		m.ResetAvailablePoints()
+		return nil
+	case userpointaccount.FieldPendingPoints:
+		m.ResetPendingPoints()
+		return nil
+	case userpointaccount.FieldFrozenPoints:
+		m.ResetFrozenPoints()
+		return nil
+	case userpointaccount.FieldLifetimeEarned:
+		m.ResetLifetimeEarned()
+		return nil
+	case userpointaccount.FieldLifetimeSpent:
+		m.ResetLifetimeSpent()
+		return nil
+	case userpointaccount.FieldVersion:
+		m.ResetVersion()
+		return nil
+	}
+	return fmt.Errorf("unknown UserPointAccount field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *UserPointAccountMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *UserPointAccountMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *UserPointAccountMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *UserPointAccountMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *UserPointAccountMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *UserPointAccountMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *UserPointAccountMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown UserPointAccount unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *UserPointAccountMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown UserPointAccount edge %s", name)
+}
+
+// UserPointLedgerEntryMutation represents an operation that mutates the UserPointLedgerEntry nodes in the graph.
+type UserPointLedgerEntryMutation struct {
+	config
+	op                       Op
+	typ                      string
+	id                       *int
+	created_at               *time.Time
+	updated_at               *time.Time
+	user_id                  *int
+	adduser_id               *int
+	direction                *userpointledgerentry.Direction
+	scene                    *userpointledgerentry.Scene
+	points                   *string
+	balance_before           *string
+	balance_after            *string
+	idempotency_key          *string
+	related_channel_id       *int
+	addrelated_channel_id    *int
+	related_request_id       *int
+	addrelated_request_id    *int
+	related_usage_log_id     *int
+	addrelated_usage_log_id  *int
+	related_api_key_id       *int
+	addrelated_api_key_id    *int
+	related_project_id       *int
+	addrelated_project_id    *int
+	conversion_rate_snapshot *string
+	settlement_status        *userpointledgerentry.SettlementStatus
+	remark                   *string
+	clearedFields            map[string]struct{}
+	done                     bool
+	oldValue                 func(context.Context) (*UserPointLedgerEntry, error)
+	predicates               []predicate.UserPointLedgerEntry
+}
+
+var _ ent.Mutation = (*UserPointLedgerEntryMutation)(nil)
+
+// userpointledgerentryOption allows management of the mutation configuration using functional options.
+type userpointledgerentryOption func(*UserPointLedgerEntryMutation)
+
+// newUserPointLedgerEntryMutation creates new mutation for the UserPointLedgerEntry entity.
+func newUserPointLedgerEntryMutation(c config, op Op, opts ...userpointledgerentryOption) *UserPointLedgerEntryMutation {
+	m := &UserPointLedgerEntryMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeUserPointLedgerEntry,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withUserPointLedgerEntryID sets the ID field of the mutation.
+func withUserPointLedgerEntryID(id int) userpointledgerentryOption {
+	return func(m *UserPointLedgerEntryMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *UserPointLedgerEntry
+		)
+		m.oldValue = func(ctx context.Context) (*UserPointLedgerEntry, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().UserPointLedgerEntry.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withUserPointLedgerEntry sets the old UserPointLedgerEntry of the mutation.
+func withUserPointLedgerEntry(node *UserPointLedgerEntry) userpointledgerentryOption {
+	return func(m *UserPointLedgerEntryMutation) {
+		m.oldValue = func(context.Context) (*UserPointLedgerEntry, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m UserPointLedgerEntryMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m UserPointLedgerEntryMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *UserPointLedgerEntryMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *UserPointLedgerEntryMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().UserPointLedgerEntry.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *UserPointLedgerEntryMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *UserPointLedgerEntryMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the UserPointLedgerEntry entity.
+// If the UserPointLedgerEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointLedgerEntryMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *UserPointLedgerEntryMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *UserPointLedgerEntryMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *UserPointLedgerEntryMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the UserPointLedgerEntry entity.
+// If the UserPointLedgerEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointLedgerEntryMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *UserPointLedgerEntryMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetUserID sets the "user_id" field.
+func (m *UserPointLedgerEntryMutation) SetUserID(i int) {
+	m.user_id = &i
+	m.adduser_id = nil
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *UserPointLedgerEntryMutation) UserID() (r int, exists bool) {
+	v := m.user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the UserPointLedgerEntry entity.
+// If the UserPointLedgerEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointLedgerEntryMutation) OldUserID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// AddUserID adds i to the "user_id" field.
+func (m *UserPointLedgerEntryMutation) AddUserID(i int) {
+	if m.adduser_id != nil {
+		*m.adduser_id += i
+	} else {
+		m.adduser_id = &i
+	}
+}
+
+// AddedUserID returns the value that was added to the "user_id" field in this mutation.
+func (m *UserPointLedgerEntryMutation) AddedUserID() (r int, exists bool) {
+	v := m.adduser_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *UserPointLedgerEntryMutation) ResetUserID() {
+	m.user_id = nil
+	m.adduser_id = nil
+}
+
+// SetDirection sets the "direction" field.
+func (m *UserPointLedgerEntryMutation) SetDirection(u userpointledgerentry.Direction) {
+	m.direction = &u
+}
+
+// Direction returns the value of the "direction" field in the mutation.
+func (m *UserPointLedgerEntryMutation) Direction() (r userpointledgerentry.Direction, exists bool) {
+	v := m.direction
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDirection returns the old "direction" field's value of the UserPointLedgerEntry entity.
+// If the UserPointLedgerEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointLedgerEntryMutation) OldDirection(ctx context.Context) (v userpointledgerentry.Direction, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDirection is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDirection requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDirection: %w", err)
+	}
+	return oldValue.Direction, nil
+}
+
+// ResetDirection resets all changes to the "direction" field.
+func (m *UserPointLedgerEntryMutation) ResetDirection() {
+	m.direction = nil
+}
+
+// SetScene sets the "scene" field.
+func (m *UserPointLedgerEntryMutation) SetScene(u userpointledgerentry.Scene) {
+	m.scene = &u
+}
+
+// Scene returns the value of the "scene" field in the mutation.
+func (m *UserPointLedgerEntryMutation) Scene() (r userpointledgerentry.Scene, exists bool) {
+	v := m.scene
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScene returns the old "scene" field's value of the UserPointLedgerEntry entity.
+// If the UserPointLedgerEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointLedgerEntryMutation) OldScene(ctx context.Context) (v userpointledgerentry.Scene, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScene is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScene requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScene: %w", err)
+	}
+	return oldValue.Scene, nil
+}
+
+// ResetScene resets all changes to the "scene" field.
+func (m *UserPointLedgerEntryMutation) ResetScene() {
+	m.scene = nil
+}
+
+// SetPoints sets the "points" field.
+func (m *UserPointLedgerEntryMutation) SetPoints(s string) {
+	m.points = &s
+}
+
+// Points returns the value of the "points" field in the mutation.
+func (m *UserPointLedgerEntryMutation) Points() (r string, exists bool) {
+	v := m.points
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPoints returns the old "points" field's value of the UserPointLedgerEntry entity.
+// If the UserPointLedgerEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointLedgerEntryMutation) OldPoints(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPoints is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPoints requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPoints: %w", err)
+	}
+	return oldValue.Points, nil
+}
+
+// ResetPoints resets all changes to the "points" field.
+func (m *UserPointLedgerEntryMutation) ResetPoints() {
+	m.points = nil
+}
+
+// SetBalanceBefore sets the "balance_before" field.
+func (m *UserPointLedgerEntryMutation) SetBalanceBefore(s string) {
+	m.balance_before = &s
+}
+
+// BalanceBefore returns the value of the "balance_before" field in the mutation.
+func (m *UserPointLedgerEntryMutation) BalanceBefore() (r string, exists bool) {
+	v := m.balance_before
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBalanceBefore returns the old "balance_before" field's value of the UserPointLedgerEntry entity.
+// If the UserPointLedgerEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointLedgerEntryMutation) OldBalanceBefore(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBalanceBefore is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBalanceBefore requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBalanceBefore: %w", err)
+	}
+	return oldValue.BalanceBefore, nil
+}
+
+// ResetBalanceBefore resets all changes to the "balance_before" field.
+func (m *UserPointLedgerEntryMutation) ResetBalanceBefore() {
+	m.balance_before = nil
+}
+
+// SetBalanceAfter sets the "balance_after" field.
+func (m *UserPointLedgerEntryMutation) SetBalanceAfter(s string) {
+	m.balance_after = &s
+}
+
+// BalanceAfter returns the value of the "balance_after" field in the mutation.
+func (m *UserPointLedgerEntryMutation) BalanceAfter() (r string, exists bool) {
+	v := m.balance_after
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBalanceAfter returns the old "balance_after" field's value of the UserPointLedgerEntry entity.
+// If the UserPointLedgerEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointLedgerEntryMutation) OldBalanceAfter(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBalanceAfter is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBalanceAfter requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBalanceAfter: %w", err)
+	}
+	return oldValue.BalanceAfter, nil
+}
+
+// ResetBalanceAfter resets all changes to the "balance_after" field.
+func (m *UserPointLedgerEntryMutation) ResetBalanceAfter() {
+	m.balance_after = nil
+}
+
+// SetIdempotencyKey sets the "idempotency_key" field.
+func (m *UserPointLedgerEntryMutation) SetIdempotencyKey(s string) {
+	m.idempotency_key = &s
+}
+
+// IdempotencyKey returns the value of the "idempotency_key" field in the mutation.
+func (m *UserPointLedgerEntryMutation) IdempotencyKey() (r string, exists bool) {
+	v := m.idempotency_key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIdempotencyKey returns the old "idempotency_key" field's value of the UserPointLedgerEntry entity.
+// If the UserPointLedgerEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointLedgerEntryMutation) OldIdempotencyKey(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIdempotencyKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIdempotencyKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIdempotencyKey: %w", err)
+	}
+	return oldValue.IdempotencyKey, nil
+}
+
+// ResetIdempotencyKey resets all changes to the "idempotency_key" field.
+func (m *UserPointLedgerEntryMutation) ResetIdempotencyKey() {
+	m.idempotency_key = nil
+}
+
+// SetRelatedChannelID sets the "related_channel_id" field.
+func (m *UserPointLedgerEntryMutation) SetRelatedChannelID(i int) {
+	m.related_channel_id = &i
+	m.addrelated_channel_id = nil
+}
+
+// RelatedChannelID returns the value of the "related_channel_id" field in the mutation.
+func (m *UserPointLedgerEntryMutation) RelatedChannelID() (r int, exists bool) {
+	v := m.related_channel_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRelatedChannelID returns the old "related_channel_id" field's value of the UserPointLedgerEntry entity.
+// If the UserPointLedgerEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointLedgerEntryMutation) OldRelatedChannelID(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRelatedChannelID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRelatedChannelID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRelatedChannelID: %w", err)
+	}
+	return oldValue.RelatedChannelID, nil
+}
+
+// AddRelatedChannelID adds i to the "related_channel_id" field.
+func (m *UserPointLedgerEntryMutation) AddRelatedChannelID(i int) {
+	if m.addrelated_channel_id != nil {
+		*m.addrelated_channel_id += i
+	} else {
+		m.addrelated_channel_id = &i
+	}
+}
+
+// AddedRelatedChannelID returns the value that was added to the "related_channel_id" field in this mutation.
+func (m *UserPointLedgerEntryMutation) AddedRelatedChannelID() (r int, exists bool) {
+	v := m.addrelated_channel_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearRelatedChannelID clears the value of the "related_channel_id" field.
+func (m *UserPointLedgerEntryMutation) ClearRelatedChannelID() {
+	m.related_channel_id = nil
+	m.addrelated_channel_id = nil
+	m.clearedFields[userpointledgerentry.FieldRelatedChannelID] = struct{}{}
+}
+
+// RelatedChannelIDCleared returns if the "related_channel_id" field was cleared in this mutation.
+func (m *UserPointLedgerEntryMutation) RelatedChannelIDCleared() bool {
+	_, ok := m.clearedFields[userpointledgerentry.FieldRelatedChannelID]
+	return ok
+}
+
+// ResetRelatedChannelID resets all changes to the "related_channel_id" field.
+func (m *UserPointLedgerEntryMutation) ResetRelatedChannelID() {
+	m.related_channel_id = nil
+	m.addrelated_channel_id = nil
+	delete(m.clearedFields, userpointledgerentry.FieldRelatedChannelID)
+}
+
+// SetRelatedRequestID sets the "related_request_id" field.
+func (m *UserPointLedgerEntryMutation) SetRelatedRequestID(i int) {
+	m.related_request_id = &i
+	m.addrelated_request_id = nil
+}
+
+// RelatedRequestID returns the value of the "related_request_id" field in the mutation.
+func (m *UserPointLedgerEntryMutation) RelatedRequestID() (r int, exists bool) {
+	v := m.related_request_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRelatedRequestID returns the old "related_request_id" field's value of the UserPointLedgerEntry entity.
+// If the UserPointLedgerEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointLedgerEntryMutation) OldRelatedRequestID(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRelatedRequestID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRelatedRequestID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRelatedRequestID: %w", err)
+	}
+	return oldValue.RelatedRequestID, nil
+}
+
+// AddRelatedRequestID adds i to the "related_request_id" field.
+func (m *UserPointLedgerEntryMutation) AddRelatedRequestID(i int) {
+	if m.addrelated_request_id != nil {
+		*m.addrelated_request_id += i
+	} else {
+		m.addrelated_request_id = &i
+	}
+}
+
+// AddedRelatedRequestID returns the value that was added to the "related_request_id" field in this mutation.
+func (m *UserPointLedgerEntryMutation) AddedRelatedRequestID() (r int, exists bool) {
+	v := m.addrelated_request_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearRelatedRequestID clears the value of the "related_request_id" field.
+func (m *UserPointLedgerEntryMutation) ClearRelatedRequestID() {
+	m.related_request_id = nil
+	m.addrelated_request_id = nil
+	m.clearedFields[userpointledgerentry.FieldRelatedRequestID] = struct{}{}
+}
+
+// RelatedRequestIDCleared returns if the "related_request_id" field was cleared in this mutation.
+func (m *UserPointLedgerEntryMutation) RelatedRequestIDCleared() bool {
+	_, ok := m.clearedFields[userpointledgerentry.FieldRelatedRequestID]
+	return ok
+}
+
+// ResetRelatedRequestID resets all changes to the "related_request_id" field.
+func (m *UserPointLedgerEntryMutation) ResetRelatedRequestID() {
+	m.related_request_id = nil
+	m.addrelated_request_id = nil
+	delete(m.clearedFields, userpointledgerentry.FieldRelatedRequestID)
+}
+
+// SetRelatedUsageLogID sets the "related_usage_log_id" field.
+func (m *UserPointLedgerEntryMutation) SetRelatedUsageLogID(i int) {
+	m.related_usage_log_id = &i
+	m.addrelated_usage_log_id = nil
+}
+
+// RelatedUsageLogID returns the value of the "related_usage_log_id" field in the mutation.
+func (m *UserPointLedgerEntryMutation) RelatedUsageLogID() (r int, exists bool) {
+	v := m.related_usage_log_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRelatedUsageLogID returns the old "related_usage_log_id" field's value of the UserPointLedgerEntry entity.
+// If the UserPointLedgerEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointLedgerEntryMutation) OldRelatedUsageLogID(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRelatedUsageLogID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRelatedUsageLogID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRelatedUsageLogID: %w", err)
+	}
+	return oldValue.RelatedUsageLogID, nil
+}
+
+// AddRelatedUsageLogID adds i to the "related_usage_log_id" field.
+func (m *UserPointLedgerEntryMutation) AddRelatedUsageLogID(i int) {
+	if m.addrelated_usage_log_id != nil {
+		*m.addrelated_usage_log_id += i
+	} else {
+		m.addrelated_usage_log_id = &i
+	}
+}
+
+// AddedRelatedUsageLogID returns the value that was added to the "related_usage_log_id" field in this mutation.
+func (m *UserPointLedgerEntryMutation) AddedRelatedUsageLogID() (r int, exists bool) {
+	v := m.addrelated_usage_log_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearRelatedUsageLogID clears the value of the "related_usage_log_id" field.
+func (m *UserPointLedgerEntryMutation) ClearRelatedUsageLogID() {
+	m.related_usage_log_id = nil
+	m.addrelated_usage_log_id = nil
+	m.clearedFields[userpointledgerentry.FieldRelatedUsageLogID] = struct{}{}
+}
+
+// RelatedUsageLogIDCleared returns if the "related_usage_log_id" field was cleared in this mutation.
+func (m *UserPointLedgerEntryMutation) RelatedUsageLogIDCleared() bool {
+	_, ok := m.clearedFields[userpointledgerentry.FieldRelatedUsageLogID]
+	return ok
+}
+
+// ResetRelatedUsageLogID resets all changes to the "related_usage_log_id" field.
+func (m *UserPointLedgerEntryMutation) ResetRelatedUsageLogID() {
+	m.related_usage_log_id = nil
+	m.addrelated_usage_log_id = nil
+	delete(m.clearedFields, userpointledgerentry.FieldRelatedUsageLogID)
+}
+
+// SetRelatedAPIKeyID sets the "related_api_key_id" field.
+func (m *UserPointLedgerEntryMutation) SetRelatedAPIKeyID(i int) {
+	m.related_api_key_id = &i
+	m.addrelated_api_key_id = nil
+}
+
+// RelatedAPIKeyID returns the value of the "related_api_key_id" field in the mutation.
+func (m *UserPointLedgerEntryMutation) RelatedAPIKeyID() (r int, exists bool) {
+	v := m.related_api_key_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRelatedAPIKeyID returns the old "related_api_key_id" field's value of the UserPointLedgerEntry entity.
+// If the UserPointLedgerEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointLedgerEntryMutation) OldRelatedAPIKeyID(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRelatedAPIKeyID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRelatedAPIKeyID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRelatedAPIKeyID: %w", err)
+	}
+	return oldValue.RelatedAPIKeyID, nil
+}
+
+// AddRelatedAPIKeyID adds i to the "related_api_key_id" field.
+func (m *UserPointLedgerEntryMutation) AddRelatedAPIKeyID(i int) {
+	if m.addrelated_api_key_id != nil {
+		*m.addrelated_api_key_id += i
+	} else {
+		m.addrelated_api_key_id = &i
+	}
+}
+
+// AddedRelatedAPIKeyID returns the value that was added to the "related_api_key_id" field in this mutation.
+func (m *UserPointLedgerEntryMutation) AddedRelatedAPIKeyID() (r int, exists bool) {
+	v := m.addrelated_api_key_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearRelatedAPIKeyID clears the value of the "related_api_key_id" field.
+func (m *UserPointLedgerEntryMutation) ClearRelatedAPIKeyID() {
+	m.related_api_key_id = nil
+	m.addrelated_api_key_id = nil
+	m.clearedFields[userpointledgerentry.FieldRelatedAPIKeyID] = struct{}{}
+}
+
+// RelatedAPIKeyIDCleared returns if the "related_api_key_id" field was cleared in this mutation.
+func (m *UserPointLedgerEntryMutation) RelatedAPIKeyIDCleared() bool {
+	_, ok := m.clearedFields[userpointledgerentry.FieldRelatedAPIKeyID]
+	return ok
+}
+
+// ResetRelatedAPIKeyID resets all changes to the "related_api_key_id" field.
+func (m *UserPointLedgerEntryMutation) ResetRelatedAPIKeyID() {
+	m.related_api_key_id = nil
+	m.addrelated_api_key_id = nil
+	delete(m.clearedFields, userpointledgerentry.FieldRelatedAPIKeyID)
+}
+
+// SetRelatedProjectID sets the "related_project_id" field.
+func (m *UserPointLedgerEntryMutation) SetRelatedProjectID(i int) {
+	m.related_project_id = &i
+	m.addrelated_project_id = nil
+}
+
+// RelatedProjectID returns the value of the "related_project_id" field in the mutation.
+func (m *UserPointLedgerEntryMutation) RelatedProjectID() (r int, exists bool) {
+	v := m.related_project_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRelatedProjectID returns the old "related_project_id" field's value of the UserPointLedgerEntry entity.
+// If the UserPointLedgerEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointLedgerEntryMutation) OldRelatedProjectID(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRelatedProjectID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRelatedProjectID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRelatedProjectID: %w", err)
+	}
+	return oldValue.RelatedProjectID, nil
+}
+
+// AddRelatedProjectID adds i to the "related_project_id" field.
+func (m *UserPointLedgerEntryMutation) AddRelatedProjectID(i int) {
+	if m.addrelated_project_id != nil {
+		*m.addrelated_project_id += i
+	} else {
+		m.addrelated_project_id = &i
+	}
+}
+
+// AddedRelatedProjectID returns the value that was added to the "related_project_id" field in this mutation.
+func (m *UserPointLedgerEntryMutation) AddedRelatedProjectID() (r int, exists bool) {
+	v := m.addrelated_project_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearRelatedProjectID clears the value of the "related_project_id" field.
+func (m *UserPointLedgerEntryMutation) ClearRelatedProjectID() {
+	m.related_project_id = nil
+	m.addrelated_project_id = nil
+	m.clearedFields[userpointledgerentry.FieldRelatedProjectID] = struct{}{}
+}
+
+// RelatedProjectIDCleared returns if the "related_project_id" field was cleared in this mutation.
+func (m *UserPointLedgerEntryMutation) RelatedProjectIDCleared() bool {
+	_, ok := m.clearedFields[userpointledgerentry.FieldRelatedProjectID]
+	return ok
+}
+
+// ResetRelatedProjectID resets all changes to the "related_project_id" field.
+func (m *UserPointLedgerEntryMutation) ResetRelatedProjectID() {
+	m.related_project_id = nil
+	m.addrelated_project_id = nil
+	delete(m.clearedFields, userpointledgerentry.FieldRelatedProjectID)
+}
+
+// SetConversionRateSnapshot sets the "conversion_rate_snapshot" field.
+func (m *UserPointLedgerEntryMutation) SetConversionRateSnapshot(s string) {
+	m.conversion_rate_snapshot = &s
+}
+
+// ConversionRateSnapshot returns the value of the "conversion_rate_snapshot" field in the mutation.
+func (m *UserPointLedgerEntryMutation) ConversionRateSnapshot() (r string, exists bool) {
+	v := m.conversion_rate_snapshot
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConversionRateSnapshot returns the old "conversion_rate_snapshot" field's value of the UserPointLedgerEntry entity.
+// If the UserPointLedgerEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointLedgerEntryMutation) OldConversionRateSnapshot(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConversionRateSnapshot is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConversionRateSnapshot requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConversionRateSnapshot: %w", err)
+	}
+	return oldValue.ConversionRateSnapshot, nil
+}
+
+// ClearConversionRateSnapshot clears the value of the "conversion_rate_snapshot" field.
+func (m *UserPointLedgerEntryMutation) ClearConversionRateSnapshot() {
+	m.conversion_rate_snapshot = nil
+	m.clearedFields[userpointledgerentry.FieldConversionRateSnapshot] = struct{}{}
+}
+
+// ConversionRateSnapshotCleared returns if the "conversion_rate_snapshot" field was cleared in this mutation.
+func (m *UserPointLedgerEntryMutation) ConversionRateSnapshotCleared() bool {
+	_, ok := m.clearedFields[userpointledgerentry.FieldConversionRateSnapshot]
+	return ok
+}
+
+// ResetConversionRateSnapshot resets all changes to the "conversion_rate_snapshot" field.
+func (m *UserPointLedgerEntryMutation) ResetConversionRateSnapshot() {
+	m.conversion_rate_snapshot = nil
+	delete(m.clearedFields, userpointledgerentry.FieldConversionRateSnapshot)
+}
+
+// SetSettlementStatus sets the "settlement_status" field.
+func (m *UserPointLedgerEntryMutation) SetSettlementStatus(us userpointledgerentry.SettlementStatus) {
+	m.settlement_status = &us
+}
+
+// SettlementStatus returns the value of the "settlement_status" field in the mutation.
+func (m *UserPointLedgerEntryMutation) SettlementStatus() (r userpointledgerentry.SettlementStatus, exists bool) {
+	v := m.settlement_status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSettlementStatus returns the old "settlement_status" field's value of the UserPointLedgerEntry entity.
+// If the UserPointLedgerEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointLedgerEntryMutation) OldSettlementStatus(ctx context.Context) (v userpointledgerentry.SettlementStatus, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSettlementStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSettlementStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSettlementStatus: %w", err)
+	}
+	return oldValue.SettlementStatus, nil
+}
+
+// ResetSettlementStatus resets all changes to the "settlement_status" field.
+func (m *UserPointLedgerEntryMutation) ResetSettlementStatus() {
+	m.settlement_status = nil
+}
+
+// SetRemark sets the "remark" field.
+func (m *UserPointLedgerEntryMutation) SetRemark(s string) {
+	m.remark = &s
+}
+
+// Remark returns the value of the "remark" field in the mutation.
+func (m *UserPointLedgerEntryMutation) Remark() (r string, exists bool) {
+	v := m.remark
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRemark returns the old "remark" field's value of the UserPointLedgerEntry entity.
+// If the UserPointLedgerEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPointLedgerEntryMutation) OldRemark(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRemark is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRemark requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRemark: %w", err)
+	}
+	return oldValue.Remark, nil
+}
+
+// ClearRemark clears the value of the "remark" field.
+func (m *UserPointLedgerEntryMutation) ClearRemark() {
+	m.remark = nil
+	m.clearedFields[userpointledgerentry.FieldRemark] = struct{}{}
+}
+
+// RemarkCleared returns if the "remark" field was cleared in this mutation.
+func (m *UserPointLedgerEntryMutation) RemarkCleared() bool {
+	_, ok := m.clearedFields[userpointledgerentry.FieldRemark]
+	return ok
+}
+
+// ResetRemark resets all changes to the "remark" field.
+func (m *UserPointLedgerEntryMutation) ResetRemark() {
+	m.remark = nil
+	delete(m.clearedFields, userpointledgerentry.FieldRemark)
+}
+
+// Where appends a list predicates to the UserPointLedgerEntryMutation builder.
+func (m *UserPointLedgerEntryMutation) Where(ps ...predicate.UserPointLedgerEntry) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the UserPointLedgerEntryMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *UserPointLedgerEntryMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.UserPointLedgerEntry, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *UserPointLedgerEntryMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *UserPointLedgerEntryMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (UserPointLedgerEntry).
+func (m *UserPointLedgerEntryMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *UserPointLedgerEntryMutation) Fields() []string {
+	fields := make([]string, 0, 17)
+	if m.created_at != nil {
+		fields = append(fields, userpointledgerentry.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, userpointledgerentry.FieldUpdatedAt)
+	}
+	if m.user_id != nil {
+		fields = append(fields, userpointledgerentry.FieldUserID)
+	}
+	if m.direction != nil {
+		fields = append(fields, userpointledgerentry.FieldDirection)
+	}
+	if m.scene != nil {
+		fields = append(fields, userpointledgerentry.FieldScene)
+	}
+	if m.points != nil {
+		fields = append(fields, userpointledgerentry.FieldPoints)
+	}
+	if m.balance_before != nil {
+		fields = append(fields, userpointledgerentry.FieldBalanceBefore)
+	}
+	if m.balance_after != nil {
+		fields = append(fields, userpointledgerentry.FieldBalanceAfter)
+	}
+	if m.idempotency_key != nil {
+		fields = append(fields, userpointledgerentry.FieldIdempotencyKey)
+	}
+	if m.related_channel_id != nil {
+		fields = append(fields, userpointledgerentry.FieldRelatedChannelID)
+	}
+	if m.related_request_id != nil {
+		fields = append(fields, userpointledgerentry.FieldRelatedRequestID)
+	}
+	if m.related_usage_log_id != nil {
+		fields = append(fields, userpointledgerentry.FieldRelatedUsageLogID)
+	}
+	if m.related_api_key_id != nil {
+		fields = append(fields, userpointledgerentry.FieldRelatedAPIKeyID)
+	}
+	if m.related_project_id != nil {
+		fields = append(fields, userpointledgerentry.FieldRelatedProjectID)
+	}
+	if m.conversion_rate_snapshot != nil {
+		fields = append(fields, userpointledgerentry.FieldConversionRateSnapshot)
+	}
+	if m.settlement_status != nil {
+		fields = append(fields, userpointledgerentry.FieldSettlementStatus)
+	}
+	if m.remark != nil {
+		fields = append(fields, userpointledgerentry.FieldRemark)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *UserPointLedgerEntryMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case userpointledgerentry.FieldCreatedAt:
+		return m.CreatedAt()
+	case userpointledgerentry.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case userpointledgerentry.FieldUserID:
+		return m.UserID()
+	case userpointledgerentry.FieldDirection:
+		return m.Direction()
+	case userpointledgerentry.FieldScene:
+		return m.Scene()
+	case userpointledgerentry.FieldPoints:
+		return m.Points()
+	case userpointledgerentry.FieldBalanceBefore:
+		return m.BalanceBefore()
+	case userpointledgerentry.FieldBalanceAfter:
+		return m.BalanceAfter()
+	case userpointledgerentry.FieldIdempotencyKey:
+		return m.IdempotencyKey()
+	case userpointledgerentry.FieldRelatedChannelID:
+		return m.RelatedChannelID()
+	case userpointledgerentry.FieldRelatedRequestID:
+		return m.RelatedRequestID()
+	case userpointledgerentry.FieldRelatedUsageLogID:
+		return m.RelatedUsageLogID()
+	case userpointledgerentry.FieldRelatedAPIKeyID:
+		return m.RelatedAPIKeyID()
+	case userpointledgerentry.FieldRelatedProjectID:
+		return m.RelatedProjectID()
+	case userpointledgerentry.FieldConversionRateSnapshot:
+		return m.ConversionRateSnapshot()
+	case userpointledgerentry.FieldSettlementStatus:
+		return m.SettlementStatus()
+	case userpointledgerentry.FieldRemark:
+		return m.Remark()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *UserPointLedgerEntryMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case userpointledgerentry.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case userpointledgerentry.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case userpointledgerentry.FieldUserID:
+		return m.OldUserID(ctx)
+	case userpointledgerentry.FieldDirection:
+		return m.OldDirection(ctx)
+	case userpointledgerentry.FieldScene:
+		return m.OldScene(ctx)
+	case userpointledgerentry.FieldPoints:
+		return m.OldPoints(ctx)
+	case userpointledgerentry.FieldBalanceBefore:
+		return m.OldBalanceBefore(ctx)
+	case userpointledgerentry.FieldBalanceAfter:
+		return m.OldBalanceAfter(ctx)
+	case userpointledgerentry.FieldIdempotencyKey:
+		return m.OldIdempotencyKey(ctx)
+	case userpointledgerentry.FieldRelatedChannelID:
+		return m.OldRelatedChannelID(ctx)
+	case userpointledgerentry.FieldRelatedRequestID:
+		return m.OldRelatedRequestID(ctx)
+	case userpointledgerentry.FieldRelatedUsageLogID:
+		return m.OldRelatedUsageLogID(ctx)
+	case userpointledgerentry.FieldRelatedAPIKeyID:
+		return m.OldRelatedAPIKeyID(ctx)
+	case userpointledgerentry.FieldRelatedProjectID:
+		return m.OldRelatedProjectID(ctx)
+	case userpointledgerentry.FieldConversionRateSnapshot:
+		return m.OldConversionRateSnapshot(ctx)
+	case userpointledgerentry.FieldSettlementStatus:
+		return m.OldSettlementStatus(ctx)
+	case userpointledgerentry.FieldRemark:
+		return m.OldRemark(ctx)
+	}
+	return nil, fmt.Errorf("unknown UserPointLedgerEntry field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *UserPointLedgerEntryMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case userpointledgerentry.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case userpointledgerentry.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case userpointledgerentry.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case userpointledgerentry.FieldDirection:
+		v, ok := value.(userpointledgerentry.Direction)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDirection(v)
+		return nil
+	case userpointledgerentry.FieldScene:
+		v, ok := value.(userpointledgerentry.Scene)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScene(v)
+		return nil
+	case userpointledgerentry.FieldPoints:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPoints(v)
+		return nil
+	case userpointledgerentry.FieldBalanceBefore:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBalanceBefore(v)
+		return nil
+	case userpointledgerentry.FieldBalanceAfter:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBalanceAfter(v)
+		return nil
+	case userpointledgerentry.FieldIdempotencyKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIdempotencyKey(v)
+		return nil
+	case userpointledgerentry.FieldRelatedChannelID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRelatedChannelID(v)
+		return nil
+	case userpointledgerentry.FieldRelatedRequestID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRelatedRequestID(v)
+		return nil
+	case userpointledgerentry.FieldRelatedUsageLogID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRelatedUsageLogID(v)
+		return nil
+	case userpointledgerentry.FieldRelatedAPIKeyID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRelatedAPIKeyID(v)
+		return nil
+	case userpointledgerentry.FieldRelatedProjectID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRelatedProjectID(v)
+		return nil
+	case userpointledgerentry.FieldConversionRateSnapshot:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConversionRateSnapshot(v)
+		return nil
+	case userpointledgerentry.FieldSettlementStatus:
+		v, ok := value.(userpointledgerentry.SettlementStatus)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSettlementStatus(v)
+		return nil
+	case userpointledgerentry.FieldRemark:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRemark(v)
+		return nil
+	}
+	return fmt.Errorf("unknown UserPointLedgerEntry field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *UserPointLedgerEntryMutation) AddedFields() []string {
+	var fields []string
+	if m.adduser_id != nil {
+		fields = append(fields, userpointledgerentry.FieldUserID)
+	}
+	if m.addrelated_channel_id != nil {
+		fields = append(fields, userpointledgerentry.FieldRelatedChannelID)
+	}
+	if m.addrelated_request_id != nil {
+		fields = append(fields, userpointledgerentry.FieldRelatedRequestID)
+	}
+	if m.addrelated_usage_log_id != nil {
+		fields = append(fields, userpointledgerentry.FieldRelatedUsageLogID)
+	}
+	if m.addrelated_api_key_id != nil {
+		fields = append(fields, userpointledgerentry.FieldRelatedAPIKeyID)
+	}
+	if m.addrelated_project_id != nil {
+		fields = append(fields, userpointledgerentry.FieldRelatedProjectID)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *UserPointLedgerEntryMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case userpointledgerentry.FieldUserID:
+		return m.AddedUserID()
+	case userpointledgerentry.FieldRelatedChannelID:
+		return m.AddedRelatedChannelID()
+	case userpointledgerentry.FieldRelatedRequestID:
+		return m.AddedRelatedRequestID()
+	case userpointledgerentry.FieldRelatedUsageLogID:
+		return m.AddedRelatedUsageLogID()
+	case userpointledgerentry.FieldRelatedAPIKeyID:
+		return m.AddedRelatedAPIKeyID()
+	case userpointledgerentry.FieldRelatedProjectID:
+		return m.AddedRelatedProjectID()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *UserPointLedgerEntryMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case userpointledgerentry.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUserID(v)
+		return nil
+	case userpointledgerentry.FieldRelatedChannelID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRelatedChannelID(v)
+		return nil
+	case userpointledgerentry.FieldRelatedRequestID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRelatedRequestID(v)
+		return nil
+	case userpointledgerentry.FieldRelatedUsageLogID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRelatedUsageLogID(v)
+		return nil
+	case userpointledgerentry.FieldRelatedAPIKeyID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRelatedAPIKeyID(v)
+		return nil
+	case userpointledgerentry.FieldRelatedProjectID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRelatedProjectID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown UserPointLedgerEntry numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *UserPointLedgerEntryMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(userpointledgerentry.FieldRelatedChannelID) {
+		fields = append(fields, userpointledgerentry.FieldRelatedChannelID)
+	}
+	if m.FieldCleared(userpointledgerentry.FieldRelatedRequestID) {
+		fields = append(fields, userpointledgerentry.FieldRelatedRequestID)
+	}
+	if m.FieldCleared(userpointledgerentry.FieldRelatedUsageLogID) {
+		fields = append(fields, userpointledgerentry.FieldRelatedUsageLogID)
+	}
+	if m.FieldCleared(userpointledgerentry.FieldRelatedAPIKeyID) {
+		fields = append(fields, userpointledgerentry.FieldRelatedAPIKeyID)
+	}
+	if m.FieldCleared(userpointledgerentry.FieldRelatedProjectID) {
+		fields = append(fields, userpointledgerentry.FieldRelatedProjectID)
+	}
+	if m.FieldCleared(userpointledgerentry.FieldConversionRateSnapshot) {
+		fields = append(fields, userpointledgerentry.FieldConversionRateSnapshot)
+	}
+	if m.FieldCleared(userpointledgerentry.FieldRemark) {
+		fields = append(fields, userpointledgerentry.FieldRemark)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *UserPointLedgerEntryMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *UserPointLedgerEntryMutation) ClearField(name string) error {
+	switch name {
+	case userpointledgerentry.FieldRelatedChannelID:
+		m.ClearRelatedChannelID()
+		return nil
+	case userpointledgerentry.FieldRelatedRequestID:
+		m.ClearRelatedRequestID()
+		return nil
+	case userpointledgerentry.FieldRelatedUsageLogID:
+		m.ClearRelatedUsageLogID()
+		return nil
+	case userpointledgerentry.FieldRelatedAPIKeyID:
+		m.ClearRelatedAPIKeyID()
+		return nil
+	case userpointledgerentry.FieldRelatedProjectID:
+		m.ClearRelatedProjectID()
+		return nil
+	case userpointledgerentry.FieldConversionRateSnapshot:
+		m.ClearConversionRateSnapshot()
+		return nil
+	case userpointledgerentry.FieldRemark:
+		m.ClearRemark()
+		return nil
+	}
+	return fmt.Errorf("unknown UserPointLedgerEntry nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *UserPointLedgerEntryMutation) ResetField(name string) error {
+	switch name {
+	case userpointledgerentry.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case userpointledgerentry.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case userpointledgerentry.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case userpointledgerentry.FieldDirection:
+		m.ResetDirection()
+		return nil
+	case userpointledgerentry.FieldScene:
+		m.ResetScene()
+		return nil
+	case userpointledgerentry.FieldPoints:
+		m.ResetPoints()
+		return nil
+	case userpointledgerentry.FieldBalanceBefore:
+		m.ResetBalanceBefore()
+		return nil
+	case userpointledgerentry.FieldBalanceAfter:
+		m.ResetBalanceAfter()
+		return nil
+	case userpointledgerentry.FieldIdempotencyKey:
+		m.ResetIdempotencyKey()
+		return nil
+	case userpointledgerentry.FieldRelatedChannelID:
+		m.ResetRelatedChannelID()
+		return nil
+	case userpointledgerentry.FieldRelatedRequestID:
+		m.ResetRelatedRequestID()
+		return nil
+	case userpointledgerentry.FieldRelatedUsageLogID:
+		m.ResetRelatedUsageLogID()
+		return nil
+	case userpointledgerentry.FieldRelatedAPIKeyID:
+		m.ResetRelatedAPIKeyID()
+		return nil
+	case userpointledgerentry.FieldRelatedProjectID:
+		m.ResetRelatedProjectID()
+		return nil
+	case userpointledgerentry.FieldConversionRateSnapshot:
+		m.ResetConversionRateSnapshot()
+		return nil
+	case userpointledgerentry.FieldSettlementStatus:
+		m.ResetSettlementStatus()
+		return nil
+	case userpointledgerentry.FieldRemark:
+		m.ResetRemark()
+		return nil
+	}
+	return fmt.Errorf("unknown UserPointLedgerEntry field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *UserPointLedgerEntryMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *UserPointLedgerEntryMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *UserPointLedgerEntryMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *UserPointLedgerEntryMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *UserPointLedgerEntryMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *UserPointLedgerEntryMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *UserPointLedgerEntryMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown UserPointLedgerEntry unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *UserPointLedgerEntryMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown UserPointLedgerEntry edge %s", name)
 }
 
 // UserProjectMutation represents an operation that mutates the UserProject nodes in the graph.

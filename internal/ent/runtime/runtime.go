@@ -32,6 +32,8 @@ import (
 	"github.com/looplj/axonhub/internal/ent/trace"
 	"github.com/looplj/axonhub/internal/ent/usagelog"
 	"github.com/looplj/axonhub/internal/ent/user"
+	"github.com/looplj/axonhub/internal/ent/userpointaccount"
+	"github.com/looplj/axonhub/internal/ent/userpointledgerentry"
 	"github.com/looplj/axonhub/internal/ent/userproject"
 	"github.com/looplj/axonhub/internal/ent/userrole"
 	"github.com/looplj/axonhub/internal/objects"
@@ -1066,6 +1068,78 @@ func init() {
 	userDescScopes := userFields[8].Descriptor()
 	// user.DefaultScopes holds the default value on creation for the scopes field.
 	user.DefaultScopes = userDescScopes.Default.([]string)
+	userpointaccountMixin := schema.UserPointAccount{}.Mixin()
+	userpointaccount.Policy = privacy.NewPolicies(schema.UserPointAccount{})
+	userpointaccount.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := userpointaccount.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	userpointaccountMixinFields0 := userpointaccountMixin[0].Fields()
+	_ = userpointaccountMixinFields0
+	userpointaccountFields := schema.UserPointAccount{}.Fields()
+	_ = userpointaccountFields
+	// userpointaccountDescCreatedAt is the schema descriptor for created_at field.
+	userpointaccountDescCreatedAt := userpointaccountMixinFields0[0].Descriptor()
+	// userpointaccount.DefaultCreatedAt holds the default value on creation for the created_at field.
+	userpointaccount.DefaultCreatedAt = userpointaccountDescCreatedAt.Default.(func() time.Time)
+	// userpointaccountDescUpdatedAt is the schema descriptor for updated_at field.
+	userpointaccountDescUpdatedAt := userpointaccountMixinFields0[1].Descriptor()
+	// userpointaccount.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	userpointaccount.DefaultUpdatedAt = userpointaccountDescUpdatedAt.Default.(func() time.Time)
+	// userpointaccount.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	userpointaccount.UpdateDefaultUpdatedAt = userpointaccountDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// userpointaccountDescAvailablePoints is the schema descriptor for available_points field.
+	userpointaccountDescAvailablePoints := userpointaccountFields[1].Descriptor()
+	// userpointaccount.DefaultAvailablePoints holds the default value on creation for the available_points field.
+	userpointaccount.DefaultAvailablePoints = userpointaccountDescAvailablePoints.Default.(string)
+	// userpointaccountDescPendingPoints is the schema descriptor for pending_points field.
+	userpointaccountDescPendingPoints := userpointaccountFields[2].Descriptor()
+	// userpointaccount.DefaultPendingPoints holds the default value on creation for the pending_points field.
+	userpointaccount.DefaultPendingPoints = userpointaccountDescPendingPoints.Default.(string)
+	// userpointaccountDescFrozenPoints is the schema descriptor for frozen_points field.
+	userpointaccountDescFrozenPoints := userpointaccountFields[3].Descriptor()
+	// userpointaccount.DefaultFrozenPoints holds the default value on creation for the frozen_points field.
+	userpointaccount.DefaultFrozenPoints = userpointaccountDescFrozenPoints.Default.(string)
+	// userpointaccountDescLifetimeEarned is the schema descriptor for lifetime_earned field.
+	userpointaccountDescLifetimeEarned := userpointaccountFields[4].Descriptor()
+	// userpointaccount.DefaultLifetimeEarned holds the default value on creation for the lifetime_earned field.
+	userpointaccount.DefaultLifetimeEarned = userpointaccountDescLifetimeEarned.Default.(string)
+	// userpointaccountDescLifetimeSpent is the schema descriptor for lifetime_spent field.
+	userpointaccountDescLifetimeSpent := userpointaccountFields[5].Descriptor()
+	// userpointaccount.DefaultLifetimeSpent holds the default value on creation for the lifetime_spent field.
+	userpointaccount.DefaultLifetimeSpent = userpointaccountDescLifetimeSpent.Default.(string)
+	// userpointaccountDescVersion is the schema descriptor for version field.
+	userpointaccountDescVersion := userpointaccountFields[6].Descriptor()
+	// userpointaccount.DefaultVersion holds the default value on creation for the version field.
+	userpointaccount.DefaultVersion = userpointaccountDescVersion.Default.(int64)
+	userpointledgerentryMixin := schema.UserPointLedgerEntry{}.Mixin()
+	userpointledgerentry.Policy = privacy.NewPolicies(schema.UserPointLedgerEntry{})
+	userpointledgerentry.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := userpointledgerentry.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	userpointledgerentryMixinFields0 := userpointledgerentryMixin[0].Fields()
+	_ = userpointledgerentryMixinFields0
+	userpointledgerentryFields := schema.UserPointLedgerEntry{}.Fields()
+	_ = userpointledgerentryFields
+	// userpointledgerentryDescCreatedAt is the schema descriptor for created_at field.
+	userpointledgerentryDescCreatedAt := userpointledgerentryMixinFields0[0].Descriptor()
+	// userpointledgerentry.DefaultCreatedAt holds the default value on creation for the created_at field.
+	userpointledgerentry.DefaultCreatedAt = userpointledgerentryDescCreatedAt.Default.(func() time.Time)
+	// userpointledgerentryDescUpdatedAt is the schema descriptor for updated_at field.
+	userpointledgerentryDescUpdatedAt := userpointledgerentryMixinFields0[1].Descriptor()
+	// userpointledgerentry.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	userpointledgerentry.DefaultUpdatedAt = userpointledgerentryDescUpdatedAt.Default.(func() time.Time)
+	// userpointledgerentry.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	userpointledgerentry.UpdateDefaultUpdatedAt = userpointledgerentryDescUpdatedAt.UpdateDefault.(func() time.Time)
 	userprojectMixin := schema.UserProject{}.Mixin()
 	userproject.Policy = privacy.NewPolicies(schema.UserProject{})
 	userproject.Hooks[0] = func(next ent.Mutator) ent.Mutator {

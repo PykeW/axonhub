@@ -35,6 +35,8 @@ import (
 	"github.com/looplj/axonhub/internal/ent/trace"
 	"github.com/looplj/axonhub/internal/ent/usagelog"
 	"github.com/looplj/axonhub/internal/ent/user"
+	"github.com/looplj/axonhub/internal/ent/userpointaccount"
+	"github.com/looplj/axonhub/internal/ent/userpointledgerentry"
 	"github.com/looplj/axonhub/internal/ent/userproject"
 	"github.com/looplj/axonhub/internal/ent/userrole"
 )
@@ -797,6 +799,60 @@ func (f TraverseUser) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.UserQuery", q)
 }
 
+// The UserPointAccountFunc type is an adapter to allow the use of ordinary function as a Querier.
+type UserPointAccountFunc func(context.Context, *ent.UserPointAccountQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f UserPointAccountFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.UserPointAccountQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.UserPointAccountQuery", q)
+}
+
+// The TraverseUserPointAccount type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseUserPointAccount func(context.Context, *ent.UserPointAccountQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseUserPointAccount) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseUserPointAccount) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.UserPointAccountQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.UserPointAccountQuery", q)
+}
+
+// The UserPointLedgerEntryFunc type is an adapter to allow the use of ordinary function as a Querier.
+type UserPointLedgerEntryFunc func(context.Context, *ent.UserPointLedgerEntryQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f UserPointLedgerEntryFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.UserPointLedgerEntryQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.UserPointLedgerEntryQuery", q)
+}
+
+// The TraverseUserPointLedgerEntry type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseUserPointLedgerEntry func(context.Context, *ent.UserPointLedgerEntryQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseUserPointLedgerEntry) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseUserPointLedgerEntry) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.UserPointLedgerEntryQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.UserPointLedgerEntryQuery", q)
+}
+
 // The UserProjectFunc type is an adapter to allow the use of ordinary function as a Querier.
 type UserProjectFunc func(context.Context, *ent.UserProjectQuery) (ent.Value, error)
 
@@ -906,6 +962,10 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.UsageLogQuery, predicate.UsageLog, usagelog.OrderOption]{typ: ent.TypeUsageLog, tq: q}, nil
 	case *ent.UserQuery:
 		return &query[*ent.UserQuery, predicate.User, user.OrderOption]{typ: ent.TypeUser, tq: q}, nil
+	case *ent.UserPointAccountQuery:
+		return &query[*ent.UserPointAccountQuery, predicate.UserPointAccount, userpointaccount.OrderOption]{typ: ent.TypeUserPointAccount, tq: q}, nil
+	case *ent.UserPointLedgerEntryQuery:
+		return &query[*ent.UserPointLedgerEntryQuery, predicate.UserPointLedgerEntry, userpointledgerentry.OrderOption]{typ: ent.TypeUserPointLedgerEntry, tq: q}, nil
 	case *ent.UserProjectQuery:
 		return &query[*ent.UserProjectQuery, predicate.UserProject, userproject.OrderOption]{typ: ent.TypeUserProject, tq: q}, nil
 	case *ent.UserRoleQuery:

@@ -30,6 +30,8 @@ import (
 	"github.com/looplj/axonhub/internal/ent/trace"
 	"github.com/looplj/axonhub/internal/ent/usagelog"
 	"github.com/looplj/axonhub/internal/ent/user"
+	"github.com/looplj/axonhub/internal/ent/userpointaccount"
+	"github.com/looplj/axonhub/internal/ent/userpointledgerentry"
 	"github.com/looplj/axonhub/internal/ent/userproject"
 	"github.com/looplj/axonhub/internal/ent/userrole"
 
@@ -41,7 +43,7 @@ import (
 
 // schemaGraph holds a representation of ent/schema at runtime.
 var schemaGraph = func() *sqlgraph.Schema {
-	graph := &sqlgraph.Schema{Nodes: make([]*sqlgraph.Node, 28)}
+	graph := &sqlgraph.Schema{Nodes: make([]*sqlgraph.Node, 30)}
 	graph.Nodes[0] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   apikey.Table,
@@ -680,6 +682,58 @@ var schemaGraph = func() *sqlgraph.Schema {
 	}
 	graph.Nodes[26] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
+			Table:   userpointaccount.Table,
+			Columns: userpointaccount.Columns,
+			ID: &sqlgraph.FieldSpec{
+				Type:   field.TypeInt,
+				Column: userpointaccount.FieldID,
+			},
+		},
+		Type: "UserPointAccount",
+		Fields: map[string]*sqlgraph.FieldSpec{
+			userpointaccount.FieldCreatedAt:       {Type: field.TypeTime, Column: userpointaccount.FieldCreatedAt},
+			userpointaccount.FieldUpdatedAt:       {Type: field.TypeTime, Column: userpointaccount.FieldUpdatedAt},
+			userpointaccount.FieldUserID:          {Type: field.TypeInt, Column: userpointaccount.FieldUserID},
+			userpointaccount.FieldAvailablePoints: {Type: field.TypeString, Column: userpointaccount.FieldAvailablePoints},
+			userpointaccount.FieldPendingPoints:   {Type: field.TypeString, Column: userpointaccount.FieldPendingPoints},
+			userpointaccount.FieldFrozenPoints:    {Type: field.TypeString, Column: userpointaccount.FieldFrozenPoints},
+			userpointaccount.FieldLifetimeEarned:  {Type: field.TypeString, Column: userpointaccount.FieldLifetimeEarned},
+			userpointaccount.FieldLifetimeSpent:   {Type: field.TypeString, Column: userpointaccount.FieldLifetimeSpent},
+			userpointaccount.FieldVersion:         {Type: field.TypeInt64, Column: userpointaccount.FieldVersion},
+		},
+	}
+	graph.Nodes[27] = &sqlgraph.Node{
+		NodeSpec: sqlgraph.NodeSpec{
+			Table:   userpointledgerentry.Table,
+			Columns: userpointledgerentry.Columns,
+			ID: &sqlgraph.FieldSpec{
+				Type:   field.TypeInt,
+				Column: userpointledgerentry.FieldID,
+			},
+		},
+		Type: "UserPointLedgerEntry",
+		Fields: map[string]*sqlgraph.FieldSpec{
+			userpointledgerentry.FieldCreatedAt:              {Type: field.TypeTime, Column: userpointledgerentry.FieldCreatedAt},
+			userpointledgerentry.FieldUpdatedAt:              {Type: field.TypeTime, Column: userpointledgerentry.FieldUpdatedAt},
+			userpointledgerentry.FieldUserID:                 {Type: field.TypeInt, Column: userpointledgerentry.FieldUserID},
+			userpointledgerentry.FieldDirection:              {Type: field.TypeEnum, Column: userpointledgerentry.FieldDirection},
+			userpointledgerentry.FieldScene:                  {Type: field.TypeEnum, Column: userpointledgerentry.FieldScene},
+			userpointledgerentry.FieldPoints:                 {Type: field.TypeString, Column: userpointledgerentry.FieldPoints},
+			userpointledgerentry.FieldBalanceBefore:          {Type: field.TypeString, Column: userpointledgerentry.FieldBalanceBefore},
+			userpointledgerentry.FieldBalanceAfter:           {Type: field.TypeString, Column: userpointledgerentry.FieldBalanceAfter},
+			userpointledgerentry.FieldIdempotencyKey:         {Type: field.TypeString, Column: userpointledgerentry.FieldIdempotencyKey},
+			userpointledgerentry.FieldRelatedChannelID:       {Type: field.TypeInt, Column: userpointledgerentry.FieldRelatedChannelID},
+			userpointledgerentry.FieldRelatedRequestID:       {Type: field.TypeInt, Column: userpointledgerentry.FieldRelatedRequestID},
+			userpointledgerentry.FieldRelatedUsageLogID:      {Type: field.TypeInt, Column: userpointledgerentry.FieldRelatedUsageLogID},
+			userpointledgerentry.FieldRelatedAPIKeyID:        {Type: field.TypeInt, Column: userpointledgerentry.FieldRelatedAPIKeyID},
+			userpointledgerentry.FieldRelatedProjectID:       {Type: field.TypeInt, Column: userpointledgerentry.FieldRelatedProjectID},
+			userpointledgerentry.FieldConversionRateSnapshot: {Type: field.TypeString, Column: userpointledgerentry.FieldConversionRateSnapshot},
+			userpointledgerentry.FieldSettlementStatus:       {Type: field.TypeEnum, Column: userpointledgerentry.FieldSettlementStatus},
+			userpointledgerentry.FieldRemark:                 {Type: field.TypeString, Column: userpointledgerentry.FieldRemark},
+		},
+	}
+	graph.Nodes[28] = &sqlgraph.Node{
+		NodeSpec: sqlgraph.NodeSpec{
 			Table:   userproject.Table,
 			Columns: userproject.Columns,
 			ID: &sqlgraph.FieldSpec{
@@ -697,7 +751,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			userproject.FieldScopes:    {Type: field.TypeJSON, Column: userproject.FieldScopes},
 		},
 	}
-	graph.Nodes[27] = &sqlgraph.Node{
+	graph.Nodes[29] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   userrole.Table,
 			Columns: userrole.Columns,
@@ -5174,6 +5228,216 @@ func (f *UserFilter) WhereHasUserRolesWith(preds ...predicate.UserRole) {
 }
 
 // addPredicate implements the predicateAdder interface.
+func (_q *UserPointAccountQuery) addPredicate(pred func(s *sql.Selector)) {
+	_q.predicates = append(_q.predicates, pred)
+}
+
+// Filter returns a Filter implementation to apply filters on the UserPointAccountQuery builder.
+func (_q *UserPointAccountQuery) Filter() *UserPointAccountFilter {
+	return &UserPointAccountFilter{config: _q.config, predicateAdder: _q}
+}
+
+// addPredicate implements the predicateAdder interface.
+func (m *UserPointAccountMutation) addPredicate(pred func(s *sql.Selector)) {
+	m.predicates = append(m.predicates, pred)
+}
+
+// Filter returns an entql.Where implementation to apply filters on the UserPointAccountMutation builder.
+func (m *UserPointAccountMutation) Filter() *UserPointAccountFilter {
+	return &UserPointAccountFilter{config: m.config, predicateAdder: m}
+}
+
+// UserPointAccountFilter provides a generic filtering capability at runtime for UserPointAccountQuery.
+type UserPointAccountFilter struct {
+	predicateAdder
+	config
+}
+
+// Where applies the entql predicate on the query filter.
+func (f *UserPointAccountFilter) Where(p entql.P) {
+	f.addPredicate(func(s *sql.Selector) {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[26].Type, p, s); err != nil {
+			s.AddError(err)
+		}
+	})
+}
+
+// WhereID applies the entql int predicate on the id field.
+func (f *UserPointAccountFilter) WhereID(p entql.IntP) {
+	f.Where(p.Field(userpointaccount.FieldID))
+}
+
+// WhereCreatedAt applies the entql time.Time predicate on the created_at field.
+func (f *UserPointAccountFilter) WhereCreatedAt(p entql.TimeP) {
+	f.Where(p.Field(userpointaccount.FieldCreatedAt))
+}
+
+// WhereUpdatedAt applies the entql time.Time predicate on the updated_at field.
+func (f *UserPointAccountFilter) WhereUpdatedAt(p entql.TimeP) {
+	f.Where(p.Field(userpointaccount.FieldUpdatedAt))
+}
+
+// WhereUserID applies the entql int predicate on the user_id field.
+func (f *UserPointAccountFilter) WhereUserID(p entql.IntP) {
+	f.Where(p.Field(userpointaccount.FieldUserID))
+}
+
+// WhereAvailablePoints applies the entql string predicate on the available_points field.
+func (f *UserPointAccountFilter) WhereAvailablePoints(p entql.StringP) {
+	f.Where(p.Field(userpointaccount.FieldAvailablePoints))
+}
+
+// WherePendingPoints applies the entql string predicate on the pending_points field.
+func (f *UserPointAccountFilter) WherePendingPoints(p entql.StringP) {
+	f.Where(p.Field(userpointaccount.FieldPendingPoints))
+}
+
+// WhereFrozenPoints applies the entql string predicate on the frozen_points field.
+func (f *UserPointAccountFilter) WhereFrozenPoints(p entql.StringP) {
+	f.Where(p.Field(userpointaccount.FieldFrozenPoints))
+}
+
+// WhereLifetimeEarned applies the entql string predicate on the lifetime_earned field.
+func (f *UserPointAccountFilter) WhereLifetimeEarned(p entql.StringP) {
+	f.Where(p.Field(userpointaccount.FieldLifetimeEarned))
+}
+
+// WhereLifetimeSpent applies the entql string predicate on the lifetime_spent field.
+func (f *UserPointAccountFilter) WhereLifetimeSpent(p entql.StringP) {
+	f.Where(p.Field(userpointaccount.FieldLifetimeSpent))
+}
+
+// WhereVersion applies the entql int64 predicate on the version field.
+func (f *UserPointAccountFilter) WhereVersion(p entql.Int64P) {
+	f.Where(p.Field(userpointaccount.FieldVersion))
+}
+
+// addPredicate implements the predicateAdder interface.
+func (_q *UserPointLedgerEntryQuery) addPredicate(pred func(s *sql.Selector)) {
+	_q.predicates = append(_q.predicates, pred)
+}
+
+// Filter returns a Filter implementation to apply filters on the UserPointLedgerEntryQuery builder.
+func (_q *UserPointLedgerEntryQuery) Filter() *UserPointLedgerEntryFilter {
+	return &UserPointLedgerEntryFilter{config: _q.config, predicateAdder: _q}
+}
+
+// addPredicate implements the predicateAdder interface.
+func (m *UserPointLedgerEntryMutation) addPredicate(pred func(s *sql.Selector)) {
+	m.predicates = append(m.predicates, pred)
+}
+
+// Filter returns an entql.Where implementation to apply filters on the UserPointLedgerEntryMutation builder.
+func (m *UserPointLedgerEntryMutation) Filter() *UserPointLedgerEntryFilter {
+	return &UserPointLedgerEntryFilter{config: m.config, predicateAdder: m}
+}
+
+// UserPointLedgerEntryFilter provides a generic filtering capability at runtime for UserPointLedgerEntryQuery.
+type UserPointLedgerEntryFilter struct {
+	predicateAdder
+	config
+}
+
+// Where applies the entql predicate on the query filter.
+func (f *UserPointLedgerEntryFilter) Where(p entql.P) {
+	f.addPredicate(func(s *sql.Selector) {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[27].Type, p, s); err != nil {
+			s.AddError(err)
+		}
+	})
+}
+
+// WhereID applies the entql int predicate on the id field.
+func (f *UserPointLedgerEntryFilter) WhereID(p entql.IntP) {
+	f.Where(p.Field(userpointledgerentry.FieldID))
+}
+
+// WhereCreatedAt applies the entql time.Time predicate on the created_at field.
+func (f *UserPointLedgerEntryFilter) WhereCreatedAt(p entql.TimeP) {
+	f.Where(p.Field(userpointledgerentry.FieldCreatedAt))
+}
+
+// WhereUpdatedAt applies the entql time.Time predicate on the updated_at field.
+func (f *UserPointLedgerEntryFilter) WhereUpdatedAt(p entql.TimeP) {
+	f.Where(p.Field(userpointledgerentry.FieldUpdatedAt))
+}
+
+// WhereUserID applies the entql int predicate on the user_id field.
+func (f *UserPointLedgerEntryFilter) WhereUserID(p entql.IntP) {
+	f.Where(p.Field(userpointledgerentry.FieldUserID))
+}
+
+// WhereDirection applies the entql string predicate on the direction field.
+func (f *UserPointLedgerEntryFilter) WhereDirection(p entql.StringP) {
+	f.Where(p.Field(userpointledgerentry.FieldDirection))
+}
+
+// WhereScene applies the entql string predicate on the scene field.
+func (f *UserPointLedgerEntryFilter) WhereScene(p entql.StringP) {
+	f.Where(p.Field(userpointledgerentry.FieldScene))
+}
+
+// WherePoints applies the entql string predicate on the points field.
+func (f *UserPointLedgerEntryFilter) WherePoints(p entql.StringP) {
+	f.Where(p.Field(userpointledgerentry.FieldPoints))
+}
+
+// WhereBalanceBefore applies the entql string predicate on the balance_before field.
+func (f *UserPointLedgerEntryFilter) WhereBalanceBefore(p entql.StringP) {
+	f.Where(p.Field(userpointledgerentry.FieldBalanceBefore))
+}
+
+// WhereBalanceAfter applies the entql string predicate on the balance_after field.
+func (f *UserPointLedgerEntryFilter) WhereBalanceAfter(p entql.StringP) {
+	f.Where(p.Field(userpointledgerentry.FieldBalanceAfter))
+}
+
+// WhereIdempotencyKey applies the entql string predicate on the idempotency_key field.
+func (f *UserPointLedgerEntryFilter) WhereIdempotencyKey(p entql.StringP) {
+	f.Where(p.Field(userpointledgerentry.FieldIdempotencyKey))
+}
+
+// WhereRelatedChannelID applies the entql int predicate on the related_channel_id field.
+func (f *UserPointLedgerEntryFilter) WhereRelatedChannelID(p entql.IntP) {
+	f.Where(p.Field(userpointledgerentry.FieldRelatedChannelID))
+}
+
+// WhereRelatedRequestID applies the entql int predicate on the related_request_id field.
+func (f *UserPointLedgerEntryFilter) WhereRelatedRequestID(p entql.IntP) {
+	f.Where(p.Field(userpointledgerentry.FieldRelatedRequestID))
+}
+
+// WhereRelatedUsageLogID applies the entql int predicate on the related_usage_log_id field.
+func (f *UserPointLedgerEntryFilter) WhereRelatedUsageLogID(p entql.IntP) {
+	f.Where(p.Field(userpointledgerentry.FieldRelatedUsageLogID))
+}
+
+// WhereRelatedAPIKeyID applies the entql int predicate on the related_api_key_id field.
+func (f *UserPointLedgerEntryFilter) WhereRelatedAPIKeyID(p entql.IntP) {
+	f.Where(p.Field(userpointledgerentry.FieldRelatedAPIKeyID))
+}
+
+// WhereRelatedProjectID applies the entql int predicate on the related_project_id field.
+func (f *UserPointLedgerEntryFilter) WhereRelatedProjectID(p entql.IntP) {
+	f.Where(p.Field(userpointledgerentry.FieldRelatedProjectID))
+}
+
+// WhereConversionRateSnapshot applies the entql string predicate on the conversion_rate_snapshot field.
+func (f *UserPointLedgerEntryFilter) WhereConversionRateSnapshot(p entql.StringP) {
+	f.Where(p.Field(userpointledgerentry.FieldConversionRateSnapshot))
+}
+
+// WhereSettlementStatus applies the entql string predicate on the settlement_status field.
+func (f *UserPointLedgerEntryFilter) WhereSettlementStatus(p entql.StringP) {
+	f.Where(p.Field(userpointledgerentry.FieldSettlementStatus))
+}
+
+// WhereRemark applies the entql string predicate on the remark field.
+func (f *UserPointLedgerEntryFilter) WhereRemark(p entql.StringP) {
+	f.Where(p.Field(userpointledgerentry.FieldRemark))
+}
+
+// addPredicate implements the predicateAdder interface.
 func (_q *UserProjectQuery) addPredicate(pred func(s *sql.Selector)) {
 	_q.predicates = append(_q.predicates, pred)
 }
@@ -5202,7 +5466,7 @@ type UserProjectFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *UserProjectFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[26].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[28].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})
@@ -5300,7 +5564,7 @@ type UserRoleFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *UserRoleFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[27].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[29].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})

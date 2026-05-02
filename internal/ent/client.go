@@ -41,6 +41,8 @@ import (
 	"github.com/looplj/axonhub/internal/ent/trace"
 	"github.com/looplj/axonhub/internal/ent/usagelog"
 	"github.com/looplj/axonhub/internal/ent/user"
+	"github.com/looplj/axonhub/internal/ent/userpointaccount"
+	"github.com/looplj/axonhub/internal/ent/userpointledgerentry"
 	"github.com/looplj/axonhub/internal/ent/userproject"
 	"github.com/looplj/axonhub/internal/ent/userrole"
 )
@@ -102,6 +104,10 @@ type Client struct {
 	UsageLog *UsageLogClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
+	// UserPointAccount is the client for interacting with the UserPointAccount builders.
+	UserPointAccount *UserPointAccountClient
+	// UserPointLedgerEntry is the client for interacting with the UserPointLedgerEntry builders.
+	UserPointLedgerEntry *UserPointLedgerEntryClient
 	// UserProject is the client for interacting with the UserProject builders.
 	UserProject *UserProjectClient
 	// UserRole is the client for interacting with the UserRole builders.
@@ -145,6 +151,8 @@ func (c *Client) init() {
 	c.Trace = NewTraceClient(c.config)
 	c.UsageLog = NewUsageLogClient(c.config)
 	c.User = NewUserClient(c.config)
+	c.UserPointAccount = NewUserPointAccountClient(c.config)
+	c.UserPointLedgerEntry = NewUserPointLedgerEntryClient(c.config)
 	c.UserProject = NewUserProjectClient(c.config)
 	c.UserRole = NewUserRoleClient(c.config)
 }
@@ -265,6 +273,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Trace:                    NewTraceClient(cfg),
 		UsageLog:                 NewUsageLogClient(cfg),
 		User:                     NewUserClient(cfg),
+		UserPointAccount:         NewUserPointAccountClient(cfg),
+		UserPointLedgerEntry:     NewUserPointLedgerEntryClient(cfg),
 		UserProject:              NewUserProjectClient(cfg),
 		UserRole:                 NewUserRoleClient(cfg),
 	}, nil
@@ -312,6 +322,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Trace:                    NewTraceClient(cfg),
 		UsageLog:                 NewUsageLogClient(cfg),
 		User:                     NewUserClient(cfg),
+		UserPointAccount:         NewUserPointAccountClient(cfg),
+		UserPointLedgerEntry:     NewUserPointLedgerEntryClient(cfg),
 		UserProject:              NewUserProjectClient(cfg),
 		UserRole:                 NewUserRoleClient(cfg),
 	}, nil
@@ -348,7 +360,8 @@ func (c *Client) Use(hooks ...Hook) {
 		c.Prompt, c.PromptProtectionRule, c.ProviderQuotaStatus,
 		c.RelayDailyUsageSummary, c.RelayKey, c.RelayProduct, c.RelayProductChannel,
 		c.RelayWallet, c.RelayWalletLedgerEntry, c.Request, c.RequestExecution, c.Role,
-		c.System, c.Thread, c.Trace, c.UsageLog, c.User, c.UserProject, c.UserRole,
+		c.System, c.Thread, c.Trace, c.UsageLog, c.User, c.UserPointAccount,
+		c.UserPointLedgerEntry, c.UserProject, c.UserRole,
 	} {
 		n.Use(hooks...)
 	}
@@ -363,7 +376,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.Prompt, c.PromptProtectionRule, c.ProviderQuotaStatus,
 		c.RelayDailyUsageSummary, c.RelayKey, c.RelayProduct, c.RelayProductChannel,
 		c.RelayWallet, c.RelayWalletLedgerEntry, c.Request, c.RequestExecution, c.Role,
-		c.System, c.Thread, c.Trace, c.UsageLog, c.User, c.UserProject, c.UserRole,
+		c.System, c.Thread, c.Trace, c.UsageLog, c.User, c.UserPointAccount,
+		c.UserPointLedgerEntry, c.UserProject, c.UserRole,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -424,6 +438,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.UsageLog.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
+	case *UserPointAccountMutation:
+		return c.UserPointAccount.mutate(ctx, m)
+	case *UserPointLedgerEntryMutation:
+		return c.UserPointLedgerEntry.mutate(ctx, m)
 	case *UserProjectMutation:
 		return c.UserProject.mutate(ctx, m)
 	case *UserRoleMutation:
@@ -5082,6 +5100,274 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 	}
 }
 
+// UserPointAccountClient is a client for the UserPointAccount schema.
+type UserPointAccountClient struct {
+	config
+}
+
+// NewUserPointAccountClient returns a client for the UserPointAccount from the given config.
+func NewUserPointAccountClient(c config) *UserPointAccountClient {
+	return &UserPointAccountClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `userpointaccount.Hooks(f(g(h())))`.
+func (c *UserPointAccountClient) Use(hooks ...Hook) {
+	c.hooks.UserPointAccount = append(c.hooks.UserPointAccount, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `userpointaccount.Intercept(f(g(h())))`.
+func (c *UserPointAccountClient) Intercept(interceptors ...Interceptor) {
+	c.inters.UserPointAccount = append(c.inters.UserPointAccount, interceptors...)
+}
+
+// Create returns a builder for creating a UserPointAccount entity.
+func (c *UserPointAccountClient) Create() *UserPointAccountCreate {
+	mutation := newUserPointAccountMutation(c.config, OpCreate)
+	return &UserPointAccountCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of UserPointAccount entities.
+func (c *UserPointAccountClient) CreateBulk(builders ...*UserPointAccountCreate) *UserPointAccountCreateBulk {
+	return &UserPointAccountCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *UserPointAccountClient) MapCreateBulk(slice any, setFunc func(*UserPointAccountCreate, int)) *UserPointAccountCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &UserPointAccountCreateBulk{err: fmt.Errorf("calling to UserPointAccountClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*UserPointAccountCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &UserPointAccountCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for UserPointAccount.
+func (c *UserPointAccountClient) Update() *UserPointAccountUpdate {
+	mutation := newUserPointAccountMutation(c.config, OpUpdate)
+	return &UserPointAccountUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *UserPointAccountClient) UpdateOne(_m *UserPointAccount) *UserPointAccountUpdateOne {
+	mutation := newUserPointAccountMutation(c.config, OpUpdateOne, withUserPointAccount(_m))
+	return &UserPointAccountUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *UserPointAccountClient) UpdateOneID(id int) *UserPointAccountUpdateOne {
+	mutation := newUserPointAccountMutation(c.config, OpUpdateOne, withUserPointAccountID(id))
+	return &UserPointAccountUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for UserPointAccount.
+func (c *UserPointAccountClient) Delete() *UserPointAccountDelete {
+	mutation := newUserPointAccountMutation(c.config, OpDelete)
+	return &UserPointAccountDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *UserPointAccountClient) DeleteOne(_m *UserPointAccount) *UserPointAccountDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *UserPointAccountClient) DeleteOneID(id int) *UserPointAccountDeleteOne {
+	builder := c.Delete().Where(userpointaccount.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &UserPointAccountDeleteOne{builder}
+}
+
+// Query returns a query builder for UserPointAccount.
+func (c *UserPointAccountClient) Query() *UserPointAccountQuery {
+	return &UserPointAccountQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeUserPointAccount},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a UserPointAccount entity by its id.
+func (c *UserPointAccountClient) Get(ctx context.Context, id int) (*UserPointAccount, error) {
+	return c.Query().Where(userpointaccount.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *UserPointAccountClient) GetX(ctx context.Context, id int) *UserPointAccount {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *UserPointAccountClient) Hooks() []Hook {
+	hooks := c.hooks.UserPointAccount
+	return append(hooks[:len(hooks):len(hooks)], userpointaccount.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *UserPointAccountClient) Interceptors() []Interceptor {
+	return c.inters.UserPointAccount
+}
+
+func (c *UserPointAccountClient) mutate(ctx context.Context, m *UserPointAccountMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&UserPointAccountCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&UserPointAccountUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&UserPointAccountUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&UserPointAccountDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown UserPointAccount mutation op: %q", m.Op())
+	}
+}
+
+// UserPointLedgerEntryClient is a client for the UserPointLedgerEntry schema.
+type UserPointLedgerEntryClient struct {
+	config
+}
+
+// NewUserPointLedgerEntryClient returns a client for the UserPointLedgerEntry from the given config.
+func NewUserPointLedgerEntryClient(c config) *UserPointLedgerEntryClient {
+	return &UserPointLedgerEntryClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `userpointledgerentry.Hooks(f(g(h())))`.
+func (c *UserPointLedgerEntryClient) Use(hooks ...Hook) {
+	c.hooks.UserPointLedgerEntry = append(c.hooks.UserPointLedgerEntry, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `userpointledgerentry.Intercept(f(g(h())))`.
+func (c *UserPointLedgerEntryClient) Intercept(interceptors ...Interceptor) {
+	c.inters.UserPointLedgerEntry = append(c.inters.UserPointLedgerEntry, interceptors...)
+}
+
+// Create returns a builder for creating a UserPointLedgerEntry entity.
+func (c *UserPointLedgerEntryClient) Create() *UserPointLedgerEntryCreate {
+	mutation := newUserPointLedgerEntryMutation(c.config, OpCreate)
+	return &UserPointLedgerEntryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of UserPointLedgerEntry entities.
+func (c *UserPointLedgerEntryClient) CreateBulk(builders ...*UserPointLedgerEntryCreate) *UserPointLedgerEntryCreateBulk {
+	return &UserPointLedgerEntryCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *UserPointLedgerEntryClient) MapCreateBulk(slice any, setFunc func(*UserPointLedgerEntryCreate, int)) *UserPointLedgerEntryCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &UserPointLedgerEntryCreateBulk{err: fmt.Errorf("calling to UserPointLedgerEntryClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*UserPointLedgerEntryCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &UserPointLedgerEntryCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for UserPointLedgerEntry.
+func (c *UserPointLedgerEntryClient) Update() *UserPointLedgerEntryUpdate {
+	mutation := newUserPointLedgerEntryMutation(c.config, OpUpdate)
+	return &UserPointLedgerEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *UserPointLedgerEntryClient) UpdateOne(_m *UserPointLedgerEntry) *UserPointLedgerEntryUpdateOne {
+	mutation := newUserPointLedgerEntryMutation(c.config, OpUpdateOne, withUserPointLedgerEntry(_m))
+	return &UserPointLedgerEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *UserPointLedgerEntryClient) UpdateOneID(id int) *UserPointLedgerEntryUpdateOne {
+	mutation := newUserPointLedgerEntryMutation(c.config, OpUpdateOne, withUserPointLedgerEntryID(id))
+	return &UserPointLedgerEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for UserPointLedgerEntry.
+func (c *UserPointLedgerEntryClient) Delete() *UserPointLedgerEntryDelete {
+	mutation := newUserPointLedgerEntryMutation(c.config, OpDelete)
+	return &UserPointLedgerEntryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *UserPointLedgerEntryClient) DeleteOne(_m *UserPointLedgerEntry) *UserPointLedgerEntryDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *UserPointLedgerEntryClient) DeleteOneID(id int) *UserPointLedgerEntryDeleteOne {
+	builder := c.Delete().Where(userpointledgerentry.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &UserPointLedgerEntryDeleteOne{builder}
+}
+
+// Query returns a query builder for UserPointLedgerEntry.
+func (c *UserPointLedgerEntryClient) Query() *UserPointLedgerEntryQuery {
+	return &UserPointLedgerEntryQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeUserPointLedgerEntry},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a UserPointLedgerEntry entity by its id.
+func (c *UserPointLedgerEntryClient) Get(ctx context.Context, id int) (*UserPointLedgerEntry, error) {
+	return c.Query().Where(userpointledgerentry.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *UserPointLedgerEntryClient) GetX(ctx context.Context, id int) *UserPointLedgerEntry {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *UserPointLedgerEntryClient) Hooks() []Hook {
+	hooks := c.hooks.UserPointLedgerEntry
+	return append(hooks[:len(hooks):len(hooks)], userpointledgerentry.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *UserPointLedgerEntryClient) Interceptors() []Interceptor {
+	return c.inters.UserPointLedgerEntry
+}
+
+func (c *UserPointLedgerEntryClient) mutate(ctx context.Context, m *UserPointLedgerEntryMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&UserPointLedgerEntryCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&UserPointLedgerEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&UserPointLedgerEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&UserPointLedgerEntryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown UserPointLedgerEntry mutation op: %q", m.Op())
+	}
+}
+
 // UserProjectClient is a client for the UserProject schema.
 type UserProjectClient struct {
 	config
@@ -5421,7 +5707,7 @@ type (
 		PromptProtectionRule, ProviderQuotaStatus, RelayDailyUsageSummary, RelayKey,
 		RelayProduct, RelayProductChannel, RelayWallet, RelayWalletLedgerEntry,
 		Request, RequestExecution, Role, System, Thread, Trace, UsageLog, User,
-		UserProject, UserRole []ent.Hook
+		UserPointAccount, UserPointLedgerEntry, UserProject, UserRole []ent.Hook
 	}
 	inters struct {
 		APIKey, Channel, ChannelModelPrice, ChannelModelPriceVersion,
@@ -5429,6 +5715,6 @@ type (
 		PromptProtectionRule, ProviderQuotaStatus, RelayDailyUsageSummary, RelayKey,
 		RelayProduct, RelayProductChannel, RelayWallet, RelayWalletLedgerEntry,
 		Request, RequestExecution, Role, System, Thread, Trace, UsageLog, User,
-		UserProject, UserRole []ent.Interceptor
+		UserPointAccount, UserPointLedgerEntry, UserProject, UserRole []ent.Interceptor
 	}
 )

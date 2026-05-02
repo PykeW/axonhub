@@ -1114,6 +1114,86 @@ var (
 			},
 		},
 	}
+	// UserPointAccountsColumns holds the columns for the "user_point_accounts" table.
+	UserPointAccountsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, Default: schema.Expr("CURRENT_TIMESTAMP")},
+		{Name: "updated_at", Type: field.TypeTime, Default: schema.Expr("CURRENT_TIMESTAMP")},
+		{Name: "user_id", Type: field.TypeInt},
+		{Name: "available_points", Type: field.TypeString, Default: "0"},
+		{Name: "pending_points", Type: field.TypeString, Default: "0"},
+		{Name: "frozen_points", Type: field.TypeString, Default: "0"},
+		{Name: "lifetime_earned", Type: field.TypeString, Default: "0"},
+		{Name: "lifetime_spent", Type: field.TypeString, Default: "0"},
+		{Name: "version", Type: field.TypeInt64, Default: 1},
+	}
+	// UserPointAccountsTable holds the schema information for the "user_point_accounts" table.
+	UserPointAccountsTable = &schema.Table{
+		Name:       "user_point_accounts",
+		Columns:    UserPointAccountsColumns,
+		PrimaryKey: []*schema.Column{UserPointAccountsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "user_point_accounts_by_user_id",
+				Unique:  true,
+				Columns: []*schema.Column{UserPointAccountsColumns[3]},
+			},
+		},
+	}
+	// UserPointLedgerEntriesColumns holds the columns for the "user_point_ledger_entries" table.
+	UserPointLedgerEntriesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, Default: schema.Expr("CURRENT_TIMESTAMP")},
+		{Name: "updated_at", Type: field.TypeTime, Default: schema.Expr("CURRENT_TIMESTAMP")},
+		{Name: "user_id", Type: field.TypeInt},
+		{Name: "direction", Type: field.TypeEnum, Enums: []string{"credit", "debit"}},
+		{Name: "scene", Type: field.TypeEnum, Enums: []string{"contribution_pending", "contribution_reward", "consume", "adjustment"}},
+		{Name: "points", Type: field.TypeString},
+		{Name: "balance_before", Type: field.TypeString},
+		{Name: "balance_after", Type: field.TypeString},
+		{Name: "idempotency_key", Type: field.TypeString},
+		{Name: "related_channel_id", Type: field.TypeInt, Nullable: true},
+		{Name: "related_request_id", Type: field.TypeInt, Nullable: true},
+		{Name: "related_usage_log_id", Type: field.TypeInt, Nullable: true},
+		{Name: "related_api_key_id", Type: field.TypeInt, Nullable: true},
+		{Name: "related_project_id", Type: field.TypeInt, Nullable: true},
+		{Name: "conversion_rate_snapshot", Type: field.TypeString, Nullable: true},
+		{Name: "settlement_status", Type: field.TypeEnum, Enums: []string{"posted"}, Default: "posted"},
+		{Name: "remark", Type: field.TypeString, Nullable: true},
+	}
+	// UserPointLedgerEntriesTable holds the schema information for the "user_point_ledger_entries" table.
+	UserPointLedgerEntriesTable = &schema.Table{
+		Name:       "user_point_ledger_entries",
+		Columns:    UserPointLedgerEntriesColumns,
+		PrimaryKey: []*schema.Column{UserPointLedgerEntriesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "user_point_ledger_entries_by_idempotency_key",
+				Unique:  true,
+				Columns: []*schema.Column{UserPointLedgerEntriesColumns[9]},
+			},
+			{
+				Name:    "user_point_ledger_entries_by_user_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{UserPointLedgerEntriesColumns[3], UserPointLedgerEntriesColumns[1]},
+			},
+			{
+				Name:    "user_point_ledger_entries_by_request_id",
+				Unique:  false,
+				Columns: []*schema.Column{UserPointLedgerEntriesColumns[11]},
+			},
+			{
+				Name:    "user_point_ledger_entries_by_usage_log_id",
+				Unique:  false,
+				Columns: []*schema.Column{UserPointLedgerEntriesColumns[12]},
+			},
+			{
+				Name:    "user_point_ledger_entries_by_channel_id",
+				Unique:  false,
+				Columns: []*schema.Column{UserPointLedgerEntriesColumns[10]},
+			},
+		},
+	}
 	// UserProjectsColumns holds the columns for the "user_projects" table.
 	UserProjectsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -1249,6 +1329,8 @@ var (
 		TracesTable,
 		UsageLogsTable,
 		UsersTable,
+		UserPointAccountsTable,
+		UserPointLedgerEntriesTable,
 		UserProjectsTable,
 		UserRolesTable,
 		ProjectPromptsTable,

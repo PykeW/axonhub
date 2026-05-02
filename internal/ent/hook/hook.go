@@ -321,6 +321,30 @@ func (f UserFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error)
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserMutation", m)
 }
 
+// The UserPointAccountFunc type is an adapter to allow the use of ordinary
+// function as UserPointAccount mutator.
+type UserPointAccountFunc func(context.Context, *ent.UserPointAccountMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f UserPointAccountFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.UserPointAccountMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserPointAccountMutation", m)
+}
+
+// The UserPointLedgerEntryFunc type is an adapter to allow the use of ordinary
+// function as UserPointLedgerEntry mutator.
+type UserPointLedgerEntryFunc func(context.Context, *ent.UserPointLedgerEntryMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f UserPointLedgerEntryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.UserPointLedgerEntryMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserPointLedgerEntryMutation", m)
+}
+
 // The UserProjectFunc type is an adapter to allow the use of ordinary
 // function as UserProject mutator.
 type UserProjectFunc func(context.Context, *ent.UserProjectMutation) (ent.Value, error)

@@ -362,6 +362,15 @@ func toDecimalPtr(s string) *decimal.Decimal {
 	return &d
 }
 
+type shareUseSettlementRecorderSpy struct {
+	inputs []ShareUseUsageSettlementInput
+}
+
+func (s *shareUseSettlementRecorderSpy) RecordShareUseUsage(ctx context.Context, input ShareUseUsageSettlementInput) error {
+	s.inputs = append(s.inputs, input)
+	return nil
+}
+
 type relaySettlementRecorderSpy struct {
 	relay  *RelayAuthContext
 	inputs []RelayUsageSettlementInput
@@ -371,6 +380,95 @@ func (s *relaySettlementRecorderSpy) RecordRelayUsage(ctx context.Context, relay
 	s.relay = relay
 	s.inputs = append(s.inputs, input)
 	return nil
+}
+
+func TestUsageLogService_CreateUsageLog_RecordsShareUseSettlement(t *testing.T) {
+	client := enttest.NewEntClient(t, "sqlite3", "file:ent?mode=memory&_fk=0")
+	defer client.Close()
+
+	ctx := context.Background()
+	ctx = ent.NewContext(ctx, client)
+	ctx = authz.WithTestBypass(ctx)
+
+	p, err := client.Project.Create().
+		SetName("share-use-settlement-project").
+		SetStatus(project.StatusActive).
+		Save(ctx)
+	require.NoError(t, err)
+
+	req, err := client.Request.Create().
+		SetProjectID(p.ID).
+		SetModelID("gpt-4").
+		SetStatus(request.StatusCompleted).
+		SetRequestBody(objects.JSONRawMessage([]byte(`{}`))).
+		Save(ctx)
+	require.NoError(t, err)
+
+	systemService := NewSystemService(SystemServiceParams{
+		CacheConfig: xcache.Config{},
+		Ent:         client,
+	})
+	channelService := NewChannelServiceForTest(client)
+	svc := NewUsageLogService(client, systemService, channelService)
+
+	recorder := &shareUseSettlementRecorderSpy{}
+	svc.SetShareUseSettlementRecorder(recorder)
+
+	created, err := svc.CreateUsageLog(ctx, CreateUsageLogParams{
+		RequestID:     req.ID,
+		ProjectID:     p.ID,
+		ChannelID:     0,
+		ActualModelID: "gpt-4",
+		Usage:         &llm.Usage{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15},
+		Source:        usagelog.SourceAPI,
+		Format:        "openai/chat_completions",
+		Request:       req,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, created)
+	require.Len(t, recorder.inputs, 1)
+	require.Equal(t, created.ID, recorder.inputs[0].UsageLog.ID)
+	require.Same(t, req, recorder.inputs[0].Request)
+}
+
+func TestUsageLogService_CreateUsageLog_SkipsShareUseSettlementWithoutRequest(t *testing.T) {
+	client := enttest.NewEntClient(t, "sqlite3", "file:ent?mode=memory&_fk=0")
+	defer client.Close()
+
+	ctx := context.Background()
+	ctx = ent.NewContext(ctx, client)
+	ctx = authz.WithTestBypass(ctx)
+
+	p, err := client.Project.Create().
+		SetName("share-use-settlement-no-request-project").
+		SetStatus(project.StatusActive).
+		Save(ctx)
+	require.NoError(t, err)
+
+	systemService := NewSystemService(SystemServiceParams{
+		CacheConfig: xcache.Config{},
+		Ent:         client,
+	})
+	channelService := NewChannelServiceForTest(client)
+	svc := NewUsageLogService(client, systemService, channelService)
+
+	recorder := &shareUseSettlementRecorderSpy{}
+	svc.SetShareUseSettlementRecorder(recorder)
+
+	created, err := svc.CreateUsageLog(ctx, CreateUsageLogParams{
+		RequestID:     1,
+		ProjectID:     p.ID,
+		ChannelID:     0,
+		ActualModelID: "gpt-4",
+		Usage:         &llm.Usage{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15},
+		Source:        usagelog.SourceAPI,
+		Format:        "openai/chat_completions",
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, created)
+	require.Empty(t, recorder.inputs)
 }
 
 func TestUsageLogService_CreateUsageLog_RecordsRelaySettlement(t *testing.T) {

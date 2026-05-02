@@ -84,6 +84,12 @@ type UsageLog func(*sql.Selector)
 // User is the predicate function for user builders.
 type User func(*sql.Selector)
 
+// UserPointAccount is the predicate function for userpointaccount builders.
+type UserPointAccount func(*sql.Selector)
+
+// UserPointLedgerEntry is the predicate function for userpointledgerentry builders.
+type UserPointLedgerEntry func(*sql.Selector)
+
 // UserProject is the predicate function for userproject builders.
 type UserProject func(*sql.Selector)
 

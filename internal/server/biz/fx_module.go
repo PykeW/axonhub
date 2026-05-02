@@ -36,6 +36,7 @@ var Module = fx.Module("biz",
 	fx.Provide(NewRelayRuntimeService),
 	fx.Provide(NewRelayAccessService),
 	fx.Provide(NewRelaySettlementService),
+	fx.Provide(NewShareUseSettlementService),
 
 	fx.Invoke(func(runtime *RelayRuntimeService, access *RelayAccessService, settlement *RelaySettlementService) {
 		runtime.SetResolver(access)
@@ -44,6 +45,9 @@ var Module = fx.Module("biz",
 	}),
 	fx.Invoke(func(usageLogService *UsageLogService, runtime *RelayRuntimeService) {
 		usageLogService.SetRelaySettlementRecorder(runtime)
+	}),
+	fx.Invoke(func(usageLogService *UsageLogService, settlement *ShareUseSettlementService) {
+		usageLogService.SetShareUseSettlementRecorder(settlement)
 	}),
 	fx.Provide(NewQuotaService),
 	fx.Provide(NewProviderQuotaService),
