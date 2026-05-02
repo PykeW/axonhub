@@ -14,10 +14,12 @@
 ### 方法 1：二进制下载
 
 1. **下载最新版本**
+
    - 访问 [GitHub Releases](https://github.com/looplj/axonhub/releases)
    - 下载适合您操作系统的二进制文件
 
 2. **解压并运行**
+
    ```bash
    unzip axonhub_*.zip
    cd axonhub_*
@@ -30,23 +32,26 @@
 
 ## 第一步
 
-### 1. 配置您的第一个渠道
+### 1. 配置您的第一个自有渠道
 
 1. 登录到 Web 界面
-2. 导航到 **Channels（渠道）**
+2. 进入 **Channels（渠道）**
 3. 点击 **Add Channel（添加渠道）**
-4. 选择您的提供商（例如，OpenAI）
-5. 输入您的 API 密钥和配置
-6. 测试连接
-7. 启用渠道
+4. 选择您的上游提供商（例如 OpenAI）
+5. 输入 API 密钥、Base URL 和支持模型
+6. 先测试连接，再启用渠道
 
-### 2. 创建 API 密钥
+> 提示：如果你后续希望把自己的渠道提供给平台分发，当前仍然是在 **Channels** 页面完成真实上传与编辑；`/share` 目前主要是说明入口。
 
-1. 导航到 **API Keys（API 密钥）**
+### 2. 创建用于调用的 API 密钥
+
+1. 进入 **API Keys（API 密钥）**
 2. 点击 **Create API Key（创建 API 密钥）**
 3. 给出一个描述性名称
-4. 选择适当的范围
+4. 选择当前调用所需的权限范围
 5. 复制生成的 API 密钥
+
+> 提示：如果你想继续控制“优先使用自己的渠道还是他人共享渠道”，下一步请阅读 [共享/使用 MVP 指南](../guides/share-use-mvp.md)。
 
 ### 3. 发出您的第一个 API 调用
 
@@ -217,7 +222,7 @@ settings:
 
 **高级覆盖示例：**
 
-```yaml
+````yaml
 # 为生产环境强制执行确定性响应
 overrideParameters: |
   {
@@ -241,7 +246,7 @@ overrideParameters: |
     "max_tokens": 4096,
     "stop": ["```", "\n\n"]
   }
-```
+````
 
 #### 组合示例：模型映射 + 覆盖参数
 
@@ -272,12 +277,14 @@ settings:
 #### 最佳实践
 
 1. **模型映射**
+
    - 仅映射到 `supported_models` 中声明的模型
    - 使用描述性的映射名称以提高清晰度
    - 在生产使用前彻底测试映射
    - 为团队成员记录您的映射策略
 
 2. **覆盖参数**
+
    - 从保守值开始，根据用例进行调整
    - 考虑对成本和性能的影响
    - 使用不同类型的请求测试覆盖
@@ -330,15 +337,20 @@ log:
 ## 下一步
 
 ### 理解请求流程
-- [请求处理流程](request-processing.md)：理解请求从入口到上游执行的完整链路，以及模型映射、模型关联、渠道选择之间的区别
 
-### 探索功能
-- **追踪**：设置请求追踪以实现可观测性
-- **权限**：配置基于角色的访问控制
-- **模型配置文件**：创建模型映射规则
-- **使用分析**：监控 API 使用和成本
+- [请求处理流程](request-processing.md)：理解请求从入口到上游执行的完整链路，以及模型映射、模型关联、共享池过滤与渠道选择之间的区别
 
-### 集成指南
+### 继续完善 Share / Use 配置
+
+- [共享/使用 MVP 指南](../guides/share-use-mvp.md)：了解自己的渠道如何进入共享池，以及 `own_first` / `shared_first` 等策略
+- [渠道配置指南](../guides/channel-management.md)：继续完善自有渠道、支持模型、可见性与刷新窗口语义
+- [模型管理指南](../guides/model-management.md)：理解模型暴露如何决定候选渠道边界
+- [Share / Use 权限指南](../guides/permissions.md)：确认谁能上传渠道、谁能维护 Use 策略
+- [成本追踪](../guides/cost-tracking.md)：查看请求成本和缓存 Token 的记录方式
+
+### 集成与排障
+
+- [请求追踪](../guides/tracing.md)
 - [Claude Code 集成](../guides/claude-code-integration.md)
 - [OpenAI API](../api-reference/openai-api.md)
 - [Anthropic API](../api-reference/anthropic-api.md)
@@ -350,16 +362,19 @@ log:
 ### 常见问题
 
 **无法连接到 AxonHub**
+
 - 检查 AxonHub 进程是否正在运行
 - 验证端口 8090 是否可用
 - 检查防火墙设置
 
 **API 密钥身份验证失败**
+
 - 验证 API 密钥是否正确配置
 - 检查渠道是否已启用
 - 确保提供商 API 密钥有效
 
 **请求超时**
+
 - 在配置中增加 `server.llm_request_timeout`
 - 检查与 AI 提供商的网络连通性
 

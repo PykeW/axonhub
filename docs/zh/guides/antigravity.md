@@ -15,7 +15,7 @@ AxonHub 支持将 Google Antigravity API 配置为渠道提供商，可通过 Go
 
 ### 前置条件
 
-- 已部署 AxonHub，且当前账号具备渠道管理权限。
+- 已部署 AxonHub，且当前账号可以进入渠道上传 / 配置入口。
 - 拥有可访问 Antigravity 的 Google 账号。
 - 已通过 Antigravity OAuth 流程获取凭据。
 
@@ -25,7 +25,7 @@ AxonHub 支持将 Google Antigravity API 配置为渠道提供商，可通过 Go
 
 ### 获取 OAuth 凭据
 
-1. 进入 AxonHub 管理界面的 **渠道** 页面。
+1. 进入 AxonHub 的 **渠道** 页面。
 2. 点击 **创建渠道**，并选择 **Antigravity** 作为渠道类型。
 3. 点击 **启动 OAuth** 发起认证流程。
 4. 系统会生成 Google OAuth URL。点击 **打开 OAuth 链接**，在浏览器中完成认证。
@@ -235,7 +235,7 @@ supported_models:
 
 **解决方法**：
 
-- 确认凭据中的项目 ID 正确。
+- 确认凭据中的 Google 项目 ID 正确。
 - 检查 AxonHub 实例是否能访问配置的 Base URL。
 - 确认当前端点支持该模型名称。
 - 尝试切换到其他端点（Daily、Autopush 或 Production）。

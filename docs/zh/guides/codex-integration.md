@@ -14,9 +14,9 @@ AxonHub 可以作为 OpenAI 接口的直接替代方案，使 Codex 能够通过
 ### 前置要求
 
 - 可访问的 AxonHub 实例。
-- 拥有项目访问权限的 AxonHub API Key。
+- 一个可用于目标模型调用的 AxonHub API Key。
 - Codex（OpenAI 兼容工具）的使用权限。
-- （可选）已在 AxonHub 控制台配置好的一个或多个模型配置文件。
+- （可选）已在 AxonHub 中配置好的一个或多个模型配置文件，用于控制模型映射和路由。
 
 ### 配置 Codex
 
@@ -100,4 +100,4 @@ AxonHub 的模型配置文件支持将请求模型映射到具体提供商模型
 
 - [追踪指南](tracing.md)
 - [OpenAI API 文档](../api-reference/openai-api.md)
-- README 中的 [使用指南](../../../README.md#使用指南-usage-guide)
+- [中文文档索引](../index.md)

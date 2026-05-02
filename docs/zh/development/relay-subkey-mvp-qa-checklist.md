@@ -2,6 +2,8 @@
 
 本文用于跟踪第一段后端 MVP 切片的可验证范围，优先覆盖低冲突测试、夹具和验收口径。核心实现仍以 `relay-subkey-mvp-backend-design.md` 和 `relay-subkey-mvp-page-flows.md` 为准。
 
+说明：这份 QA 清单对应的是较早期“运营方自托管 Relay + 手动发放 Sub-Key”方案，不是当前中文 guides 的主产品口径。当前主线请优先参考 [共享/使用 MVP 指南](../guides/share-use-mvp.md) 与 [用户贡献 API：模型真实性验证、随机抽检与积分奖惩设计](./user-contributed-api-quality-plan.md)。
+
 ## 当前可落地检查
 
 - 产品契约：`RelayProductService.Contract()` 必须与 `internal/server/biz/testdata/relay_product_contract.json` 保持一致，避免前端选项、文档状态和后端常量漂移。

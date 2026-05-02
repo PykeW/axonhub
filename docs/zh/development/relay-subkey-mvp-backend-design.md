@@ -2,6 +2,8 @@
 
 ## 背景
 
+说明：本文保留的是较早期的“运营方自托管 Relay + 手动发放 Sub-Key”后端方案，用于对照历史实现与结构演进。当前中文 guides 的产品主线已经转向“用户共享自己的渠道到 Share，平台统一分发请求，并在跨用户成功调用后结算积分”；阅读当前主线请优先参考 [共享/使用 MVP 指南](../guides/share-use-mvp.md) 和 [用户贡献 API：模型真实性验证、随机抽检与积分奖惩设计](./user-contributed-api-quality-plan.md)。
+
 AxonHub 当前已经具备自托管 Relay MVP 所需的基础骨架：
 
 - `channels` 已经承载上游 provider 凭证、模型能力、路由设置与健康状态。

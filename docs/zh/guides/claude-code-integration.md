@@ -14,9 +14,9 @@ AxonHub 可以作为 Anthropic 接口的直接替代方案，使 Claude Code 能
 ### 前置要求
 
 - 可访问的 AxonHub 实例。
-- 拥有项目访问权限的 AxonHub API Key。
+- 一个可用于目标模型调用的 AxonHub API Key。
 - Claude Code（Anthropic）的使用权限。
-- （可选）已在 AxonHub 控制台配置好的一个或多个模型配置文件。
+- （可选）已在 AxonHub 中配置好的一个或多个模型配置文件，用于控制模型映射和路由。
 
 ### 配置 Claude Code
 
@@ -91,7 +91,7 @@ AxonHub 还可以将您的 Claude Code 订阅作为后端提供商，允许非 C
 
 - 已安装 Claude Code CLI (https://claude.com/claude-code)
 - 拥有 Claude Code 订阅的有效 Anthropic 账户
-- 具有渠道管理访问权限的 AxonHub 实例
+- 能进入渠道上传 / 配置入口的 AxonHub 实例
 
 ### 获取认证令牌
 
@@ -115,7 +115,7 @@ AxonHub 还可以将您的 Claude Code 订阅作为后端提供商，允许非 C
 
 ### 配置渠道
 
-1. 在 AxonHub 管理界面中导航到 **渠道（Channels）** 部分
+1. 在 AxonHub 的 **渠道（Channels）** 入口中创建或编辑渠道
 
 2. 创建新渠道并进行以下配置：
 
@@ -157,4 +157,4 @@ AxonHub 还可以将您的 Claude Code 订阅作为后端提供商，允许非 C
 - [OpenAI API 文档](../api-reference/openai-api.md)
 - [Codex 集成指南](codex-integration.md)
 - [渠道管理指南](channel-management.md)
-- README 中的 [使用指南](../../../README.md#使用指南-usage-guide)
+- [中文文档索引](../index.md)

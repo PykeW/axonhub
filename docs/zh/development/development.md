@@ -133,20 +133,24 @@ bash ./scripts/e2e/e2e-test.sh
 
 ## MVP 设计参考
 
-围绕 Relay/Sub-key 共享容量 MVP，可结合以下配套文档同步产品流程、实现方案与 QA 验收口径：
-
-- [自托管 Relay + Sub-key 共享容量 MVP：页面清单与用户流程](./relay-subkey-mvp-page-flows.md)
-- [自托管 Relay + Sub-key 共享容量 MVP：后端与数据设计](./relay-subkey-mvp-backend-design.md)
-- [自托管 Relay + Sub-Key 共享容量 MVP：QA 与测试清单](./relay-subkey-mvp-qa-checklist.md)
-
-围绕当前 Share / Use 轻量接入切片，可补充参考：
+围绕当前主线“用户共享自己的上游渠道 -> 平台统一分发 -> 跨用户使用积分结算”，优先参考：
 
 - [共享/使用 MVP 指南](../guides/share-use-mvp.md)
+- [请求处理流程指南](../getting-started/request-processing.md)
+- [渠道配置指南](../guides/channel-management.md)
+- [模型管理指南](../guides/model-management.md)
+- [Share / Use 权限指南](../guides/permissions.md)
 
 围绕后续“用户贡献 API 换积分”的小范围实验，可参考：
 
 - [用户贡献 API：模型真实性验证、随机抽检与积分奖惩设计](./user-contributed-api-quality-plan.md)
 - [用户贡献 API 质量治理：QA 与小范围试点验收清单](./user-contributed-api-quality-qa-checklist.md)
+
+历史 / 旁路线的“自托管 Relay + Sub-Key 共享容量 MVP”文档仍然保留，主要用于回顾较早期的运营式 Relay 方案与相关实现，不代表当前中文 guides 的主产品口径：
+
+- [自托管 Relay + Sub-key 共享容量 MVP：页面清单与用户流程](./relay-subkey-mvp-page-flows.md)
+- [自托管 Relay + Sub-key 共享容量 MVP：后端与数据设计](./relay-subkey-mvp-backend-design.md)
+- [自托管 Relay + Sub-Key 共享容量 MVP：QA 与测试清单](./relay-subkey-mvp-qa-checklist.md)
 
 ## 代码质量
 

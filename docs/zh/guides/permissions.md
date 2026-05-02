@@ -1,127 +1,140 @@
-# 权限管理指南
+# Share / Use 权限指南
 
-## 概述
+本指南不再从泛化的 RBAC 教材角度展开，而是只回答当前产品主线里最重要的问题：**谁能上传自己的渠道到 Share，谁能在 Use 里选择如何消费渠道，谁又能排查这条分发链路。**
 
-AxonHub 使用基于角色的访问控制（RBAC）来控制后台页面、API 资源和项目数据的可见性。当前实现同时区分 system-level 和 project-level scopes：前者用于系统级资源，后者用于某个 Project 内的资源。
+## 先看两个入口
 
-是否能访问某个页面，取决于两部分：
+当前前端把 `/share` 和 `/use` 放在同一个路由组里，但它们依赖的权限并不相同：
 
-1. 后端是否定义了对应的 scope 以及它支持的层级
-2. 前端路由是否把该页面声明为需要这些 scope
+| 入口     | 当前依赖的 scope | scope 层级            | 主要作用                                    |
+| -------- | ---------------- | --------------------- | ------------------------------------------- |
+| `/share` | `read_channels`  | 仅 `system`           | 查看 Share 说明，并进入现有渠道管理能力     |
+| `/use`   | `read_api_keys`  | `system` 或 `project` | 查看和维护当前用户的 Use API Key / 使用策略 |
 
-虽然每个用户默认可以查看和管理自己的资源，但涉及他人资源、系统配置或跨项目数据时，仍然需要显式授权。
+如果要做写操作，还需要额外的写权限：
 
-## 权限模型
+| 操作                                             | 需要的 scope     |
+| ------------------------------------------------ | ---------------- |
+| 创建、编辑、测试、启用渠道                       | `write_channels` |
+| 创建、编辑、轮换 Use API Key 或其 active profile | `write_api_keys` |
+| 查看请求与追踪数据                               | `read_requests`  |
 
-### 角色、作用域与 Owner
+## 当前最小权限模型
 
-| 概念          | 说明                                                 |
-| ------------- | ---------------------------------------------------- |
-| Global Role   | 绑定系统级权限，在所有 Projects 中生效               |
-| Project Role  | 绑定项目内权限，只在指定 Project 中生效              |
-| Scope         | 细粒度权限点，例如 `read_channels`、`write_api_keys` |
-| Global Owner  | 拥有所有系统级与项目级权限                           |
-| Project Owner | 拥有当前 Project 内所有权限                          |
-| API Key       | 属于某个用户和项目，可继承对应角色作用域             |
+### 1. 渠道提供者
 
-从当前权限实现与 ERD 文档来看，权限检查的大致顺序是：
+如果一个用户要把自己的上游渠道贡献给平台，当前最小权限组合通常是：
 
-1. 先判断当前用户是否为 Owner
-2. 再检查系统级角色与 scopes
-3. 最后检查当前 Project 下的角色与 scopes
+- `read_channels`
+- `write_channels`
 
-### Scope 层级
-
-| 层级               | 说明                                    | 典型 scope                                                               |
-| ------------------ | --------------------------------------- | ------------------------------------------------------------------------ |
-| `system`           | 管理系统全局资源                        | `read_channels`、`write_channels`、`read_projects`、`read_data_storages` |
-| `project`          | 管理当前 Project 中的业务资源           | `read_api_keys`、`write_api_keys`、`read_requests`                       |
-| `system + project` | 同一个 scope 可被系统角色或项目角色授予 | `read_users`、`read_roles`、`read_prompts`、`read_requests`              |
-
-当前代码里，以下 scope 仅支持 system-level：
-
-- `read_dashboard`
-- `read_settings` / `write_settings`
-- `read_channels` / `write_channels`
-- `read_data_storages` / `write_data_storages`
-- `read_projects` / `write_projects`
-
-以下 scope 同时支持 system-level 和 project-level：
-
-- `read_users` / `write_users`
-- `read_roles` / `write_roles`
-- `read_api_keys` / `write_api_keys`
-- `read_requests` / `write_requests`
-- `read_prompts` / `write_prompts`
-
-## 页面访问与常见入口
-
-下表总结了当前前端路由里的几类常见入口：
-
-| 页面 / 入口                                                | 需要的 scope    | 层级说明          | 备注                                                                 |
-| ---------------------------------------------------------- | --------------- | ----------------- | -------------------------------------------------------------------- |
-| `/channels`、`/models`、`/prompt-protection-rules`         | `read_channels` | 仅 system-level   | 渠道和模型属于系统级管理面                                           |
-| `/share`                                                   | `read_channels` | 仅 system-level   | 当前仍是 Share / Use 指南包装页，不是独立 CRUD                       |
-| `/use`、`/project/api-keys`                                | `read_api_keys` | system 或 project | `/use` 当前支持创建 key，也支持通过 `apiKeyId` 深链编辑既有 user key |
-| `/project/requests`、`/project/traces`、`/project/threads` | `read_requests` | system 或 project | 查看请求、链路和线程数据                                             |
-| `/project/users`                                           | `read_users`    | system 或 project | 项目成员管理                                                         |
-| `/project/roles`                                           | `read_roles`    | system 或 project | 项目角色管理                                                         |
-
-如果需要写操作，通常还要额外具备对应的 `write_*` scope，例如：
-
-- 创建或编辑渠道：`write_channels`
-- 创建或编辑 API Key：`write_api_keys`
-- 创建或编辑角色：`write_roles`
-
-## Share / Use 当前权限口径
-
-Share / Use 方向现在处于“文档 + 最小可用表单”阶段，权限口径最好与当前实现一起理解：
-
-- `/share` 入口属于 `Share/Use` 路由组，但实际仍复用渠道读权限；没有 `read_channels` 就无法进入。
-- 由于 `read_channels` 当前只支持 system-level，所以 `/share` 目前更接近“有渠道管理权限的用户查看 Share 指南页”。
-- `/use` 入口依赖 `read_api_keys`；它既可以由 system-level 角色授权，也可以由 project-level 角色授权。
-- `/use` 的保存目标是当前 user API Key 的 active profile；因此在实际分配权限时，通常还要同时考虑谁可以创建、编辑或轮换 API Key。
-
-## 常见授权策略
-
-### 1. 系统管理员 / 渠道管理员
-
-适合维护全局渠道、模型和系统配置：
-
-- `read_channels` / `write_channels`
-- `read_projects`
-- `read_data_storages` / `write_data_storages`
-- 按需要补充 `read_users` / `read_roles`
-
-### 2. Project 开发者
-
-适合在项目内自助创建 Key、查看请求和调试路由：
-
-- `read_api_keys` / `write_api_keys`
-- `read_requests`
-- `read_prompts` / `write_prompts`（如果需要提示词功能）
-
-### 3. 审计 / 只读排障角色
-
-适合只看数据、不改配置：
+如果还要自己验证渠道是否真的参与了分发，通常再补：
 
 - `read_requests`
+
+需要注意的是，`read_channels` / `write_channels` 目前只支持 `system` 层级，所以**现在的 Share 上传者更接近“被授予渠道管理能力的用户”，而不是纯 Project 内的普通成员。**
+
+### 2. 渠道使用者
+
+如果一个用户只想在项目流量进入平台后，决定优先用自己的渠道还是别人的共享渠道，最小权限通常是：
+
 - `read_api_keys`
-- `read_users`
-- `read_roles`
+
+如果他还需要创建、编辑或切换自己的 Use 配置，则再补：
+
+- `write_api_keys`
+
+如果还要自己排查为什么某次请求没有命中预期渠道，则再补：
+
+- `read_requests`
+
+### 3. 平台运维 / 授权管理员
+
+如果一个用户负责给别人分配入口、查看权限差异或维护角色，才需要进一步补充：
+
+- `read_roles` / `write_roles`
+- `read_users` / `write_users`
+
+这类权限不属于 Share / Use 的最少必要集合，不应该默认发给普通调用者。
+
+## 权限和共享分发的边界
+
+权限决定的是“能不能进入页面、能不能改配置”，不是“能不能直接拿到别人的原始渠道凭据”。
+
+在当前主线里要分清 3 件事：
+
+1. `shared` 只是说明一个渠道**可以进入其他用户的共享候选池**。
+2. 它不意味着其他用户获得了这个渠道的后台管理权。
+3. 它也不意味着其他用户可以直接看到 owner 的原始 API Key。
+
+也就是说：
+
+- **渠道所有权** 仍归 owner
+- **平台分发权** 由 Share / Use 路由和结算逻辑控制
+- **后台编辑权** 仍由 `write_channels` / `write_api_keys` 这类 scope 控制
+
+## 与共享池规则的关系
+
+Share / Use 文档已经约定：
+
+- `OwnPool(U)` 表示用户自己的渠道池
+- `SharedPool(U)` 表示所有 `shared` 且 `owner != U` 的渠道池
+
+这条规则和权限模型是正交的：
+
+- 你有没有 `read_api_keys`，决定你能不能进入 `/use`
+- 你有没有 `read_channels` / `write_channels`，决定你能不能维护供给侧渠道
+- 你是否会命中别人的共享渠道，取决于 `useStrategy`、模型暴露、健康状态和共享池过滤规则
+
+换句话说，**权限只打开入口，不直接决定某次请求会路由到哪条渠道。**
+
+## 当前实现口径
+
+当前文档需要和代码里的真实配置保持一致：
+
+- 后端 `internal/scopes/scopes.go` 中，`read_channels` / `write_channels` 只支持 `system`。
+- 后端 `internal/scopes/scopes.go` 中，`read_api_keys` / `write_api_keys` / `read_requests` 同时支持 `system` 和 `project`。
+- 前端 `frontend/src/config/route-permission.ts` 中，`/share` 依赖 `read_channels`，`/use` 依赖 `read_api_keys`。
+- 虽然 `Share/Use` 路由组的 `scopeLevel` 是 `any`，但 `/share` 本身仍绑定到 system-only 的 `read_channels`，所以 project-only 用户当前并不能真正进入 Share 侧入口。
+
+## 推荐授权方式
+
+### 只负责上传渠道
+
+适合愿意提供供给、但不需要管理项目成员或角色的人：
+
+- `read_channels`
+- `write_channels`
+- 可选 `read_requests`
+
+### 只负责消费渠道
+
+适合只想配置自己如何用渠道的人：
+
+- `read_api_keys`
+- 可选 `write_api_keys`
+- 可选 `read_requests`
+
+### 同时负责上传与消费
+
+适合既维护自己渠道，又要调 Use 策略的人：
+
+- `read_channels`
+- `write_channels`
+- `read_api_keys`
+- `write_api_keys`
+- 可选 `read_requests`
 
 ## 最佳实践
 
-- 只授予完成工作所需的最小权限，避免把 `write_channels` 或 `write_roles` 直接给普通调用方。
-- 把“系统级资源管理”和“项目内业务协作”分开授权，减少误操作范围。
-- 为自动化流水线单独创建服务账号，并使用最小 scope 的 API Key。
-- 定期轮换 API Key，回收不再使用的角色和项目成员关系。
-- 在落地 Share / Use 能力时，优先确认 `/share` 与 `/use` 的访问入口是否符合目标用户画像，避免文档和实际授权口径脱节。
+- 只给普通调用者发完成当前工作所需的最小权限，不要默认附带 `write_roles` 或 `write_users`。
+- 把“上传渠道的人”和“消费渠道的人”拆开授权，避免所有人都持有渠道编辑权。
+- 如果某个成员只需要调试为什么没命中共享池，优先补 `read_requests`，而不是直接给 `write_channels`。
+- 现阶段 `/share` 仍复用系统级渠道能力；如果后续产品把 Share 做成真正的用户自助入口，文档也要跟着 scope 设计一起更新。
 
 ## 相关文档
 
-- [共享/使用 MVP 指南](share-use-mvp.md) - 查看 Share / Use 的当前能力边界
-- [请求处理流程指南](../getting-started/request-processing.md) - 了解共享池与渠道选择在请求链路中的位置
-- [渠道配置指南](channel-management.md) - 了解渠道管理与 Share 语义的当前关系
-- [实体关系图](../development/erd.md) - 查看 Role、Scope、API Key、Project 关系
-- [授权编码规范](../development/authz-coding-guidelines.md) - 查看开发侧权限实现约定
+- [共享/使用 MVP 指南](share-use-mvp.md) - 查看共享池、策略值和结算边界
+- [渠道配置指南](channel-management.md) - 查看供给侧渠道上传与配置方式
+- [模型管理指南](model-management.md) - 查看模型暴露与路由映射如何影响候选渠道
+- [请求处理流程指南](../getting-started/request-processing.md) - 查看权限之外真正影响分发顺序的链路步骤

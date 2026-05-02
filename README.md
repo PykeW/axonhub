@@ -29,9 +29,11 @@
 
 ### All-in-one AI 开发平台
 
-**AxonHub 是 AI 网关，让你无需改动一行代码即可切换模型供应商。**
+**AxonHub 是兼容 OpenAI / Anthropic / Gemini 的 AI 网关：你既可以零代码切换模型供应商，也可以把自己的上游渠道上传到 Share，由平台统一分发。**
 
 无论你使用的是 OpenAI SDK、Anthropic SDK 还是任何 AI SDK，AxonHub 都会透明地将你的请求转换为与任何支持的模型供应商兼容的格式。无需重构，无需更换 SDK——只需更改配置即可。
+
+在当前主线里，用户可以上传自己的渠道、定义模型暴露范围、决定优先使用自有渠道还是他人共享池，并在跨用户成功调用后进一步做积分结算。
 
 **它解决了什么问题：**
 
@@ -39,6 +41,7 @@
 - 🔧 **集成复杂性** - 一个 API 格式对接 10+ 供应商
 - 📊 **可观测性缺口** - 开箱即用的完整请求追踪
 - 💸 **成本控制** - 实时用量追踪和预算管理
+- ♻️ **闲置渠道浪费** - 让用户共享自己的上游渠道，由平台统一做分发和复用
 
 <div align="center">
   <img src="docs/axonhub-architecture-light.svg" alt="AxonHub Architecture" width="700"/>
@@ -50,7 +53,7 @@
 | ----------------------------------------------------------------- | -------------------------------------------------------------------- |
 | 🔄 [**任意 SDK → 任意模型**](docs/zh/api-reference/openai-api.md) | 用 OpenAI SDK 调用 Claude，或用 Anthropic SDK 调用 GPT。零代码改动。 |
 | 🔍 [**完整请求追踪**](docs/zh/guides/tracing.md)                  | 线程级可观测性的完整请求时间线。更快定位问题。                       |
-| 🔐 [**企业级 RBAC**](docs/zh/guides/permissions.md)               | 细粒度访问控制、用量配额和数据隔离。                                 |
+| 🔐 [**Share / Use 权限边界**](docs/zh/guides/permissions.md)      | 控制谁能上传渠道、谁能消费共享池、谁能排查链路。                     |
 | ⚡ [**共享分发与路由策略**](docs/zh/guides/share-use-mvp.md)      | 共享池排除自己、自有优先/共享优先与现有评分系统的组合分发。          |
 | 💰 [**实时成本追踪**](docs/zh/guides/cost-tracking.md)            | 每次请求的成本明细。输入、输出、缓存 Token——全部追踪。               |
 
@@ -366,63 +369,63 @@ axonhub config check
 
 ## 📖 使用指南 | Usage Guide
 
-### 1. 初始化设置 | Initial Setup
+### 1. 初始化与第一条调用 | First Setup
 
-1. **访问管理界面**
+1. **访问 Web 控制台**
 
    ```
    http://localhost:8090
    ```
 
-2. **配置 AI 提供商**
+2. **上传并测试你的第一个自有渠道**
 
-   - 在管理界面中添加 API 密钥
-   - 测试连接确保配置正确
+   - 在 `Channels` 中添加上游提供商凭据
+   - 确认 Base URL、支持模型与测试结果正确
 
-3. **创建用户和角色**
-   - 设置权限管理
-   - 分配适当的访问权限
+3. **创建用于调用的 API Key**
 
-### 2. Channel 配置 | Channel Configuration
+   - 在 `API Keys` 中创建调用凭据
+   - 只授予当前调用所需的权限范围
 
-在管理界面中配置 AI 提供商渠道。关于渠道配置的详细信息，包括模型映射、参数覆盖和故障排除，请参阅 [渠道配置指南](docs/zh/guides/channel-management.md)。
+4. **发出第一条兼容请求**
 
-### 3. 模型管理 | Model Management
+   - 使用现有 OpenAI / Anthropic 兼容 SDK 即可开始调用
+   - 需要更细的链路说明时，优先参考 [快速入门指南](docs/zh/getting-started/quick-start.md)
 
-AxonHub 提供灵活的模型管理系统，支持通过模型关联将抽象模型映射到特定渠道和模型实现。这使您能够：
+### 2. Share：上传自己的渠道 | Share Your Channels
 
-- **统一模型接口** - 使用抽象模型 ID（如 `gpt-4`、`claude-3-opus`）替代渠道特定的名称
-- **智能渠道选择** - 基于关联规则和负载均衡自动将请求路由到最优渠道
-- **灵活的映射策略** - 支持精确的渠道-模型匹配、正则表达式模式和基于标签的选择
-- **基于优先级的回退** - 配置多个具有优先级的关联以实现自动故障转移
+当前产品主线里，Share 是供给侧入口：用户上传自己的上游渠道，平台再基于这些渠道统一分发请求。
 
-关于模型管理的全面信息，包括关联类型、配置示例和最佳实践，请参阅 [模型管理指南](docs/zh/guides/model-management.md)。
+- 当前 `/share` 主要是说明入口；真实的渠道创建、编辑、测试和启用仍在 `Channels` 与 `Models` 页面完成
+- `shared` 渠道会在后续完整能力接入后进入其他用户的共享候选池
+- 对 owner 自己而言，标记为 `shared` 的渠道仍然属于自有池，而不是“绕回来的共享池”
 
-### 4. 创建 API Key | Create API Keys
+详细说明请参阅 [渠道配置指南](docs/zh/guides/channel-management.md) 和 [共享/使用 MVP 指南](docs/zh/guides/share-use-mvp.md)。
 
-创建 API 密钥以验证您的应用程序与 AxonHub 的连接。每个 API 密钥可以配置多个配置文件（Profile），用于定义：
+### 3. Use：决定如何消费渠道 | Use Strategy
 
-- **模型映射** - 使用精确匹配或正则表达式模式将用户请求的模型转换为实际可用的模型
-- **渠道限制** - 通过渠道 ID 或标签限制 API 密钥可以使用的渠道
-- **模型访问控制** - 控制特定配置文件可以访问的模型
-- **配置文件切换** - 通过激活不同的配置文件即时更改行为
+调用方不需要手动选择具体渠道，而是主要决定：
 
-关于 API 密钥配置文件的详细信息，包括配置示例、验证规则和最佳实践，请参阅 [API 密钥配置文件指南](docs/zh/guides/api-key-profiles.md)。
+- 允许访问哪些模型
+- 优先使用自己的渠道还是他人的共享渠道
+- 请求进入后如何在 `OwnPool` 与 `SharedPool` 之间排序
 
-### 5. AI 编程工具集成 | AI Coding Tools Integration
+详细说明请参阅 [共享/使用 MVP 指南](docs/zh/guides/share-use-mvp.md)、[模型管理指南](docs/zh/guides/model-management.md)、[请求处理流程指南](docs/zh/getting-started/request-processing.md) 和 [Share / Use 权限指南](docs/zh/guides/permissions.md)。
 
-关于如何在 OpenCode、Claude Code、Claude Codex 与 Antigravity 中配置与 AxonHub 的集成、排查常见问题以及结合模型配置文件工作流的最佳实践，请参阅专门的集成指南：
+### 4. AI 编程工具集成 | AI Coding Tools Integration
+
+关于如何在 OpenCode、Claude Code、Codex 与 Antigravity 中配置与 AxonHub 的集成、排查常见问题以及结合模型暴露与路由规则工作流的最佳实践，请参阅专门的集成指南：
 
 - [OpenCode 集成指南](docs/zh/guides/opencode-integration.md)
 - [Claude Code 集成指南](docs/zh/guides/claude-code-integration.md)
 - [Codex 集成指南](docs/zh/guides/codex-integration.md)
 - [Antigravity 集成指南](docs/zh/guides/antigravity.md)
 
-这些文档提供了环境变量示例、Codex 配置模板、Antigravity OAuth 配置、模型配置文件说明以及工作流示例，帮助您快速完成接入。
+这些文档提供了环境变量示例、Codex 配置模板、Antigravity OAuth 配置以及工作流示例，帮助您快速完成接入。
 
 ---
 
-### 6. 使用 SDK | SDK Usage
+### 5. 使用 SDK | SDK Usage
 
 详细的 SDK 使用示例和代码示例，请参阅 API 文档：
 

@@ -14,7 +14,7 @@ AxonHub 可以作为 Anthropic 端点的无缝替代方案，让 OpenCode 通过
 ### 前提条件
 
 - 可从您的开发机器访问的 AxonHub 实例。
-- 具有项目访问权限的有效 AxonHub API 密钥。
+- 一个可用于目标模型调用的有效 AxonHub API 密钥。
 - 访问 OpenCode CLI 工具。
 - 可选：在 AxonHub 控制台中配置的一个或多个模型配置（Model Profiles）。
 
@@ -240,8 +240,8 @@ export OPENCODE_AXONHUB_TRACING_TRACE_HEADER="X-Trace-Id"
 
 1. 验证您的 API 密钥在配置中是否正确
 2. 在 AxonHub 控制台中检查 API 密钥是否已过期
-3. 确保 API 密钥具有所请求项目的访问权限
-4. 验证 API 密钥具有所请求模型的权限
+3. 确保 API 密钥具备当前调用上下文所需的访问范围（如 scope / project 绑定）
+4. 验证 API 密钥具有所请求模型的调用权限
 
 ### 意外的模型响应
 
@@ -369,4 +369,4 @@ OpenCode 也可以使用 AxonHub 的 OpenAI 兼容端点：
 - [模型管理指南](model-management.md)
 - [渠道管理指南](channel-management.md)
 - [Anthropic API 参考](../api-reference/anthropic-api.md)
-- README 中的 [使用指南](../../../README.md#使用指南-usage-guide)
+- [中文文档索引](../index.md)
