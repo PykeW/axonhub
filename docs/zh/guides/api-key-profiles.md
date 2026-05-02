@@ -159,6 +159,13 @@ API Key Profile 的模型映射是三层流水线中的**第一步**。完整说
 4. **优先使用渠道标签**：比硬编码渠道 ID 更灵活
 5. **Share / Use 最小方案先从 `modelIDs + useStrategy` 开始**：先跑通模型白名单和使用策略，再逐步补更复杂的 quota / routing 规则
 
+## 后续开发关注点
+
+- 近期先为 `/use` 创建 / 编辑闭环补回归测试，确保 `apiKeyId` 深链编辑只覆盖当前 active profile 的 `modelIDs/useStrategy`。
+- 高级 Profile 编辑应放在 Share 数据契约和请求路由接入之后，再逐步暴露 `quota`、`channelTags`、`modelMappings` 等字段。
+- 高级字段保存必须保持“只覆盖用户明确编辑的字段”，避免最小 Use 表单把既有 profile 的配额、标签或映射清空。
+- 更完整的阶段顺序、阻塞点和验收标准见 [共享/使用 MVP 指南](share-use-mvp.md#下一步开发计划)。
+
 ## 相关文档
 
 - [模型管理指南](model-management.md) - 配置模型关联

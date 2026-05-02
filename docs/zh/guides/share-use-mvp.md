@@ -33,6 +33,45 @@
 - 不要求普通用户理解 API Key Profile、渠道标签或完整负载均衡配置。
 - 不改变现有管理员渠道管理、模型映射、配额和重试能力；MVP 只在其上增加用户视角。
 
+## 下一步开发计划
+
+当前最小闭环已经能创建 / 编辑 Use API Key 的 `modelIDs/useStrategy`。下一步应先把 Share 的实体语义落到数据契约和权限层，再接入请求路由；否则前端即使先做完整表单，也无法保证共享渠道的安全边界、刷新窗口和调度行为一致。
+
+### 推荐实施顺序
+
+| 优先级 | 阶段                       | 目标                                                                   | 主要落点                                                          | 完成标准                                                                                              |
+| ------ | -------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| P0     | 稳定当前 Use 闭环          | 给已完成的 `/use` 创建 / 编辑能力补回归保护                            | `/use` 页面、API Keys 行操作、API Key Profile mutation            | 创建模式、`apiKeyId` 编辑模式、无模型保存失败、无权限提示均有测试或手工验收记录                       |
+| P1     | Share 数据契约实体化       | 在渠道 schema / API 中暴露 owner、visibility、刷新窗口字段             | Channel schema、GraphQL input/output、迁移默认值                  | 历史渠道有默认 owner/visibility 策略；`private/shared` 非法值被拒绝；敏感字段默认不外泄               |
+| P2     | Share 服务端权限与刷新窗口 | 实现普通用户只管理自有渠道、shared 脱敏读取、5 小时刷新冷却和并发保护  | Channel service、permission scope、refresh mutation               | 非所有者无法读写 private；shared 只暴露可路由信息；同渠道并发刷新只有一次成功                         |
+| P3     | Share 前端真实页面         | 用真实列表和表单替换 `/share` 指南包装页                               | `/share` route、渠道表单、状态提示、i18n                          | 可创建 / 编辑 / 归档自有渠道；可见性、支持模型、默认测试模型、刷新冷却状态可见                        |
+| P4     | Use 策略接入请求路由       | 按 `useStrategy`、owner/visibility 和 `nextRefreshAt` 过滤排序候选渠道 | request processing、selector/orchestrator、load balancer 前置过滤 | `only_own` 不使用共享；`prefer_own` 自有优先且可回退；`allow_shared` 保留共享候选；旧配额和重试不回归 |
+| P5     | Use 高级 Profile 编辑      | 在最小表单之上补 quota、channelTags、modelMappings 等高级字段          | `/use` 页面、API Key Profile UI、schema 校验                      | 默认模式仍简单；高级模式只覆盖用户明确编辑的字段，不破坏既有 profile                                  |
+| P6     | 可观测与端到端验收         | 补齐共享容量链路的日志、指标、E2E 和后端回归                           | orchestrator logs、frontend e2e、Go tests                         | 日志包含策略和候选桶；Share/Use 主流程有 e2e；测试矩阵中的目标项可稳定运行                            |
+
+### 最近两个开发切片
+
+1. **P0：当前 Use 闭环回归**
+
+   - 给 `/use` 创建模式补前端测试：选择模型、保存 `prefer_own`、复制生成 key。
+   - 给 `/use?apiKeyId=<id>` 编辑模式补测试：加载既有 user key，仅更新 active profile 的 `modelIDs/useStrategy`，保留 `quota/channelTags/modelMappings`。
+   - 给 API Keys 行操作补断言：只有 user key 显示 `Use 配置`，点击后带 `apiKeyId` 进入 `/use`。
+   - 验证命令优先使用 `cd frontend && npm run build`，如有 E2E 基础数据再补 `cd frontend && npm run test:e2e -- apikeys/share-use.spec.ts`。
+
+2. **P1/P2：Share 字段与权限后端切片**
+   - 明确历史渠道的兼容默认值：管理员渠道默认 `private` 且 owner 为空时只保留管理员可见，还是迁移到创建者 / 默认项目所有者。
+   - 在渠道对象和 GraphQL 层增加 `ownerUserID`、`visibility`、`supportedModels`、`defaultTestModel`、`lastRefreshedAt`、`nextRefreshAt` 的读写契约。
+   - 增加服务端校验：普通用户不能改 owner；`supportedModels` 不能为空；`defaultTestModel` 必须属于 `supportedModels`；刷新冷却按服务端时间判断。
+   - 先做后端单元测试，再接 `/share` 前端表单，避免 UI 先行导致权限和脱敏语义返工。
+
+### 关键依赖和阻塞点
+
+- **权限模型**：必须先确认“渠道所有者”到底绑定 user、project，还是二者都要记录；这会影响 private/shared 的可见范围。
+- **历史数据迁移**：没有 owner/visibility 的渠道必须有明确默认值，否则路由过滤会出现灰区。
+- **刷新窗口一致性**：5 小时窗口应以服务端成功刷新时间为准，并在事务或锁内更新 `nextRefreshAt`。
+- **调度层插入点**：own-first 与 soonest-refresh-first 应放在现有负载均衡和重试之前，但不能绕过现有模型关联、配额、健康、熔断规则。
+- **前端降级**：在后端字段未全量发布前，`/share` 和 `/use` 需要能显示“暂不可配置”的明确状态，而不是静默保存不完整数据。
+
 ## 共享页面
 
 共享页面管理“我上传的渠道”。每个渠道仍然是 AxonHub 渠道，但必须带有所有者和可见性语义。
@@ -230,10 +269,9 @@ make build
 
 - 本文作为 MVP 验收和联调入口：`docs/zh/guides/share-use-mvp.md`。
 - `docs/zh/guides/api-key-profiles.md` 已补充 `/use` 最小表单、`modelIDs/useStrategy` 以及通过 `apiKeyId` 深链编辑既有 key 的关系。
-
-- `docs/zh/guides/channel-management.md` 后续可补充 Share 页面与 `private/shared` 的关系。
-
-- `docs/zh/getting-started/request-processing.md` 后续可补充 own-first 与 soonest-refresh-first 在请求链路中的位置。
+- `docs/zh/guides/channel-management.md` 已补充当前 `/share` 仍为包装页，以及 `private/shared` 与 5 小时刷新窗口的现阶段关系。
+- `docs/zh/guides/permissions.md` 已补充 `/share` 依赖 `read_channels`、`/use` 依赖 `read_api_keys` 的访问前提。
+- `docs/zh/getting-started/request-processing.md` 已补充 own-first 与 soonest-refresh-first 在请求链路中的位置。
 
 ## 风险和待确认
 
