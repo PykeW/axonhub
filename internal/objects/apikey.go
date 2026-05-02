@@ -28,6 +28,11 @@ type APIKeyProfile struct {
 type APIKeyUseStrategy string
 
 const (
+	APIKeyUseStrategyOwnOnly     APIKeyUseStrategy = "own_only"
+	APIKeyUseStrategyOwnFirst    APIKeyUseStrategy = "own_first"
+	APIKeyUseStrategySharedFirst APIKeyUseStrategy = "shared_first"
+	APIKeyUseStrategySharedOnly  APIKeyUseStrategy = "shared_only"
+
 	APIKeyUseStrategyPreferOwn   APIKeyUseStrategy = "prefer_own"
 	APIKeyUseStrategyOnlyOwn     APIKeyUseStrategy = "only_own"
 	APIKeyUseStrategyAllowShared APIKeyUseStrategy = "allow_shared"
@@ -35,7 +40,14 @@ const (
 
 func (s APIKeyUseStrategy) IsValid() bool {
 	switch s {
-	case "", APIKeyUseStrategyPreferOwn, APIKeyUseStrategyOnlyOwn, APIKeyUseStrategyAllowShared:
+	case "",
+		APIKeyUseStrategyOwnOnly,
+		APIKeyUseStrategyOwnFirst,
+		APIKeyUseStrategySharedFirst,
+		APIKeyUseStrategySharedOnly,
+		APIKeyUseStrategyPreferOwn,
+		APIKeyUseStrategyOnlyOwn,
+		APIKeyUseStrategyAllowShared:
 		return true
 	default:
 		return false
@@ -44,16 +56,20 @@ func (s APIKeyUseStrategy) IsValid() bool {
 
 func (s APIKeyUseStrategy) OrDefault() APIKeyUseStrategy {
 	switch s {
-	case APIKeyUseStrategyOnlyOwn, APIKeyUseStrategyAllowShared:
-		return s
+	case APIKeyUseStrategyOwnOnly, APIKeyUseStrategyOnlyOwn:
+		return APIKeyUseStrategyOwnOnly
+	case APIKeyUseStrategySharedFirst, APIKeyUseStrategyAllowShared:
+		return APIKeyUseStrategySharedFirst
+	case APIKeyUseStrategySharedOnly:
+		return APIKeyUseStrategySharedOnly
 	default:
-		return APIKeyUseStrategyPreferOwn
+		return APIKeyUseStrategyOwnFirst
 	}
 }
 
 func (p *APIKeyProfile) UseStrategyOrDefault() APIKeyUseStrategy {
 	if p == nil {
-		return APIKeyUseStrategyPreferOwn
+		return APIKeyUseStrategyOwnFirst
 	}
 
 	return p.UseStrategy.OrDefault()

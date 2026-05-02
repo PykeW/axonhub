@@ -37,6 +37,8 @@ type RelayAdminServiceParams struct {
 	APIKeyService  *APIKeyService
 }
 
+// Legacy Relay/Sub-Key admin surface for the older operator-managed product/key workflow.
+// Keep maintenance-only changes here until Share/Use fully replaces relay products, relay keys, and relay wallets.
 type RelayAdminService struct {
 	*AbstractService
 

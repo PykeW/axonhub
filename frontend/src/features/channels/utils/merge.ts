@@ -83,6 +83,43 @@ export function mergeOverrideOperations(existing: OverrideOperation[], template:
   return result;
 }
 
+const DEFAULT_SHARE_VISIBILITY = 'private';
+const DEFAULT_SHARE_REFRESH_WINDOW_SECONDS = 5 * 60 * 60;
+const DEFAULT_SHARE_REFRESH_QUOTA = 1;
+
+function mergeChannelShareSettings(
+  existing: ChannelSettings['share'] | null | undefined,
+  patch: ChannelSettings['share'] | undefined,
+  hasSharePatch: boolean
+): ChannelSettings['share'] {
+  if (hasSharePatch && patch === null) {
+    return null;
+  }
+
+  if (!hasSharePatch) {
+    return existing ?? null;
+  }
+
+  const source = patch ?? existing;
+  if (!source) {
+    return {
+      visibility: DEFAULT_SHARE_VISIBILITY,
+      refreshWindowSeconds: DEFAULT_SHARE_REFRESH_WINDOW_SECONDS,
+      refreshQuota: DEFAULT_SHARE_REFRESH_QUOTA,
+    };
+  }
+
+  return {
+    ownerUserID: patch?.ownerUserID ?? existing?.ownerUserID ?? undefined,
+    visibility: patch?.visibility ?? existing?.visibility ?? DEFAULT_SHARE_VISIBILITY,
+    lastRefreshedAt: patch?.lastRefreshedAt ?? existing?.lastRefreshedAt ?? undefined,
+    nextRefreshAt: patch?.nextRefreshAt ?? existing?.nextRefreshAt ?? undefined,
+    refreshWindowSeconds:
+      patch?.refreshWindowSeconds ?? existing?.refreshWindowSeconds ?? DEFAULT_SHARE_REFRESH_WINDOW_SECONDS,
+    refreshQuota: patch?.refreshQuota ?? existing?.refreshQuota ?? DEFAULT_SHARE_REFRESH_QUOTA,
+  };
+}
+
 export function mergeChannelSettingsForUpdate(
   existing: ChannelSettings | null | undefined,
   patch: Partial<ChannelSettings>
@@ -109,6 +146,11 @@ export function mergeChannelSettingsForUpdate(
     passThroughUserAgent: pick('passThroughUserAgent', existing?.passThroughUserAgent ?? null),
     passThroughBody: pick('passThroughBody', existing?.passThroughBody ?? false),
     rateLimit: pick('rateLimit', existing?.rateLimit ?? null),
+    share: mergeChannelShareSettings(
+      existing?.share ?? null,
+      hasOwn('share') ? (patch.share as ChannelSettings['share'] | undefined) : undefined,
+      hasOwn('share')
+    ),
   };
 }
 

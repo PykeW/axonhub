@@ -1,9 +1,7 @@
 import { type FormEvent, type ReactNode, useMemo, useState } from 'react';
 import { Outlet } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { Header } from '@/components/layout/header';
 import { useRoutePermissions } from '@/hooks/useRoutePermissions';
-import { Main } from '@/components/layout/main';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Header } from '@/components/layout/header';
+import { Main } from '@/components/layout/main';
 import {
   type RelayDerivedState,
   type RelayFailureStage,
@@ -53,7 +53,8 @@ interface DetailPageProps {
   productId?: string;
   keyId?: string;
 }
-
+// Legacy operator navigation for the old Relay/Sub-Key console. Keep maintenance-only updates here
+// until Share/Use fully replaces product, key, request-trace, and pool-health views.
 const operatorNav = [
   { labelKey: 'relaySubkeys.nav.overview', fallback: 'Overview', href: '/relay-subkeys' },
   { labelKey: 'relaySubkeys.nav.products', fallback: 'Products', href: '/relay-subkeys/products' },
@@ -145,7 +146,7 @@ function PageHeader({ title, description, actions }: { title: string; descriptio
     <div className='flex flex-col gap-3 md:flex-row md:items-start md:justify-between'>
       <div className='space-y-1'>
         <h3 className='text-lg font-semibold tracking-tight'>{title}</h3>
-        <p className='text-sm text-muted-foreground'>{description}</p>
+        <p className='text-muted-foreground text-sm'>{description}</p>
       </div>
       {actions ? <div className='flex flex-wrap gap-2'>{actions}</div> : null}
     </div>
@@ -160,7 +161,7 @@ function MetricCard({ label, value, hint }: { label: string; value: string; hint
         <CardTitle className='text-2xl'>{value}</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className='text-sm text-muted-foreground'>{hint}</p>
+        <p className='text-muted-foreground text-sm'>{hint}</p>
       </CardContent>
     </Card>
   );
@@ -189,7 +190,7 @@ function EmptyState({ title, description }: { title: string; description: string
     <Card>
       <CardContent className='py-10 text-center'>
         <p className='font-medium'>{title}</p>
-        <p className='mt-1 text-sm text-muted-foreground'>{description}</p>
+        <p className='text-muted-foreground mt-1 text-sm'>{description}</p>
       </CardContent>
     </Card>
   );
@@ -238,7 +239,10 @@ function ProductTable({ products }: { products: RelayProduct[] }) {
   }
 
   return (
-    <TableFrame title='Product inventory' description='Operational state, pool health, and issued-key coverage for shared-capacity products.'>
+    <TableFrame
+      title='Product inventory'
+      description='Operational state, pool health, and issued-key coverage for shared-capacity products.'
+    >
       <Table>
         <TableHeader>
           <TableRow>
@@ -256,7 +260,7 @@ function ProductTable({ products }: { products: RelayProduct[] }) {
             <TableRow key={product.id}>
               <TableCell className='whitespace-normal'>
                 <div className='font-medium'>{product.name}</div>
-                <div className='text-xs text-muted-foreground'>{product.code}</div>
+                <div className='text-muted-foreground text-xs'>{product.code}</div>
               </TableCell>
               <TableCell>
                 <ProductStatusBadge status={product.status} />
@@ -264,10 +268,10 @@ function ProductTable({ products }: { products: RelayProduct[] }) {
               <TableCell>
                 <div className='space-y-1'>
                   <HealthBadge health={product.poolHealth} />
-                  <div className='text-xs text-muted-foreground'>{product.channelPool.length} bound channels</div>
+                  <div className='text-muted-foreground text-xs'>{product.channelPool.length} bound channels</div>
                 </div>
               </TableCell>
-              <TableCell className='max-w-[280px] whitespace-normal text-xs'>{product.allowedModels.join(', ')}</TableCell>
+              <TableCell className='max-w-[280px] text-xs whitespace-normal'>{product.allowedModels.join(', ')}</TableCell>
               <TableCell>
                 {product.activeKeyCount}/{product.keyCount} active
               </TableCell>
@@ -309,7 +313,7 @@ function KeyTable({ keys }: { keys: RelayKey[] }) {
             <TableRow key={key.id}>
               <TableCell className='whitespace-normal'>
                 <div className='font-medium'>{key.name}</div>
-                <div className='text-xs text-muted-foreground'>{key.maskedKey}</div>
+                <div className='text-muted-foreground text-xs'>{key.maskedKey}</div>
               </TableCell>
               <TableCell>{key.projectName}</TableCell>
               <TableCell>{key.productName}</TableCell>
@@ -321,7 +325,7 @@ function KeyTable({ keys }: { keys: RelayKey[] }) {
               </TableCell>
               <TableCell className='text-right'>
                 <div>{formatNumber(key.usage.todayRequests)} req</div>
-                <div className='text-xs text-muted-foreground'>{formatNumber(key.usage.todayTokens)} tokens</div>
+                <div className='text-muted-foreground text-xs'>{formatNumber(key.usage.todayTokens)} tokens</div>
               </TableCell>
               <TableCell className='text-right'>
                 <Button variant='ghost' size='sm' asChild>
@@ -338,11 +342,16 @@ function KeyTable({ keys }: { keys: RelayKey[] }) {
 
 function RequestTraceTable({ requests }: { requests: RelayRequestTrace[] }) {
   if (requests.length === 0) {
-    return <EmptyState title='No request traces' description='Relay request facts will appear here after compatible API traffic is processed.' />;
+    return (
+      <EmptyState title='No request traces' description='Relay request facts will appear here after compatible API traffic is processed.' />
+    );
   }
 
   return (
-    <TableFrame title='Request and settlement trace' description='Request success and charge success are separate states for relay troubleshooting.'>
+    <TableFrame
+      title='Request and settlement trace'
+      description='Request success and charge success are separate states for relay troubleshooting.'
+    >
       <Table>
         <TableHeader>
           <TableRow>
@@ -361,23 +370,25 @@ function RequestTraceTable({ requests }: { requests: RelayRequestTrace[] }) {
               <TableCell>{formatDateTime(request.createdAt)}</TableCell>
               <TableCell className='whitespace-normal'>
                 <div className='font-medium'>{request.projectName}</div>
-                <div className='text-xs text-muted-foreground'>{request.keyName}</div>
+                <div className='text-muted-foreground text-xs'>{request.keyName}</div>
               </TableCell>
               <TableCell className='whitespace-normal'>
                 <div>{request.productName}</div>
-                <div className='text-xs text-muted-foreground'>{request.modelId}</div>
+                <div className='text-muted-foreground text-xs'>{request.modelId}</div>
               </TableCell>
               <TableCell className='whitespace-normal'>{request.channelName ?? '-'}</TableCell>
               <TableCell>
                 <div className='space-y-1'>
                   <StatusBadge variant={failureStageVariant(request.failureStage)}>{request.failureStage}</StatusBadge>
-                  {request.errorMessage ? <div className='max-w-[280px] whitespace-normal text-xs text-muted-foreground'>{request.errorMessage}</div> : null}
+                  {request.errorMessage ? (
+                    <div className='text-muted-foreground max-w-[280px] text-xs whitespace-normal'>{request.errorMessage}</div>
+                  ) : null}
                 </div>
               </TableCell>
               <TableCell>
                 <div className='space-y-1'>
                   <Badge variant={request.charged ? 'default' : 'outline'}>{request.charged ? 'charged' : 'not charged'}</Badge>
-                  <div className='text-xs text-muted-foreground'>{request.settlementStatus}</div>
+                  <div className='text-muted-foreground text-xs'>{request.settlementStatus}</div>
                 </div>
               </TableCell>
               <TableCell className='text-right'>{formatCurrency(request.chargeAmount)}</TableCell>
@@ -397,8 +408,11 @@ export function RelaySubkeysLayout() {
         <div className='flex flex-1 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between'>
           <div>
             <h2 className='text-xl font-bold tracking-tight'>{tt('relaySubkeys.operator.title', 'Relay Sub-Key Operations')}</h2>
-            <p className='text-sm text-muted-foreground'>
-              {tt('relaySubkeys.operator.description', 'Manage products, channel pools, sub-keys, wallets, and request traces for shared relay capacity.')}
+            <p className='text-muted-foreground text-sm'>
+              {tt(
+                'relaySubkeys.operator.description',
+                'Manage products, channel pools, sub-keys, wallets, and request traces for shared relay capacity.'
+              )}
             </p>
           </div>
           <Badge variant='secondary'>{tt('relaySubkeys.operator.badge', 'Frontend MVP')}</Badge>
@@ -437,7 +451,10 @@ export function RelaySubkeysOverviewPage() {
     <div className='space-y-6'>
       <PageHeader
         title={tt('relaySubkeys.overview.title', 'Operator overview')}
-        description={tt('relaySubkeys.overview.description', 'The MVP surface keeps the manual relay lifecycle visible from product setup to settlement troubleshooting.')}
+        description={tt(
+          'relaySubkeys.overview.description',
+          'The MVP surface keeps the manual relay lifecycle visible from product setup to settlement troubleshooting.'
+        )}
         actions={
           <>
             <Button asChild>
@@ -450,10 +467,26 @@ export function RelaySubkeysOverviewPage() {
         }
       />
       <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
-        <MetricCard label='Active products' value={`${activeProducts}/${products.length}`} hint='Products can issue keys only when the channel pool is ready.' />
-        <MetricCard label='Active sub-keys' value={`${activeKeys}/${keys.length}`} hint='Derived badges call out low balance, expiry, quota, and pool risk.' />
-        <MetricCard label='Degraded pools' value={formatNumber(degradedPools)} hint='Pool health separates upstream capacity issues from customer key issues.' />
-        <MetricCard label='Failed traces' value={formatNumber(failedRequests)} hint='Request facts include failure stage and settlement outcome.' />
+        <MetricCard
+          label='Active products'
+          value={`${activeProducts}/${products.length}`}
+          hint='Products can issue keys only when the channel pool is ready.'
+        />
+        <MetricCard
+          label='Active sub-keys'
+          value={`${activeKeys}/${keys.length}`}
+          hint='Derived badges call out low balance, expiry, quota, and pool risk.'
+        />
+        <MetricCard
+          label='Degraded pools'
+          value={formatNumber(degradedPools)}
+          hint='Pool health separates upstream capacity issues from customer key issues.'
+        />
+        <MetricCard
+          label='Failed traces'
+          value={formatNumber(failedRequests)}
+          hint='Request facts include failure stage and settlement outcome.'
+        />
       </div>
       <div className='grid gap-6 xl:grid-cols-2'>
         <ProductTable products={products.slice(0, 3)} />
@@ -538,7 +571,10 @@ export function RelayProductCreatePage() {
 
   return (
     <div className='space-y-6'>
-      <PageHeader title='Create relay product' description='Create the product shell first; bind channels from the product detail page before activation.' />
+      <PageHeader
+        title='Create relay product'
+        description='Create the product shell first; bind channels from the product detail page before activation.'
+      />
       <Card>
         <CardHeader>
           <CardTitle>Product metadata</CardTitle>
@@ -588,10 +624,12 @@ export function RelayProductDetailPage({ productId }: DetailPageProps) {
   const canWriteChannels = canAccessScopes(['write_channels'], 'system');
 
   if (productQuery.isLoading || channelQuery.isLoading || keysQuery.isLoading) return <LoadingCards />;
-  if (productQuery.error || channelQuery.error || keysQuery.error) return <ErrorState error={productQuery.error ?? channelQuery.error ?? keysQuery.error} />;
+  if (productQuery.error || channelQuery.error || keysQuery.error)
+    return <ErrorState error={productQuery.error ?? channelQuery.error ?? keysQuery.error} />;
 
   const product = productQuery.data;
-  if (!product) return <EmptyState title='Product not found' description='The requested relay product does not exist in the current dataset.' />;
+  if (!product)
+    return <EmptyState title='Product not found' description='The requested relay product does not exist in the current dataset.' />;
 
   const channels = channelQuery.data ?? [];
   const assignedKeys = (keysQuery.data ?? []).filter((key) => key.productId === product.id);
@@ -604,7 +642,12 @@ export function RelayProductDetailPage({ productId }: DetailPageProps) {
         actions={
           canWriteChannels ? (
             <>
-              <Button variant='outline' onClick={() => updateMutation.mutate({ id: product.id, input: { status: product.status === 'active' ? 'draft' : 'active' } })}>
+              <Button
+                variant='outline'
+                onClick={() =>
+                  updateMutation.mutate({ id: product.id, input: { status: product.status === 'active' ? 'draft' : 'active' } })
+                }
+              >
                 {product.status === 'active' ? 'Return to draft' : 'Activate product'}
               </Button>
               <Button
@@ -628,7 +671,11 @@ export function RelayProductDetailPage({ productId }: DetailPageProps) {
       <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
         <MetricCard label='Status' value={product.status} hint='Only active products should receive new traffic.' />
         <MetricCard label='Pool health' value={product.poolHealth} hint='Healthy candidates are required before activation.' />
-        <MetricCard label='Issued keys' value={`${product.activeKeyCount}/${product.keyCount}`} hint='Active keys currently mapped to this product.' />
+        <MetricCard
+          label='Issued keys'
+          value={`${product.activeKeyCount}/${product.keyCount}`}
+          hint='Active keys currently mapped to this product.'
+        />
         <MetricCard label='Monthly tokens' value={formatNumber(product.monthlyTokenCount)} hint={formatCurrency(product.monthlyCost)} />
       </div>
       <Tabs defaultValue='pool'>
@@ -638,7 +685,10 @@ export function RelayProductDetailPage({ productId }: DetailPageProps) {
           <TabsTrigger value='keys'>Assigned keys</TabsTrigger>
         </TabsList>
         <TabsContent value='pool' className='space-y-4'>
-          <TableFrame title='Bound upstream channels' description='Priority, weight, fallback behavior, and health explain product capacity.'>
+          <TableFrame
+            title='Bound upstream channels'
+            description='Priority, weight, fallback behavior, and health explain product capacity.'
+          >
             <Table>
               <TableHeader>
                 <TableRow>
@@ -656,7 +706,7 @@ export function RelayProductDetailPage({ productId }: DetailPageProps) {
                   <TableRow key={channel.id}>
                     <TableCell className='whitespace-normal'>
                       <div className='font-medium'>{channel.channelName}</div>
-                      <div className='text-xs text-muted-foreground'>{channel.unavailableReason ?? `${channel.latencyMs} ms latency`}</div>
+                      <div className='text-muted-foreground text-xs'>{channel.unavailableReason ?? `${channel.latencyMs} ms latency`}</div>
                     </TableCell>
                     <TableCell>{channel.priority}</TableCell>
                     <TableCell>{channel.weight}</TableCell>
@@ -665,9 +715,9 @@ export function RelayProductDetailPage({ productId }: DetailPageProps) {
                     </TableCell>
                     <TableCell className='min-w-[160px]'>
                       <Progress value={channel.quotaRemainingPercent} />
-                      <div className='mt-1 text-xs text-muted-foreground'>{channel.quotaRemainingPercent}% remaining</div>
+                      <div className='text-muted-foreground mt-1 text-xs'>{channel.quotaRemainingPercent}% remaining</div>
                     </TableCell>
-                    <TableCell className='whitespace-normal text-xs'>{channel.modelFilter.join(', ')}</TableCell>
+                    <TableCell className='text-xs whitespace-normal'>{channel.modelFilter.join(', ')}</TableCell>
                     {canWriteChannels ? (
                       <TableCell className='space-x-2 text-right'>
                         <Button
@@ -733,7 +783,11 @@ export function RelayKeyListPage() {
     return rows.filter((key) => {
       const matchesStatus = statusFilter === 'all' || key.status === statusFilter;
       const query = search.toLowerCase();
-      const matchesSearch = !query || key.name.toLowerCase().includes(query) || key.projectName.toLowerCase().includes(query) || key.maskedKey.toLowerCase().includes(query);
+      const matchesSearch =
+        !query ||
+        key.name.toLowerCase().includes(query) ||
+        key.projectName.toLowerCase().includes(query) ||
+        key.maskedKey.toLowerCase().includes(query);
       return matchesStatus && matchesSearch;
     });
   }, [keysQuery.data, search, statusFilter]);
@@ -754,7 +808,11 @@ export function RelayKeyListPage() {
       />
       <Card>
         <CardContent className='flex flex-col gap-3 pt-6 md:flex-row'>
-          <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder='Search key, project, or masked secret...' />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder='Search key, project, or masked secret...'
+          />
           <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | RelayKeyStatus)}>
             <SelectTrigger className='w-full md:w-[180px]'>
               <SelectValue placeholder='Status' />
@@ -802,7 +860,10 @@ export function RelayKeyCreatePage() {
 
   return (
     <div className='space-y-6'>
-      <PageHeader title='Issue relay sub-key' description='Bind a project to an active product and prepare the one-time plaintext credential handoff.' />
+      <PageHeader
+        title='Issue relay sub-key'
+        description='Bind a project to an active product and prepare the one-time plaintext credential handoff.'
+      />
       <Card>
         <CardHeader>
           <CardTitle>Issuance form</CardTitle>
@@ -837,10 +898,13 @@ export function RelayKeyCreatePage() {
             {oneTimeCredential ? (
               <>
                 <p>Copy and store this value now. It will not be shown again in lists or detail pages.</p>
-                <div className='rounded-lg border bg-muted/40 p-3 font-mono text-sm text-foreground'>{oneTimeCredential}</div>
+                <div className='bg-muted/40 text-foreground rounded-lg border p-3 font-mono text-sm'>{oneTimeCredential}</div>
               </>
             ) : (
-              <p>Plaintext was not returned by this response. Use the masked identifier {createdKey.maskedKey} for tracking and re-issue if the secret was not captured.</p>
+              <p>
+                Plaintext was not returned by this response. Use the masked identifier {createdKey.maskedKey} for tracking and re-issue if
+                the secret was not captured.
+              </p>
             )}
           </AlertDescription>
         </Alert>
@@ -867,7 +931,8 @@ export function RelayKeyDetailPage({ keyId }: DetailPageProps) {
   }
 
   const key = keyQuery.data;
-  if (!key) return <EmptyState title='Sub-key not found' description='The requested relay sub-key does not exist in the current dataset.' />;
+  if (!key)
+    return <EmptyState title='Sub-key not found' description='The requested relay sub-key does not exist in the current dataset.' />;
 
   const wallet = walletQuery.data;
   const ledger = ledgerQuery.data ?? [];
@@ -885,13 +950,21 @@ export function RelayKeyDetailPage({ keyId }: DetailPageProps) {
             </Button>
             {canWriteApiKeys ? (
               <>
-                <Button variant='secondary' onClick={() => suspendMutation.mutate({ id: key.id, note: 'Operator pause from MVP UI' })} disabled={key.status === 'suspended'}>
+                <Button
+                  variant='secondary'
+                  onClick={() => suspendMutation.mutate({ id: key.id, note: 'Operator pause from MVP UI' })}
+                  disabled={key.status === 'suspended'}
+                >
                   Suspend
                 </Button>
                 <Button variant='outline' onClick={() => resumeMutation.mutate({ id: key.id })} disabled={key.status === 'active'}>
                   Resume
                 </Button>
-                <Button variant='destructive' onClick={() => archiveMutation.mutate({ id: key.id, note: 'Archive from MVP UI' })} disabled={key.status === 'archived'}>
+                <Button
+                  variant='destructive'
+                  onClick={() => archiveMutation.mutate({ id: key.id, note: 'Archive from MVP UI' })}
+                  disabled={key.status === 'archived'}
+                >
                   Archive
                 </Button>
               </>
@@ -901,8 +974,16 @@ export function RelayKeyDetailPage({ keyId }: DetailPageProps) {
       />
       <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
         <MetricCard label='Status' value={key.status} hint='Persisted state controls runtime access.' />
-        <MetricCard label='Available balance' value={wallet ? formatCurrency(wallet.availableAmount, wallet.currency) : '-'} hint='Low-balance badges are derived from wallet thresholds.' />
-        <MetricCard label='Today requests' value={formatNumber(key.usage.todayRequests)} hint={`${formatNumber(key.usage.todayTokens)} tokens today`} />
+        <MetricCard
+          label='Available balance'
+          value={wallet ? formatCurrency(wallet.availableAmount, wallet.currency) : '-'}
+          hint='Low-balance badges are derived from wallet thresholds.'
+        />
+        <MetricCard
+          label='Today requests'
+          value={formatNumber(key.usage.todayRequests)}
+          hint={`${formatNumber(key.usage.todayTokens)} tokens today`}
+        />
         <MetricCard label='Monthly cost' value={formatCurrency(key.usage.monthlyCost)} hint={`Expires ${formatDateTime(key.expiresAt)}`} />
       </div>
       <Tabs defaultValue='overview'>
@@ -924,7 +1005,12 @@ export function RelayKeyDetailPage({ keyId }: DetailPageProps) {
                 <KeyStatusBadge status={key.status} />
                 <DerivedStateBadges states={key.derivedStates} />
               </div>
-              {key.usage.recentFailure ? <Alert><AlertTitle>Recent failure</AlertTitle><AlertDescription>{key.usage.recentFailure}</AlertDescription></Alert> : null}
+              {key.usage.recentFailure ? (
+                <Alert>
+                  <AlertTitle>Recent failure</AlertTitle>
+                  <AlertDescription>{key.usage.recentFailure}</AlertDescription>
+                </Alert>
+              ) : null}
             </CardContent>
           </Card>
           <Card>
@@ -950,13 +1036,23 @@ export function RelayKeyDetailPage({ keyId }: DetailPageProps) {
           <Card>
             <CardHeader>
               <CardTitle>Usage guards</CardTitle>
-              <CardDescription>Daily limits are enforced; monthly cost is a soft preflight guard and concurrency is an MVP preview.</CardDescription>
+              <CardDescription>
+                Daily limits are enforced; monthly cost is a soft preflight guard and concurrency is an MVP preview.
+              </CardDescription>
             </CardHeader>
             <CardContent className='grid gap-4 md:grid-cols-4'>
               <MetricCard label='Daily requests' value={formatNumber(key.limits.dailyRequestLimit)} hint='Hard cap before quota_reached.' />
               <MetricCard label='Daily tokens' value={formatNumber(key.limits.dailyTokenLimit)} hint='Token guard for shared pool use.' />
-              <MetricCard label='Monthly cost' value={formatCurrency(key.limits.monthlyCostLimit)} hint='Soft preflight guard; not a settlement hard cap.' />
-              <MetricCard label='Concurrency' value={formatNumber(key.limits.concurrencyLimit)} hint='Preview value; positive limits are not enforced in MVP.' />
+              <MetricCard
+                label='Monthly cost'
+                value={formatCurrency(key.limits.monthlyCostLimit)}
+                hint='Soft preflight guard; not a settlement hard cap.'
+              />
+              <MetricCard
+                label='Concurrency'
+                value={formatNumber(key.limits.concurrencyLimit)}
+                hint='Preview value; positive limits are not enforced in MVP.'
+              />
               {canWriteApiKeys ? (
                 <div className='md:col-span-4'>
                   <Button
@@ -996,10 +1092,26 @@ function RelayWalletAndLedger({
   return (
     <div className='space-y-6'>
       <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
-        <MetricCard label='Available' value={wallet ? formatCurrency(wallet.availableAmount, wallet.currency) : '-'} hint='Amount available for new relay requests.' />
-        <MetricCard label='Frozen' value={wallet ? formatCurrency(wallet.frozenAmount, wallet.currency) : '-'} hint='Reserved for in-flight settlement.' />
-        <MetricCard label='Recharged' value={wallet ? formatCurrency(wallet.totalRecharged, wallet.currency) : '-'} hint='Manual top-ups and refunds.' />
-        <MetricCard label='Spent' value={wallet ? formatCurrency(wallet.totalSpent, wallet.currency) : '-'} hint='Usage settlement ledger total.' />
+        <MetricCard
+          label='Available'
+          value={wallet ? formatCurrency(wallet.availableAmount, wallet.currency) : '-'}
+          hint='Amount available for new relay requests.'
+        />
+        <MetricCard
+          label='Frozen'
+          value={wallet ? formatCurrency(wallet.frozenAmount, wallet.currency) : '-'}
+          hint='Reserved for in-flight settlement.'
+        />
+        <MetricCard
+          label='Recharged'
+          value={wallet ? formatCurrency(wallet.totalRecharged, wallet.currency) : '-'}
+          hint='Manual top-ups and refunds.'
+        />
+        <MetricCard
+          label='Spent'
+          value={wallet ? formatCurrency(wallet.totalSpent, wallet.currency) : '-'}
+          hint='Usage settlement ledger total.'
+        />
       </div>
       {canWriteApiKeys ? (
         <Card>
@@ -1008,7 +1120,10 @@ function RelayWalletAndLedger({
             <CardDescription>Recharge uses mutation glue with mock fallback until backend endpoints land.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => rechargeMutation.mutate({ relayKeyId: keyId, amount: 100, note: 'MVP preview recharge' })} disabled={rechargeMutation.isPending}>
+            <Button
+              onClick={() => rechargeMutation.mutate({ relayKeyId: keyId, amount: 100, note: 'MVP preview recharge' })}
+              disabled={rechargeMutation.isPending}
+            >
               {rechargeMutation.isPending ? 'Posting...' : 'Post $100 preview recharge'}
             </Button>
           </CardContent>
@@ -1052,12 +1167,16 @@ export function RelayKeyBillingPage({ keyId }: DetailPageProps) {
   const ledgerQuery = useRelayLedgerEntriesQuery(keyId);
 
   if (keyQuery.isLoading || walletQuery.isLoading || ledgerQuery.isLoading) return <LoadingCards />;
-  if (keyQuery.error || walletQuery.error || ledgerQuery.error) return <ErrorState error={keyQuery.error ?? walletQuery.error ?? ledgerQuery.error} />;
+  if (keyQuery.error || walletQuery.error || ledgerQuery.error)
+    return <ErrorState error={keyQuery.error ?? walletQuery.error ?? ledgerQuery.error} />;
   if (!keyQuery.data) return <EmptyState title='Sub-key not found' description='Wallet and ledger data could not be resolved.' />;
 
   return (
     <div className='space-y-6'>
-      <PageHeader title={`${keyQuery.data.name} wallet`} description='Recharge, refund, manual adjustment, and usage settlement evidence for support workflows.' />
+      <PageHeader
+        title={`${keyQuery.data.name} wallet`}
+        description='Recharge, refund, manual adjustment, and usage settlement evidence for support workflows.'
+      />
       <RelayWalletAndLedger keyId={keyQuery.data.id} wallet={walletQuery.data} ledger={ledgerQuery.data} />
     </div>
   );
@@ -1088,10 +1207,17 @@ export function RelayRequestListPage() {
 
   return (
     <div className='space-y-6'>
-      <PageHeader title='Relay request troubleshooting' description='Filter by key, product, channel, or failure stage to explain where a request failed.' />
+      <PageHeader
+        title='Relay request troubleshooting'
+        description='Filter by key, product, channel, or failure stage to explain where a request failed.'
+      />
       <Card>
         <CardContent className='flex flex-col gap-3 pt-6 md:flex-row'>
-          <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder='Search project, key, product, or model...' />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder='Search project, key, product, or model...'
+          />
           <Select value={stage} onValueChange={(value) => setStage(value as 'all' | RelayFailureStage)}>
             <SelectTrigger className='w-full md:w-[220px]'>
               <SelectValue placeholder='Failure stage' />
@@ -1124,9 +1250,16 @@ export function RelayChannelPoolHealthPage() {
 
   return (
     <div className='space-y-6'>
-      <PageHeader title='Channel pool health' description='Inspect shared upstream risk by product before blaming customer balances or keys.' />
+      <PageHeader
+        title='Channel pool health'
+        description='Inspect shared upstream risk by product before blaming customer balances or keys.'
+      />
       <div className='grid gap-4 md:grid-cols-3'>
-        <MetricCard label='Products watched' value={formatNumber(pools.length)} hint='Every relay product with a configured or missing pool.' />
+        <MetricCard
+          label='Products watched'
+          value={formatNumber(pools.length)}
+          hint='Every relay product with a configured or missing pool.'
+        />
         <MetricCard label='At-risk pools' value={formatNumber(atRisk)} hint='Degraded or unavailable pools need operator action.' />
         <MetricCard label='Healthy pools' value={formatNumber(pools.length - atRisk)} hint='Ready for key issuance and traffic.' />
       </div>
@@ -1170,7 +1303,7 @@ export function RelayChannelPoolHealthPage() {
                           <TableCell>{channel.allowFallback ? 'allowed' : 'blocked'}</TableCell>
                           <TableCell className='min-w-[160px]'>
                             <Progress value={channel.quotaRemainingPercent} />
-                            <div className='mt-1 text-xs text-muted-foreground'>{channel.quotaRemainingPercent}% remaining</div>
+                            <div className='text-muted-foreground mt-1 text-xs'>{channel.quotaRemainingPercent}% remaining</div>
                           </TableCell>
                           <TableCell>{channel.errorRatePercent}%</TableCell>
                         </TableRow>
@@ -1179,7 +1312,10 @@ export function RelayChannelPoolHealthPage() {
                   </Table>
                 </div>
               ) : (
-                <EmptyState title='No channels bound' description='This product cannot be activated until at least one upstream channel is bound.' />
+                <EmptyState
+                  title='No channels bound'
+                  description='This product cannot be activated until at least one upstream channel is bound.'
+                />
               )}
             </CardContent>
           </Card>

@@ -24,6 +24,11 @@ import (
 	"github.com/samber/lo"
 )
 
+// UseStrategy is the resolver for the useStrategy field.
+func (r *aPIKeyProfileResolver) UseStrategy(ctx context.Context, obj *objects.APIKeyProfile) (*objects.APIKeyUseStrategy, error) {
+	panic(fmt.Errorf("not implemented: UseStrategy - useStrategy"))
+}
+
 // AllModelEntries is the resolver for the allModelEntries field.
 func (r *channelResolver) AllModelEntries(ctx context.Context, obj *ent.Channel) ([]*biz.ChannelModelEntry, error) {
 	ch := biz.Channel{Channel: obj}
@@ -749,6 +754,9 @@ func (r *traceResolver) UsageMetadata(ctx context.Context, obj *ent.Trace) (*biz
 	return r.traceService.UsageMetadata(ctx, obj.ID)
 }
 
+// APIKeyProfile returns APIKeyProfileResolver implementation.
+func (r *Resolver) APIKeyProfile() APIKeyProfileResolver { return &aPIKeyProfileResolver{r} }
+
 // ChannelSettings returns ChannelSettingsResolver implementation.
 func (r *Resolver) ChannelSettings() ChannelSettingsResolver { return &channelSettingsResolver{r} }
 
@@ -758,6 +766,7 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 // Segment returns SegmentResolver implementation.
 func (r *Resolver) Segment() SegmentResolver { return &segmentResolver{r} }
 
+type aPIKeyProfileResolver struct{ *Resolver }
 type channelSettingsResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type segmentResolver struct{ *Resolver }

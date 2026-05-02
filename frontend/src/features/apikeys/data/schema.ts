@@ -21,16 +21,29 @@ const channelTagsMatchModeFieldSchema = z.preprocess((value) => {
   return value;
 }, channelTagsMatchModeSchema);
 
-export const apiKeyUseStrategySchema = z.enum(['prefer_own', 'only_own', 'allow_shared']);
+const apiKeyUseStrategyCanonicalSchema = z.enum(['own_only', 'own_first', 'shared_first', 'shared_only']);
+
+function normalizeApiKeyUseStrategy(value: unknown) {
+  switch (value) {
+    case null:
+    case undefined:
+    case '':
+      return 'own_first';
+    case 'prefer_own':
+      return 'own_first';
+    case 'only_own':
+      return 'own_only';
+    case 'allow_shared':
+      return 'shared_first';
+    default:
+      return value;
+  }
+}
+
+export const apiKeyUseStrategySchema = z.preprocess(normalizeApiKeyUseStrategy, apiKeyUseStrategyCanonicalSchema);
 export type ApiKeyUseStrategy = z.infer<typeof apiKeyUseStrategySchema>;
 
-const apiKeyUseStrategyFieldSchema = z.preprocess((value) => {
-  if (value == null || value === '') {
-    return 'prefer_own';
-  }
-
-  return value;
-}, apiKeyUseStrategySchema);
+const apiKeyUseStrategyFieldSchema = z.preprocess(normalizeApiKeyUseStrategy, apiKeyUseStrategyCanonicalSchema);
 
 // API Key schema based on GraphQL schema
 export const apiKeySchema = z.object({

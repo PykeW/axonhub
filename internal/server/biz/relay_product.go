@@ -65,6 +65,8 @@ type RelayProductServiceParams struct {
 	ChannelService *ChannelService
 }
 
+// Legacy Relay/Sub-Key product/catalog service kept for the older operator-managed flow.
+// Keep compatibility fixes only; new Share/Use management should not expand this surface.
 type RelayProductService struct {
 	*AbstractService
 

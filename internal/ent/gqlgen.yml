@@ -132,6 +132,15 @@ models:
   ChannelRateLimitInput:
     model:
       - github.com/looplj/axonhub/internal/objects.ChannelRateLimit
+  ChannelVisibility:
+    model:
+      - github.com/looplj/axonhub/internal/objects.ChannelVisibility
+  ChannelShareSettings:
+    model:
+      - github.com/looplj/axonhub/internal/objects.ChannelShareSettings
+  ChannelShareSettingsInput:
+    model:
+      - github.com/looplj/axonhub/internal/objects.ChannelShareSettings
   ChannelCredentials:
     model:
       - github.com/looplj/axonhub/internal/objects.ChannelCredentials

@@ -9,6 +9,7 @@ import (
 
 	"github.com/samber/lo"
 
+	"github.com/looplj/axonhub/internal/contexts"
 	"github.com/looplj/axonhub/internal/ent"
 	"github.com/looplj/axonhub/internal/ent/model"
 	"github.com/looplj/axonhub/internal/log"
@@ -560,6 +561,181 @@ func (s *TagsFilterSelector) Select(ctx context.Context, req *llm.Request) ([]*C
 
 func matchChannelTagsFilter(allowedTags []string, matchMode objects.ChannelTagsMatchMode, channelTags []string) bool {
 	return objects.MatchChannelTags(allowedTags, matchMode, channelTags)
+}
+
+const shareUseBucketPriorityOffset = 1_000_000_000
+
+type shareUsePoolClass int
+
+const (
+	shareUsePoolExcluded shareUsePoolClass = iota
+	shareUsePoolOwn
+	shareUsePoolShared
+	shareUsePoolLegacy
+)
+
+// ShareUseStrategySelector routes candidates through OwnPool/SharedPool semantics
+// before the existing scoring/load-balancing phase runs.
+type ShareUseStrategySelector struct {
+	wrapped CandidateSelector
+	apiKey  *ent.APIKey
+}
+
+func WithShareUseStrategySelector(wrapped CandidateSelector, apiKey *ent.APIKey) *ShareUseStrategySelector {
+	return &ShareUseStrategySelector{
+		wrapped: wrapped,
+		apiKey:  apiKey,
+	}
+}
+
+func (s *ShareUseStrategySelector) Select(ctx context.Context, req *llm.Request) ([]*ChannelModelsCandidate, error) {
+	candidates, err := s.wrapped.Select(ctx, req)
+	if err != nil || len(candidates) == 0 {
+		return candidates, err
+	}
+
+	callerUserID, useStrategy, ok := s.resolveCallerUseStrategy(ctx)
+	if !ok {
+		return candidates, nil
+	}
+
+	ownCandidates := make([]*ChannelModelsCandidate, 0, len(candidates))
+	sharedCandidates := make([]*ChannelModelsCandidate, 0, len(candidates))
+	legacyCandidates := make([]*ChannelModelsCandidate, 0, len(candidates))
+
+	for _, candidate := range candidates {
+		switch classifyShareUseCandidate(candidate, callerUserID) {
+		case shareUsePoolOwn:
+			ownCandidates = append(ownCandidates, candidate)
+		case shareUsePoolShared:
+			sharedCandidates = append(sharedCandidates, candidate)
+		case shareUsePoolLegacy:
+			legacyCandidates = append(legacyCandidates, candidate)
+		}
+	}
+
+	ownBucketIndex, sharedBucketIndex, legacyBucketIndex := shareUseBucketOrder(useStrategy)
+	ownCandidates = orderShareUseBucketCandidates(ownCandidates, ownBucketIndex)
+	sharedCandidates = orderShareUseBucketCandidates(sharedCandidates, sharedBucketIndex)
+	legacyCandidates = orderShareUseBucketCandidates(legacyCandidates, legacyBucketIndex)
+
+	routed := routeShareUseCandidates(useStrategy, ownCandidates, sharedCandidates, legacyCandidates)
+	if log.DebugEnabled(ctx) {
+		log.Debug(ctx, "applied share/use strategy",
+			log.String("use_strategy", string(useStrategy)),
+			log.Int("caller_user_id", callerUserID),
+			log.Int("own_candidates", len(ownCandidates)),
+			log.Int("shared_candidates", len(sharedCandidates)),
+			log.Int("legacy_candidates", len(legacyCandidates)),
+			log.Int("routed_candidates", len(routed)),
+		)
+	}
+
+	return routed, nil
+}
+
+func (s *ShareUseStrategySelector) resolveCallerUseStrategy(ctx context.Context) (int, objects.APIKeyUseStrategy, bool) {
+	useStrategy := objects.APIKeyUseStrategyOwnFirst
+	if s.apiKey != nil {
+		if profile := s.apiKey.GetActiveProfile(); profile != nil {
+			useStrategy = profile.UseStrategyOrDefault()
+		}
+
+		if s.apiKey.UserID > 0 {
+			return s.apiKey.UserID, useStrategy, true
+		}
+	}
+
+	if user, ok := contexts.GetUser(ctx); ok && user != nil && user.ID > 0 {
+		return user.ID, useStrategy, true
+	}
+
+	return 0, useStrategy, false
+}
+
+func classifyShareUseCandidate(candidate *ChannelModelsCandidate, callerUserID int) shareUsePoolClass {
+	if candidate == nil || candidate.Channel == nil || candidate.Channel.Settings == nil {
+		return shareUsePoolLegacy
+	}
+
+	share := candidate.Channel.Settings.Share
+	if share == nil || share.OwnerUserID == nil || share.OwnerUserID.Type != ent.TypeUser {
+		// Keep legacy channels reachable as a migration fallback until ownerUserID
+		// is normalized for all shared/private channel records.
+		return shareUsePoolLegacy
+	}
+
+	if share.OwnerUserID.ID == callerUserID {
+		return shareUsePoolOwn
+	}
+
+	if share.VisibilityOrDefault() == objects.ChannelVisibilityShared {
+		return shareUsePoolShared
+	}
+
+	return shareUsePoolExcluded
+}
+
+func orderShareUseBucketCandidates(candidates []*ChannelModelsCandidate, bucketIndex int) []*ChannelModelsCandidate {
+	if len(candidates) == 0 {
+		return candidates
+	}
+
+	ordered := append([]*ChannelModelsCandidate(nil), candidates...)
+	slices.SortStableFunc(ordered, func(left, right *ChannelModelsCandidate) int {
+		leftAt := shareUseNextRefreshAt(left)
+		rightAt := shareUseNextRefreshAt(right)
+
+		if leftAt.Before(rightAt) {
+			return -1
+		}
+		if leftAt.After(rightAt) {
+			return 1
+		}
+
+		return 0
+	})
+
+	for _, candidate := range ordered {
+		candidate.Priority = bucketIndex*shareUseBucketPriorityOffset + candidate.Priority
+	}
+
+	return ordered
+}
+
+func shareUseNextRefreshAt(candidate *ChannelModelsCandidate) time.Time {
+	if candidate == nil || candidate.Channel == nil || candidate.Channel.Settings == nil || candidate.Channel.Settings.Share == nil || candidate.Channel.Settings.Share.NextRefreshAt == nil {
+		return time.Time{}
+	}
+
+	return *candidate.Channel.Settings.Share.NextRefreshAt
+}
+
+func shareUseBucketOrder(useStrategy objects.APIKeyUseStrategy) (ownBucketIndex, sharedBucketIndex, legacyBucketIndex int) {
+	switch useStrategy.OrDefault() {
+	case objects.APIKeyUseStrategySharedFirst, objects.APIKeyUseStrategySharedOnly:
+		return 1, 0, 2
+	default:
+		return 0, 1, 2
+	}
+}
+
+func routeShareUseCandidates(
+	useStrategy objects.APIKeyUseStrategy,
+	ownCandidates []*ChannelModelsCandidate,
+	sharedCandidates []*ChannelModelsCandidate,
+	legacyCandidates []*ChannelModelsCandidate,
+) []*ChannelModelsCandidate {
+	switch useStrategy.OrDefault() {
+	case objects.APIKeyUseStrategyOwnOnly:
+		return ownCandidates
+	case objects.APIKeyUseStrategySharedFirst:
+		return append(append(append([]*ChannelModelsCandidate{}, sharedCandidates...), ownCandidates...), legacyCandidates...)
+	case objects.APIKeyUseStrategySharedOnly:
+		return sharedCandidates
+	default:
+		return append(append(append([]*ChannelModelsCandidate{}, ownCandidates...), sharedCandidates...), legacyCandidates...)
+	}
 }
 
 // SpecifiedChannelSelector allows selecting specific channels (including disabled ones) for testing.

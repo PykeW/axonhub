@@ -1,13 +1,13 @@
 import React from 'react';
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
-import { useNavigate } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import { Row } from '@tanstack/react-table';
 import { IconArchive, IconEdit, IconSettings, IconUserCheck, IconUserOff } from '@tabler/icons-react';
 import { BarChart3 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { usePermissions } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useApiKeysContext } from '../context/use-apikeys-context';
 import { ApiKey } from '../data/schema';
 import { ApiKeyTokenChartDialog } from './api-key-token-chart-dialog';
@@ -17,7 +17,6 @@ interface DataTableRowActionsProps {
 }
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
-  const navigate = useNavigate();
   const { t } = useTranslation();
   const { openDialog } = useApiKeysContext();
   const { apiKeyPermissions } = usePermissions();
@@ -53,13 +52,6 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
     setTimeout(() => openDialog('profiles', target), 0);
   };
 
-  const handleUseSetup = (target: ApiKey) => {
-    setOpen(false);
-    setTimeout(() => {
-      navigate({ to: '/use', search: { apiKeyId: target.id } });
-    }, 0);
-  };
-
   const handleViewChart = () => {
     setOpen(false);
     setTimeout(() => setChartOpen(true), 0);
@@ -87,9 +79,11 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
                 {t('common.actions.edit')}
               </DropdownMenuItem>
               {apiKey.type === 'user' ? (
-                <DropdownMenuItem onClick={() => handleUseSetup(apiKey)}>
-                  <IconSettings className='mr-2 h-4 w-4' />
-                  {t('apikeys.actions.useSetup')}
+                <DropdownMenuItem asChild>
+                  <Link to='/use' search={{ apiKeyId: apiKey.id }} onClick={() => setOpen(false)}>
+                    <IconSettings className='mr-2 h-4 w-4' />
+                    {t('apikeys.actions.useSetup')}
+                  </Link>
                 </DropdownMenuItem>
               ) : null}
               {apiKey.type !== 'service_account' ? (

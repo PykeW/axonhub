@@ -56,6 +56,10 @@ func selectCandidates(inbound *PersistentInboundTransformer) pipeline.Middleware
 			}
 		}
 
+		if inbound.state.RelayAuthContext == nil || !inbound.state.RelayAuthContext.HasRoutingConstraints() {
+			selector = WithShareUseStrategySelector(selector, inbound.state.APIKey)
+		}
+
 		// Apply Google native tools filter (only for Gemini native API format)
 		if llmRequest.APIFormat == llm.APIFormatGeminiContents {
 			selector = WithGoogleNativeToolsSelector(selector)

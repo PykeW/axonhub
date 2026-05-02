@@ -222,10 +222,12 @@ export interface RechargeRelayWalletInput {
   amount: number;
   note: string;
 }
-
+// Legacy Relay/Sub-Key admin API surface for the older operator-managed flow.
+// Keep compatibility fixes only; new Share/Use work should not add fresh dependencies here.
 export type RelaySubkeysApiMode = 'mock' | 'rest';
 
 const RELAY_SUBKEYS_API_BASE = '/admin/relay-subkeys';
+
 const RELAY_SUBKEYS_PROJECT_API_BASE = '/admin/projects';
 
 const relayApiMode = (): RelaySubkeysApiMode => (import.meta.env.VITE_RELAY_SUBKEYS_API_MODE === 'rest' ? 'rest' : 'mock');

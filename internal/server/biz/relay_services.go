@@ -33,6 +33,8 @@ type RelayAccessServiceParams struct {
 	Router *RelayRouterService
 }
 
+// Legacy Relay/Sub-Key access loader kept for the older operator-managed relay flow.
+// New Share/Use pool selection should stay in the normal API key/channel path instead of expanding this branch.
 type RelayAccessService struct {
 	*AbstractService
 
@@ -349,6 +351,8 @@ type RelaySettlementServiceParams struct {
 	Ent *ent.Client
 }
 
+// Legacy Relay/Sub-Key wallet settlement kept only for backward compatibility with relay-subkey billing.
+// Cross-user Share/Use credits should settle through the new shared-capacity accounting path instead of extending this service.
 type RelaySettlementService struct {
 	*AbstractService
 }

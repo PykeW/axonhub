@@ -59,6 +59,11 @@ enum ProxyType {
   URL
 }
 
+enum ChannelVisibility {
+  private
+  shared
+}
+
 type ProxyConfig {
   type: ProxyType!
   url: String
@@ -66,11 +71,26 @@ type ProxyConfig {
   password: String
 }
 
+type ChannelShareSettings {
+  ownerUserID: ID
+  visibility: ChannelVisibility
+  lastRefreshedAt: Time
+  nextRefreshAt: Time
+  refreshWindowSeconds: Int
+  refreshQuota: Int
+}
+
 input ProxyConfigInput {
   type: ProxyType!
   url: String
   username: String
   password: String
+}
+
+input ChannelShareSettingsInput {
+  visibility: ChannelVisibility
+  refreshWindowSeconds: Int
+  refreshQuota: Int
 }
 
 type ChannelSettings {
@@ -86,6 +106,7 @@ type ChannelSettings {
   passThroughUserAgent: Boolean
   passThroughBody: Boolean
   rateLimit: ChannelRateLimit
+  share: ChannelShareSettings
 }
 
 enum CapabilityPolicy {
@@ -120,6 +141,7 @@ input ChannelSettingsInput {
   passThroughUserAgent: Boolean
   passThroughBody: Boolean
   rateLimit: ChannelRateLimitInput
+  share: ChannelShareSettingsInput
 }
 
 input ChannelRateLimitInput {
@@ -334,7 +356,7 @@ type APIKeyProfile {
   modelIDs: [String!]
   quota: APIKeyQuota
   loadBalanceStrategy: String
-  useStrategy: APIKeyUseStrategy
+  useStrategy: APIKeyUseStrategy @goField(forceResolver: true)
 }
 
 enum ChannelTagsMatchMode {
@@ -344,6 +366,10 @@ enum ChannelTagsMatchMode {
 }
 
 enum APIKeyUseStrategy {
+  own_only
+  own_first
+  shared_first
+  shared_only
   prefer_own
   only_own
   allow_shared

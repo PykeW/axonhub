@@ -61,6 +61,8 @@ const channelNamesConnectionSchema = z.object({
   }),
 });
 
+
+
 const CREATE_CHANNEL_MUTATION = `
   mutation CreateChannel($input: CreateChannelInput!) {
     createChannel(input: $input) {
@@ -81,34 +83,48 @@ const CREATE_CHANNEL_MUTATION = `
       manualModels
       tags
       defaultTestModel
-        settings {
-          extraModelPrefix
-          modelMappings {
-            from
-            to
-          }
-          autoTrimedModelPrefixes
-          hideOriginalModels
-          hideMappedModels
-          proxy {
-            type
-            url
-            username
-            password
-          }
-          transformOptions {
-            forceArrayInstructions
-            forceArrayInputs
-            replaceDeveloperRoleWithSystem
-          }
-          passThroughUserAgent
-          passThroughBody
+      settings {
+        extraModelPrefix
+        modelMappings {
+          from
+          to
         }
+        autoTrimedModelPrefixes
+        hideOriginalModels
+        hideMappedModels
+        proxy {
+          type
+          url
+          username
+          password
+        }
+        transformOptions {
+          forceArrayInstructions
+          forceArrayInputs
+          replaceDeveloperRoleWithSystem
+        }
+        passThroughUserAgent
+        passThroughBody
+        rateLimit {
+          rpm
+          tpm
+          maxConcurrent
+        }
+        share {
+          ownerUserID
+          visibility
+          lastRefreshedAt
+          nextRefreshAt
+          refreshWindowSeconds
+          refreshQuota
+        }
+      }
       orderingWeight
       remark
     }
   }
 `;
+
 
 const BULK_CREATE_CHANNELS_MUTATION = `
   mutation BulkCreateChannels($input: BulkCreateChannelsInput!) {
@@ -129,34 +145,48 @@ const BULK_CREATE_CHANNELS_MUTATION = `
       manualModels
       tags
       defaultTestModel
-        settings {
-          extraModelPrefix
-          modelMappings {
-            from
-            to
-          }
-          autoTrimedModelPrefixes
-          hideOriginalModels
-          hideMappedModels
-          proxy {
-            type
-            url
-            username
-            password
-          }
-          transformOptions {
-            forceArrayInstructions
-            forceArrayInputs
-            replaceDeveloperRoleWithSystem
-          }
-          passThroughUserAgent
-          passThroughBody
+      settings {
+        extraModelPrefix
+        modelMappings {
+          from
+          to
         }
+        autoTrimedModelPrefixes
+        hideOriginalModels
+        hideMappedModels
+        proxy {
+          type
+          url
+          username
+          password
+        }
+        transformOptions {
+          forceArrayInstructions
+          forceArrayInputs
+          replaceDeveloperRoleWithSystem
+        }
+        passThroughUserAgent
+        passThroughBody
+        rateLimit {
+          rpm
+          tpm
+          maxConcurrent
+        }
+        share {
+          ownerUserID
+          visibility
+          lastRefreshedAt
+          nextRefreshAt
+          refreshWindowSeconds
+          refreshQuota
+        }
+      }
       orderingWeight
       remark
     }
   }
 `;
+
 
 const UPDATE_CHANNEL_MUTATION = `
   mutation UpdateChannel($id: ID!, $input: UpdateChannelInput!) {
@@ -177,29 +207,42 @@ const UPDATE_CHANNEL_MUTATION = `
       manualModels
       tags
       defaultTestModel
-        settings {
-          extraModelPrefix
-          modelMappings {
-            from
-            to
-          }
-          autoTrimedModelPrefixes
-          hideOriginalModels
-          hideMappedModels
-          proxy {
-            type
-            url
-            username
-            password
-          }
-          transformOptions {
-            forceArrayInstructions
-            forceArrayInputs
-            replaceDeveloperRoleWithSystem
-          }
-          passThroughUserAgent
-          passThroughBody
+      settings {
+        extraModelPrefix
+        modelMappings {
+          from
+          to
         }
+        autoTrimedModelPrefixes
+        hideOriginalModels
+        hideMappedModels
+        proxy {
+          type
+          url
+          username
+          password
+        }
+        transformOptions {
+          forceArrayInstructions
+          forceArrayInputs
+          replaceDeveloperRoleWithSystem
+        }
+        passThroughUserAgent
+        passThroughBody
+        rateLimit {
+          rpm
+          tpm
+          maxConcurrent
+        }
+        share {
+          ownerUserID
+          visibility
+          lastRefreshedAt
+          nextRefreshAt
+          refreshWindowSeconds
+          refreshQuota
+        }
+      }
       orderingWeight
       errorMessage
       remark
@@ -281,6 +324,8 @@ const TEST_CHANNEL_API_KEYS_MUTATION = `
   }
 `;
 
+
+
 const BULK_IMPORT_CHANNELS_MUTATION = `
   mutation BulkImportChannels($input: BulkImportChannelsInput!) {
     bulkImportChannels(input: $input) {
@@ -296,7 +341,7 @@ const BULK_IMPORT_CHANNELS_MUTATION = `
         baseURL
         name
         status
-          supportedModels
+        supportedModels
         autoSyncSupportedModels
         autoSyncModelPattern
         manualModels
@@ -311,6 +356,12 @@ const BULK_IMPORT_CHANNELS_MUTATION = `
           autoTrimedModelPrefixes
           hideOriginalModels
           hideMappedModels
+          proxy {
+            type
+            url
+            username
+            password
+          }
           transformOptions {
             forceArrayInstructions
             forceArrayInputs
@@ -318,6 +369,19 @@ const BULK_IMPORT_CHANNELS_MUTATION = `
           }
           passThroughUserAgent
           passThroughBody
+          rateLimit {
+            rpm
+            tpm
+            maxConcurrent
+          }
+          share {
+            ownerUserID
+            visibility
+            lastRefreshedAt
+            nextRefreshAt
+            refreshWindowSeconds
+            refreshQuota
+          }
         }
       }
     }
@@ -457,6 +521,8 @@ const SAVE_CHANNEL_MODEL_PRICES_MUTATION = `
   }
 `;
 
+
+
 const BULK_UPDATE_CHANNEL_ORDERING_MUTATION = `
   mutation BulkUpdateChannelOrdering($input: BulkUpdateChannelOrderingInput!) {
     bulkUpdateChannelOrdering(input: $input) {
@@ -484,6 +550,12 @@ const BULK_UPDATE_CHANNEL_ORDERING_MUTATION = `
           autoTrimedModelPrefixes
           hideOriginalModels
           hideMappedModels
+          proxy {
+            type
+            url
+            username
+            password
+          }
           transformOptions {
             forceArrayInstructions
             forceArrayInputs
@@ -491,6 +563,19 @@ const BULK_UPDATE_CHANNEL_ORDERING_MUTATION = `
           }
           passThroughUserAgent
           passThroughBody
+          rateLimit {
+            rpm
+            tpm
+            maxConcurrent
+          }
+          share {
+            ownerUserID
+            visibility
+            lastRefreshedAt
+            nextRefreshAt
+            refreshWindowSeconds
+            refreshQuota
+          }
         }
       }
     }
@@ -541,6 +626,8 @@ const ALL_CHANNEL_TAGS_QUERY = `
     allChannelTags
   }
 `;
+
+
 
 const QUERY_CHANNELS_QUERY = `
   query QueryChannels($input: QueryChannelInput!) {
@@ -614,6 +701,14 @@ const QUERY_CHANNELS_QUERY = `
               rpm
               tpm
               maxConcurrent
+            }
+            share {
+              ownerUserID
+              visibility
+              lastRefreshedAt
+              nextRefreshAt
+              refreshWindowSeconds
+              refreshQuota
             }
           }
           orderingWeight

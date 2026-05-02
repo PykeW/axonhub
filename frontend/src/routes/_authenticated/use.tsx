@@ -25,7 +25,7 @@ import { useSelectedProjectId } from '@/stores/projectStore';
 const CREATE_NEW_API_KEY_OPTION = '__create_new_api_key__';
 const DEFAULT_API_KEY_NAME = 'Use MVP API Key';
 const DEFAULT_PROFILE_NAME = 'Use MVP';
-const DEFAULT_USE_STRATEGY: ApiKeyUseStrategy = 'prefer_own';
+const DEFAULT_USE_STRATEGY: ApiKeyUseStrategy = 'own_first';
 
 const useStrategyOptions: Array<{
   value: ApiKeyUseStrategy;
@@ -33,19 +33,24 @@ const useStrategyOptions: Array<{
   description: string;
 }> = [
   {
-    value: 'prefer_own',
-    title: 'Prefer own',
-    description: 'Try your own channels first, then fall back to shared channels when eligible.',
+    value: 'own_only',
+    title: 'Own only',
+    description: 'Only route to your own channels. Shared channels are excluded.',
   },
   {
-    value: 'only_own',
-    title: 'Only own',
-    description: 'Route only to channels owned by the current project.',
+    value: 'own_first',
+    title: 'Own first',
+    description: 'Try your own channels first, then fall back to eligible shared channels.',
   },
   {
-    value: 'allow_shared',
-    title: 'Allow shared',
-    description: 'Allow eligible shared channels for the selected model IDs.',
+    value: 'shared_first',
+    title: 'Shared first',
+    description: 'Try eligible shared channels first, then fall back to your own channels.',
+  },
+  {
+    value: 'shared_only',
+    title: 'Shared only',
+    description: 'Only route to eligible shared channels and exclude your own channels.',
   },
 ];
 
@@ -380,7 +385,7 @@ function UsePage() {
 
     const parsedUseStrategy = apiKeyUseStrategySchema.safeParse(useStrategy.trim() || DEFAULT_USE_STRATEGY);
     if (!parsedUseStrategy.success) {
-      return { ok: false, error: 'Invalid use strategy. Choose prefer_own, only_own, or allow_shared.' };
+      return { ok: false, error: 'Invalid use strategy. Choose own_only, own_first, shared_first, or shared_only.' };
     }
 
     return { ok: true, name, modelIDs, useStrategy: parsedUseStrategy.data };
@@ -608,7 +613,7 @@ function UsePage() {
                 <Label>Use strategy</Label>
                 <Select value={useStrategy || DEFAULT_USE_STRATEGY} onValueChange={setUseStrategy} disabled={isSaving || isLoadingEditingApiKey}>
                   <SelectTrigger className='w-full'>
-                    <SelectValue placeholder='prefer_own' />
+                    <SelectValue placeholder='own_first' />
                   </SelectTrigger>
                   <SelectContent>
                     {useStrategyOptions.map((option) => (
@@ -729,7 +734,9 @@ function UsePage() {
   );
 }
 
-export const Route = createFileRoute('/_authenticated/use' as keyof FileRoutesByPath)({
+const useRoutePath = '/_authenticated/use' as Extract<keyof FileRoutesByPath, '/_authenticated/use'>;
+
+export const Route = createFileRoute(useRoutePath)({
   component: UsePage,
   validateSearch: (search: UsePageSearch) => ({
     apiKeyId: typeof search.apiKeyId === 'string' && search.apiKeyId.trim().length > 0 ? search.apiKeyId : undefined,

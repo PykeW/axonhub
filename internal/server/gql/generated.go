@@ -67,6 +67,7 @@ type Config struct {
 
 type ResolverRoot interface {
 	APIKey() APIKeyResolver
+	APIKeyProfile() APIKeyProfileResolver
 	Channel() ChannelResolver
 	ChannelModelPrice() ChannelModelPriceResolver
 	ChannelModelPriceVersion() ChannelModelPriceVersionResolver
@@ -472,7 +473,17 @@ type ComplexityRoot struct {
 		PassThroughUserAgent     func(childComplexity int) int
 		Proxy                    func(childComplexity int) int
 		RateLimit                func(childComplexity int) int
+		Share                    func(childComplexity int) int
 		TransformOptions         func(childComplexity int) int
+	}
+
+	ChannelShareSettings struct {
+		LastRefreshedAt      func(childComplexity int) int
+		NextRefreshAt        func(childComplexity int) int
+		OwnerUserID          func(childComplexity int) int
+		RefreshQuota         func(childComplexity int) int
+		RefreshWindowSeconds func(childComplexity int) int
+		Visibility           func(childComplexity int) int
 	}
 
 	ChannelSuccessRate struct {
@@ -1991,6 +2002,9 @@ type APIKeyResolver interface {
 	ProjectID(ctx context.Context, obj *ent.APIKey) (*objects.GUID, error)
 
 	User(ctx context.Context, obj *ent.APIKey) (*ent.User, error)
+}
+type APIKeyProfileResolver interface {
+	UseStrategy(ctx context.Context, obj *objects.APIKeyProfile) (*objects.APIKeyUseStrategy, error)
 }
 type ChannelResolver interface {
 	ID(ctx context.Context, obj *ent.Channel) (*objects.GUID, error)
@@ -3772,12 +3786,55 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ChannelSettings.RateLimit(childComplexity), true
+	case "ChannelSettings.share":
+		if e.complexity.ChannelSettings.Share == nil {
+			break
+		}
+
+		return e.complexity.ChannelSettings.Share(childComplexity), true
 	case "ChannelSettings.transformOptions":
 		if e.complexity.ChannelSettings.TransformOptions == nil {
 			break
 		}
 
 		return e.complexity.ChannelSettings.TransformOptions(childComplexity), true
+
+	case "ChannelShareSettings.lastRefreshedAt":
+		if e.complexity.ChannelShareSettings.LastRefreshedAt == nil {
+			break
+		}
+
+		return e.complexity.ChannelShareSettings.LastRefreshedAt(childComplexity), true
+	case "ChannelShareSettings.nextRefreshAt":
+		if e.complexity.ChannelShareSettings.NextRefreshAt == nil {
+			break
+		}
+
+		return e.complexity.ChannelShareSettings.NextRefreshAt(childComplexity), true
+	case "ChannelShareSettings.ownerUserID":
+		if e.complexity.ChannelShareSettings.OwnerUserID == nil {
+			break
+		}
+
+		return e.complexity.ChannelShareSettings.OwnerUserID(childComplexity), true
+	case "ChannelShareSettings.refreshQuota":
+		if e.complexity.ChannelShareSettings.RefreshQuota == nil {
+			break
+		}
+
+		return e.complexity.ChannelShareSettings.RefreshQuota(childComplexity), true
+	case "ChannelShareSettings.refreshWindowSeconds":
+		if e.complexity.ChannelShareSettings.RefreshWindowSeconds == nil {
+			break
+		}
+
+		return e.complexity.ChannelShareSettings.RefreshWindowSeconds(childComplexity), true
+	case "ChannelShareSettings.visibility":
+		if e.complexity.ChannelShareSettings.Visibility == nil {
+			break
+		}
+
+		return e.complexity.ChannelShareSettings.Visibility(childComplexity), true
 
 	case "ChannelSuccessRate.channelId":
 		if e.complexity.ChannelSuccessRate.ChannelID == nil {
@@ -10692,6 +10749,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputChannelRateLimitInput,
 		ec.unmarshalInputChannelRegexAssociationInput,
 		ec.unmarshalInputChannelSettingsInput,
+		ec.unmarshalInputChannelShareSettingsInput,
 		ec.unmarshalInputChannelTagsModelAssociationInput,
 		ec.unmarshalInputChannelTagsRegexAssociationInput,
 		ec.unmarshalInputChannelWhereInput,
@@ -15222,10 +15280,10 @@ func (ec *executionContext) _APIKeyProfile_useStrategy(ctx context.Context, fiel
 		field,
 		ec.fieldContext_APIKeyProfile_useStrategy,
 		func(ctx context.Context) (any, error) {
-			return obj.UseStrategy, nil
+			return ec.resolvers.APIKeyProfile().UseStrategy(ctx, obj)
 		},
 		nil,
-		ec.marshalOAPIKeyUseStrategy2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐAPIKeyUseStrategy,
+		ec.marshalOAPIKeyUseStrategy2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐAPIKeyUseStrategy,
 		true,
 		false,
 	)
@@ -15235,8 +15293,8 @@ func (ec *executionContext) fieldContext_APIKeyProfile_useStrategy(_ context.Con
 	fc = &graphql.FieldContext{
 		Object:     "APIKeyProfile",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type APIKeyUseStrategy does not have child fields")
 		},
@@ -17789,6 +17847,8 @@ func (ec *executionContext) fieldContext_Channel_settings(_ context.Context, fie
 				return ec.fieldContext_ChannelSettings_passThroughBody(ctx, field)
 			case "rateLimit":
 				return ec.fieldContext_ChannelSettings_rateLimit(ctx, field)
+			case "share":
+				return ec.fieldContext_ChannelSettings_share(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ChannelSettings", field.Name)
 		},
@@ -21853,6 +21913,223 @@ func (ec *executionContext) fieldContext_ChannelSettings_rateLimit(_ context.Con
 				return ec.fieldContext_ChannelRateLimit_maxConcurrent(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ChannelRateLimit", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChannelSettings_share(ctx context.Context, field graphql.CollectedField, obj *objects.ChannelSettings) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChannelSettings_share,
+		func(ctx context.Context) (any, error) {
+			return obj.Share, nil
+		},
+		nil,
+		ec.marshalOChannelShareSettings2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐChannelShareSettings,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChannelSettings_share(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChannelSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "ownerUserID":
+				return ec.fieldContext_ChannelShareSettings_ownerUserID(ctx, field)
+			case "visibility":
+				return ec.fieldContext_ChannelShareSettings_visibility(ctx, field)
+			case "lastRefreshedAt":
+				return ec.fieldContext_ChannelShareSettings_lastRefreshedAt(ctx, field)
+			case "nextRefreshAt":
+				return ec.fieldContext_ChannelShareSettings_nextRefreshAt(ctx, field)
+			case "refreshWindowSeconds":
+				return ec.fieldContext_ChannelShareSettings_refreshWindowSeconds(ctx, field)
+			case "refreshQuota":
+				return ec.fieldContext_ChannelShareSettings_refreshQuota(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ChannelShareSettings", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChannelShareSettings_ownerUserID(ctx context.Context, field graphql.CollectedField, obj *objects.ChannelShareSettings) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChannelShareSettings_ownerUserID,
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerUserID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐGUID,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChannelShareSettings_ownerUserID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChannelShareSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChannelShareSettings_visibility(ctx context.Context, field graphql.CollectedField, obj *objects.ChannelShareSettings) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChannelShareSettings_visibility,
+		func(ctx context.Context) (any, error) {
+			return obj.Visibility, nil
+		},
+		nil,
+		ec.marshalOChannelVisibility2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐChannelVisibility,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChannelShareSettings_visibility(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChannelShareSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ChannelVisibility does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChannelShareSettings_lastRefreshedAt(ctx context.Context, field graphql.CollectedField, obj *objects.ChannelShareSettings) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChannelShareSettings_lastRefreshedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.LastRefreshedAt, nil
+		},
+		nil,
+		ec.marshalOTime2ᚖtimeᚐTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChannelShareSettings_lastRefreshedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChannelShareSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChannelShareSettings_nextRefreshAt(ctx context.Context, field graphql.CollectedField, obj *objects.ChannelShareSettings) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChannelShareSettings_nextRefreshAt,
+		func(ctx context.Context) (any, error) {
+			return obj.NextRefreshAt, nil
+		},
+		nil,
+		ec.marshalOTime2ᚖtimeᚐTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChannelShareSettings_nextRefreshAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChannelShareSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChannelShareSettings_refreshWindowSeconds(ctx context.Context, field graphql.CollectedField, obj *objects.ChannelShareSettings) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChannelShareSettings_refreshWindowSeconds,
+		func(ctx context.Context) (any, error) {
+			return obj.RefreshWindowSeconds, nil
+		},
+		nil,
+		ec.marshalOInt2int64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChannelShareSettings_refreshWindowSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChannelShareSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ChannelShareSettings_refreshQuota(ctx context.Context, field graphql.CollectedField, obj *objects.ChannelShareSettings) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ChannelShareSettings_refreshQuota,
+		func(ctx context.Context) (any, error) {
+			return obj.RefreshQuota, nil
+		},
+		nil,
+		ec.marshalOInt2int64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ChannelShareSettings_refreshQuota(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ChannelShareSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -62934,7 +63211,7 @@ func (ec *executionContext) unmarshalInputChannelSettingsInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"extraModelPrefix", "modelMappings", "autoTrimedModelPrefixes", "hideOriginalModels", "hideMappedModels", "proxy", "transformOptions", "headerOverrideOperations", "bodyOverrideOperations", "passThroughUserAgent", "passThroughBody", "rateLimit"}
+	fieldsInOrder := [...]string{"extraModelPrefix", "modelMappings", "autoTrimedModelPrefixes", "hideOriginalModels", "hideMappedModels", "proxy", "transformOptions", "headerOverrideOperations", "bodyOverrideOperations", "passThroughUserAgent", "passThroughBody", "rateLimit", "share"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -63025,6 +63302,54 @@ func (ec *executionContext) unmarshalInputChannelSettingsInput(ctx context.Conte
 				return it, err
 			}
 			it.RateLimit = data
+		case "share":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("share"))
+			data, err := ec.unmarshalOChannelShareSettingsInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐChannelShareSettings(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Share = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputChannelShareSettingsInput(ctx context.Context, obj any) (objects.ChannelShareSettings, error) {
+	var it objects.ChannelShareSettings
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"visibility", "refreshWindowSeconds", "refreshQuota"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "visibility":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("visibility"))
+			data, err := ec.unmarshalOChannelVisibility2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐChannelVisibility(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Visibility = data
+		case "refreshWindowSeconds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("refreshWindowSeconds"))
+			data, err := ec.unmarshalOInt2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RefreshWindowSeconds = data
+		case "refreshQuota":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("refreshQuota"))
+			data, err := ec.unmarshalOInt2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RefreshQuota = data
 		}
 	}
 
@@ -88327,7 +88652,7 @@ func (ec *executionContext) _APIKeyProfile(ctx context.Context, sel ast.Selectio
 		case "name":
 			out.Values[i] = ec._APIKeyProfile_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "modelMappings":
 			out.Values[i] = ec._APIKeyProfile_modelMappings(ctx, field, obj)
@@ -88344,7 +88669,38 @@ func (ec *executionContext) _APIKeyProfile(ctx context.Context, sel ast.Selectio
 		case "loadBalanceStrategy":
 			out.Values[i] = ec._APIKeyProfile_loadBalanceStrategy(ctx, field, obj)
 		case "useStrategy":
-			out.Values[i] = ec._APIKeyProfile_useStrategy(ctx, field, obj)
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._APIKeyProfile_useStrategy(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -91571,6 +91927,54 @@ func (ec *executionContext) _ChannelSettings(ctx context.Context, sel ast.Select
 			out.Values[i] = ec._ChannelSettings_passThroughBody(ctx, field, obj)
 		case "rateLimit":
 			out.Values[i] = ec._ChannelSettings_rateLimit(ctx, field, obj)
+		case "share":
+			out.Values[i] = ec._ChannelSettings_share(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var channelShareSettingsImplementors = []string{"ChannelShareSettings"}
+
+func (ec *executionContext) _ChannelShareSettings(ctx context.Context, sel ast.SelectionSet, obj *objects.ChannelShareSettings) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, channelShareSettingsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ChannelShareSettings")
+		case "ownerUserID":
+			out.Values[i] = ec._ChannelShareSettings_ownerUserID(ctx, field, obj)
+		case "visibility":
+			out.Values[i] = ec._ChannelShareSettings_visibility(ctx, field, obj)
+		case "lastRefreshedAt":
+			out.Values[i] = ec._ChannelShareSettings_lastRefreshedAt(ctx, field, obj)
+		case "nextRefreshAt":
+			out.Values[i] = ec._ChannelShareSettings_nextRefreshAt(ctx, field, obj)
+		case "refreshWindowSeconds":
+			out.Values[i] = ec._ChannelShareSettings_refreshWindowSeconds(ctx, field, obj)
+		case "refreshQuota":
+			out.Values[i] = ec._ChannelShareSettings_refreshQuota(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -113669,6 +114073,25 @@ func (ec *executionContext) marshalOAPIKeyUseStrategy2githubᚗcomᚋloopljᚋax
 	return res
 }
 
+func (ec *executionContext) unmarshalOAPIKeyUseStrategy2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐAPIKeyUseStrategy(ctx context.Context, v any) (*objects.APIKeyUseStrategy, error) {
+	if v == nil {
+		return nil, nil
+	}
+	tmp, err := graphql.UnmarshalString(v)
+	res := objects.APIKeyUseStrategy(tmp)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOAPIKeyUseStrategy2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐAPIKeyUseStrategy(ctx context.Context, sel ast.SelectionSet, v *objects.APIKeyUseStrategy) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalString(string(*v))
+	return res
+}
+
 func (ec *executionContext) unmarshalOAPIKeyWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐAPIKeyWhereInputᚄ(ctx context.Context, v any) ([]*ent.APIKeyWhereInput, error) {
 	if v == nil {
 		return nil, nil
@@ -114457,6 +114880,21 @@ func (ec *executionContext) unmarshalOChannelSettingsInput2ᚖgithubᚗcomᚋloo
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalOChannelShareSettings2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐChannelShareSettings(ctx context.Context, sel ast.SelectionSet, v *objects.ChannelShareSettings) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ChannelShareSettings(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOChannelShareSettingsInput2ᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐChannelShareSettings(ctx context.Context, v any) (*objects.ChannelShareSettings, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputChannelShareSettingsInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalOChannelStatus2ᚕgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚋchannelᚐStatusᚄ(ctx context.Context, v any) ([]channel.Status, error) {
 	if v == nil {
 		return nil, nil
@@ -114660,6 +115098,19 @@ func (ec *executionContext) marshalOChannelType2ᚖgithubᚗcomᚋloopljᚋaxonh
 		return graphql.Null
 	}
 	return v
+}
+
+func (ec *executionContext) unmarshalOChannelVisibility2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐChannelVisibility(ctx context.Context, v any) (objects.ChannelVisibility, error) {
+	tmp, err := graphql.UnmarshalString(v)
+	res := objects.ChannelVisibility(tmp)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOChannelVisibility2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐChannelVisibility(ctx context.Context, sel ast.SelectionSet, v objects.ChannelVisibility) graphql.Marshaler {
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalString(string(v))
+	return res
 }
 
 func (ec *executionContext) unmarshalOChannelWhereInput2ᚕᚖgithubᚗcomᚋloopljᚋaxonhubᚋinternalᚋentᚐChannelWhereInputᚄ(ctx context.Context, v any) ([]*ent.ChannelWhereInput, error) {

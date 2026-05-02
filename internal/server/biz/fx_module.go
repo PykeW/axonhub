@@ -27,12 +27,16 @@ var Module = fx.Module("biz",
 	fx.Provide(NewChannelProbeService),
 	fx.Provide(NewPromptService),
 	fx.Provide(NewPromptProtectionRuleService),
+	// Legacy Relay/Sub-Key services remain wired for backward compatibility with
+	// the older operator-managed flow. New Share/Use features should avoid adding
+	// fresh dependencies here unless historical paths would otherwise break.
 	fx.Provide(NewRelayProductService),
 	fx.Provide(NewRelayAdminService),
 	fx.Provide(NewRelayRouterService),
 	fx.Provide(NewRelayRuntimeService),
 	fx.Provide(NewRelayAccessService),
 	fx.Provide(NewRelaySettlementService),
+
 	fx.Invoke(func(runtime *RelayRuntimeService, access *RelayAccessService, settlement *RelaySettlementService) {
 		runtime.SetResolver(access)
 		runtime.SetAccessChecker(access)

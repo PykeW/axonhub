@@ -98,7 +98,10 @@ func (v ChannelVisibility) OrDefault() ChannelVisibility {
 }
 
 type ChannelShareSettings struct {
+	OwnerUserID          *GUID             `json:"ownerUserID,omitempty"`
 	Visibility           ChannelVisibility `json:"visibility,omitempty"`
+	LastRefreshedAt      *time.Time        `json:"lastRefreshedAt,omitempty"`
+	NextRefreshAt        *time.Time        `json:"nextRefreshAt,omitempty"`
 	RefreshWindowSeconds int64             `json:"refreshWindowSeconds,omitempty"`
 	RefreshQuota         int64             `json:"refreshQuota,omitempty"`
 }

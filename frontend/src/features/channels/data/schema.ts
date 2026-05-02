@@ -151,6 +151,19 @@ export const channelRateLimitSchema = z.object({
 });
 export type ChannelRateLimit = z.infer<typeof channelRateLimitSchema>;
 
+export const channelVisibilitySchema = z.enum(['private', 'shared']);
+export type ChannelVisibility = z.infer<typeof channelVisibilitySchema>;
+
+export const channelShareSettingsSchema = z.object({
+  ownerUserID: z.string().optional().nullable(),
+  visibility: channelVisibilitySchema.optional().nullable(),
+  lastRefreshedAt: z.string().optional().nullable(),
+  nextRefreshAt: z.string().optional().nullable(),
+  refreshWindowSeconds: z.number().int().positive().optional().nullable(),
+  refreshQuota: z.number().int().positive().optional().nullable(),
+});
+export type ChannelShareSettings = z.infer<typeof channelShareSettingsSchema>;
+
 // Channel Settings
 export const channelSettingsSchema = z.object({
   extraModelPrefix: z.string().optional(),
@@ -165,6 +178,7 @@ export const channelSettingsSchema = z.object({
   passThroughUserAgent: z.boolean().optional().nullable(),
   passThroughBody: z.boolean().optional(),
   rateLimit: channelRateLimitSchema.optional().nullable(),
+  share: channelShareSettingsSchema.optional().nullable(),
 });
 
 export type ChannelSettings = z.infer<typeof channelSettingsSchema>;

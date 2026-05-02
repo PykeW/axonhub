@@ -11,6 +11,7 @@ import (
 	"github.com/zhenzou/executors"
 	"go.uber.org/fx"
 
+	"github.com/looplj/axonhub/internal/contexts"
 	"github.com/looplj/axonhub/internal/ent"
 	"github.com/looplj/axonhub/internal/ent/channel"
 	"github.com/looplj/axonhub/internal/ent/providerquotastatus"
@@ -424,20 +425,104 @@ func (svc *ChannelService) ListModels(ctx context.Context, input ListModelsInput
 	return models, nil
 }
 
+func normalizeChannelSettings(ctx context.Context, settings *objects.ChannelSettings, existing *objects.ChannelSettings) *objects.ChannelSettings {
+	if settings == nil {
+		settings = &objects.ChannelSettings{ModelMappings: []objects.ModelMapping{}}
+	} else if settings.ModelMappings == nil && existing == nil {
+		settings.ModelMappings = []objects.ModelMapping{}
+	}
+
+	var existingShare *objects.ChannelShareSettings
+	if existing != nil {
+		existingShare = existing.Share
+	}
+
+	settings.Share = normalizeChannelShareSettings(ctx, settings.Share, existingShare)
+
+	return settings
+}
+
+func normalizeChannelShareSettings(
+	ctx context.Context,
+	share *objects.ChannelShareSettings,
+	existing *objects.ChannelShareSettings,
+) *objects.ChannelShareSettings {
+	if share == nil && existing == nil {
+		share = &objects.ChannelShareSettings{}
+	}
+
+	if share == nil {
+		share = &objects.ChannelShareSettings{}
+	}
+
+	normalized := &objects.ChannelShareSettings{
+		LastRefreshedAt: share.LastRefreshedAt,
+		NextRefreshAt:   share.NextRefreshAt,
+	}
+
+	if normalized.LastRefreshedAt == nil && existing != nil {
+		normalized.LastRefreshedAt = existing.LastRefreshedAt
+	}
+
+	if normalized.NextRefreshAt == nil && existing != nil {
+		normalized.NextRefreshAt = existing.NextRefreshAt
+	}
+
+	switch {
+	case share.OwnerUserID != nil:
+		normalized.OwnerUserID = share.OwnerUserID
+	case existing != nil && existing.OwnerUserID != nil:
+		normalized.OwnerUserID = existing.OwnerUserID
+	default:
+		if user, ok := contexts.GetUser(ctx); ok && user != nil {
+			normalized.OwnerUserID = &objects.GUID{Type: ent.TypeUser, ID: user.ID}
+		}
+	}
+
+	switch {
+	case share.Visibility != "":
+		normalized.Visibility = share.Visibility.OrDefault()
+	case existing != nil:
+		normalized.Visibility = existing.VisibilityOrDefault()
+	default:
+		normalized.Visibility = objects.ChannelVisibilityPrivate
+	}
+
+	switch {
+	case share.RefreshWindowSeconds > 0:
+		normalized.RefreshWindowSeconds = share.RefreshWindowSeconds
+	case existing != nil && existing.RefreshWindowSeconds > 0:
+		normalized.RefreshWindowSeconds = existing.RefreshWindowSeconds
+	default:
+		normalized.RefreshWindowSeconds = objects.DefaultShareRefreshWindowSeconds
+	}
+
+	switch {
+	case share.RefreshQuota > 0:
+		normalized.RefreshQuota = share.RefreshQuota
+	case existing != nil && existing.RefreshQuota > 0:
+		normalized.RefreshQuota = existing.RefreshQuota
+	default:
+		normalized.RefreshQuota = objects.DefaultShareRefreshQuota
+	}
+
+	return normalized
+}
+
 // createChannel creates a new channel without triggering a reload.
 // This is useful for batch operations where reload should happen once at the end.
 func (svc *ChannelService) createChannel(ctx context.Context, input ent.CreateChannelInput) (*ent.Channel, error) {
-	if input.Settings != nil {
-		if input.Settings.BodyOverrideOperations != nil {
-			if err := ValidateBodyOverrideOperations(input.Settings.BodyOverrideOperations); err != nil {
-				return nil, fmt.Errorf("invalid body override operations: %w", err)
-			}
-		}
+	input.Settings = normalizeChannelSettings(ctx, input.Settings, nil)
 
-		if input.Settings.HeaderOverrideOperations != nil {
-			if err := ValidateOverrideHeaders(input.Settings.HeaderOverrideOperations); err != nil {
-				return nil, fmt.Errorf("invalid header override operations: %w", err)
-			}
+	if input.Settings.BodyOverrideOperations != nil {
+		if err := ValidateBodyOverrideOperations(input.Settings.BodyOverrideOperations); err != nil {
+			return nil, fmt.Errorf("invalid body override operations: %w", err)
+		}
+	}
+
+	if input.Settings.HeaderOverrideOperations != nil {
+		if err := ValidateOverrideHeaders(input.Settings.HeaderOverrideOperations); err != nil {
+			return nil, fmt.Errorf("invalid header override operations: %w", err)
 		}
 	}
 
@@ -536,6 +621,13 @@ func (svc *ChannelService) UpdateChannel(ctx context.Context, id int, input *ent
 	}
 
 	if input.Settings != nil {
+		current, err := svc.entFromContext(ctx).Channel.Get(ctx, id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get current channel: %w", err)
+		}
+
+		input.Settings = normalizeChannelSettings(ctx, input.Settings, current.Settings)
+
 		// Always normalize and validate override settings.
 		if input.Settings.BodyOverrideOperations != nil {
 			if err := ValidateBodyOverrideOperations(input.Settings.BodyOverrideOperations); err != nil {

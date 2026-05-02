@@ -20,6 +20,9 @@ var (
 	ErrRelayQuotaExceeded       = errors.New("relay quota exceeded")
 )
 
+// Legacy Relay/Sub-Key runtime path kept for the older operator-managed flow.
+// Do not add new Share/Use routing behavior here unless it is strictly needed for backward compatibility.
+// Remove this service after Share/Use fully replaces relay-subkey request entry and settlement.
 type RelayRuntimeService struct {
 	resolver   RelayAuthResolver
 	access     RelayAccessChecker
