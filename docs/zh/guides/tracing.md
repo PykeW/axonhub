@@ -3,14 +3,17 @@
 ---
 
 ### 概览
+
 AxonHub 可以在不引入额外 SDK 的情况下，为每一次请求构建线程感知的追踪。只要客户端已经兼容 OpenAI 协议，您就可以通过传递追踪与线程请求头，或直接让 AxonHub 自动生成，实现低侵入的可观测能力。
 
 使用追踪的主要优势包括：
+
 - **可观测性**：清晰地查看每一条用户消息及其触发的所有 agent 请求。
 - **性能优化**：AxonHub 会将同一个 Trace 的请求优先转发到同一个上游渠道，从而大幅提高提供商端的缓存命中率（例如 Anthropic 的 Prompt Caching），降低响应延迟并减少成本。
 - **调试便捷**：结合线程 ID 还原完整的会话上下文，快速定位多轮对话中的问题。
 
 ### 关键概念
+
 - **Thread ID（`AH-Thread-Id`）** – 代表用户的一个完整对话会话，将多条追踪关联起来，帮助重现完整的用户旅程。
 - **Trace ID（`AH-Trace-Id`）** – 代表用户发出的一条消息以及该消息触发的所有 agent 请求。需要在需要串联多次调用时显式提供；未携带该请求头时，AxonHub 会为单次调用生成 ID 但无法自动关联其他请求。
 - **Request（请求）** – 单次 API 调用的最小单元，包含完整的请求/响应数据、耗时、Token 使用量等信息。
@@ -34,17 +37,20 @@ Thread (完整用户对话会话)
 - **Request**：代表对 LLM 或其他服务的单次 API 调用，包含请求体、响应体、Token 使用量等详细信息
 
 **层级关系**：
+
 - 1 个 Thread 可以包含多个 Trace（每条用户消息一个 Trace）
 - 1 个 Trace 可以包含多个 Request（该消息触发的所有 agent 调用）
 - 1 个 Request 只能属于 1 个 Trace
 - 1 个 Trace 只能属于 1 个 Thread（可选关联）
 
 **实际应用场景**：
+
 - **单条消息带 agent**：1 Thread → 1 Trace → N Request（用户发送一条消息，agent 发起多次 API 调用）
 - **多轮对话**：1 Thread → 多 Trace（每条用户消息一个 Trace）→ 每个 Trace 包含 N Request
 - **独立请求**：无 Thread → 1 Trace → 1 Request（无对话上下文的单次 API 调用）
 
 ### 配置
+
 ```yaml
 # config.yml
 trace:
@@ -58,6 +64,7 @@ trace:
 - 如不配置，将采用上述默认值。
 
 ### 在 OpenAI 兼容客户端中使用追踪
+
 ```bash
 curl https://your-axonhub-instance/v1/chat/completions \
   -H "Authorization: Bearer ${AXONHUB_API_KEY}" \
@@ -76,9 +83,11 @@ curl https://your-axonhub-instance/v1/chat/completions \
 - 任何 OpenAI 兼容 SDK 均可直接使用，只需根据需要添加请求头即可。
 
 ### SDK 示例
+
 如需完整可运行的样例，可参考 `integration_test/openai/trace_multiple_requests/trace_test.go` 与 `integration_test/anthropic/trace_multiple_requests/trace_test.go`。以下片段展示了在生产代码中最核心的部分。
 
 #### OpenAI Go SDK
+
 ```go
 package traces
 
@@ -111,6 +120,7 @@ func sendTracedChat(ctx context.Context, apiKey string) (*openai.ChatCompletion,
 ```
 
 #### Anthropic Go SDK
+
 ```go
 package traces
 
@@ -145,20 +155,24 @@ func sendTracedMessage(ctx context.Context, apiKey string) (*anthropic.Message, 
 ```
 
 ### 追踪数据存储
+
 - 可在系统策略中决定是否保存完整请求／响应体：若仅需指标，可关闭以减少敏感数据留存。
 - 在管理后台配置默认数据存储，若该存储不可用会自动回退到主存储，保障访问稳定。
 - 大体量内容可放在外部存储（本地磁盘、S3、GCS），追踪页面仍能快速加载。
 
 ### Claude Code 追踪支持
+
 - 将 `server.trace.claude_code_trace_enabled` 设为 `true`，AxonHub 会自动读取 Claude Code 产生的追踪 ID。
 - `/anthropic/v1/messages` (及 `/v1/messages`) 的 `metadata.user_id` 会作为追踪 ID 使用，同时不会影响请求体给后续逻辑的读取。
 - 如果请求已经带有追踪请求头，系统会优先使用该值，与自动提取机制兼容。
 
 ### Codex 追踪支持
+
 - 将 `server.trace.codex_trace_enabled` 设为 `true`，AxonHub 会将 `Session_id` header 作为追踪 ID 使用。
 - 如果请求已经带有追踪请求头，系统会优先使用该值，与自动提取机制兼容。
 
 ### 在控制台中探索追踪
+
 1. 在 AxonHub 管理后台进入 **Traces** 页面。
 2. 按项目、模型或时间范围筛选目标追踪。
 3. 展开追踪查看 span、提示/回复内容、耗时及渠道元数据。
@@ -189,11 +203,13 @@ func sendTracedMessage(ctx context.Context, apiKey string) (*anthropic.Message, 
 - **避免场景**：单个 Trace 超过 1000 个 Request
 
 **原因**：
+
 - **内存消耗**：每个 Request 的请求体和响应体大小通常在 1-5MB，100 个 Request 可能占用 500MB 内存
 - **性能影响**：过多 Request 会导致 Trace 页面加载缓慢，影响用户体验
 - **可读性**：包含大量 Request 的 Trace 难以阅读和调试
 
 **优化建议**：
+
 1. **拆分工作流**：将复杂的 agent 工作流拆分为多个 Trace，每个 Trace 代表一个逻辑单元
 2. **使用 Thread 关联**：通过 Thread ID 关联多个 Trace，保持会话完整性
 3. **控制 agent 迭代次数**：在 agent 循环中设置合理的最大迭代次数，避免无限循环
@@ -202,6 +218,7 @@ func sendTracedMessage(ctx context.Context, apiKey string) (*anthropic.Message, 
 **示例场景**：
 
 ✅ **良好实践**：
+
 ```
 Thread (用户会话)
   ├── Trace 1: 用户问题分析 (5 个 Request)
@@ -211,6 +228,7 @@ Thread (用户会话)
 ```
 
 ❌ **避免做法**：
+
 ```
 Thread (用户会话)
   └── Trace: 完整工作流 (500+ 个 Request)
@@ -223,10 +241,12 @@ Thread (用户会话)
 - 对于图片、视频等大文件，使用 URL 引用而非 base64 编码
 
 ### 故障排查
+
 - **未生成追踪** – 确认请求已通过认证且项目 ID 正确解析（API Key 必须隶属于某个项目）。
 - **缺少线程关联** – 在请求中提供 `AH-Thread-Id`，或先通过 API 创建线程。
 - **追踪 ID 异常** – 检查上游代理是否覆盖了相关请求头。
 
 ### 相关文档
+
 - [请求处理流程指南](../getting-started/request-processing.md)
-- [负载均衡指南](load-balance.md)
+- [共享/使用 MVP 指南](share-use-mvp.md)

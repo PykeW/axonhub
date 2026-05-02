@@ -1,282 +1,290 @@
 # 共享/使用 MVP 指南
 
-本文记录简化版“共享/使用”方案的产品边界、数据约定、调度规则、当前实现状态与后续验收标准。它既是产品计划，也是当前仓库实现与后续工作之间的对照入口。
-当前仓库也分成两层状态：已提交的小切片已经打通 `APIKeyProfile.useStrategy` 的 GraphQL / schema 保存链路，并在对象层提供 `ChannelSettings.Share` 元数据与默认值；当前工作树又在其上恢复了 `/use` 最小可用表单。`/share` 仍是指南包装页，真正的共享路由、刷新窗口强约束和更完整的 Use 配置体验仍是后续工作。
+本文定义一个更贴近 `newapi` 类平台的 Share / Use 方向：用户把自己的上游渠道上传到 Share，平台负责统一分发；当其他用户成功使用你的共享渠道时，你获得平台代币 / 积分；当你自己的渠道额度失效、冷却或不可用时，你可以消耗这些积分去使用其他用户的共享渠道。
 
-## 范围
+当前仓库仍处于过渡阶段：`/share` 还是指南包装页，`/use` 是最小可用表单，底层仍通过 `APIKeyProfile.useStrategy` 保存策略。本文以下以**目标产品口径**为主，同时保留当前实现状态说明，方便后续开发对照。
 
-### 页面
+## 产品定位
 
-| 页面 | 用户目标                            | 目标 MVP 能力（后续验收）                                                 |
-| ---- | ----------------------------------- | ------------------------------------------------------------------------- |
-| 共享 | 把自己的上游账号贡献给 AxonHub 使用 | 创建/编辑/归档自己的渠道，设置 `private` 或 `shared`，查看 5 小时刷新窗口 |
-| 使用 | 用简单 API Key 调用可用模型         | 创建或编辑 API Key，选择 `modelIDs`，选择 `useStrategy`                   |
+- **Share 是供给侧**：用户上传、管理并决定哪些渠道可以贡献给平台。
+- **Use 是消费侧**：用户通过项目 API、API Key 或单次请求选择优先使用自己的渠道还是其他人的共享渠道。
+- **Wallet 是结算侧**：平台记录“别人用了我的共享渠道，我赚到多少积分”和“我使用了别人的共享渠道，我花掉多少积分”。
+- **平台路由层是中枢**：它负责在自有渠道池和共享渠道池之间做过滤、排序、调度和结算。
 
-### 当前已落地切片
+## 核心原则
 
-- 前端：`/share` 仍是指南包装路由；`/use` 已恢复为最小可用表单，支持创建 API Key、选择 `modelIDs`、选择 `useStrategy`、保存 profile 并复制生成结果；当前也支持通过 `/use?apiKeyId=<id>` 直接加载并编辑既有 user API Key 的当前生效 profile。
-- 前端联动：API Keys 列表行操作已新增 `Use 配置` 入口，可直接深链到对应 `/use` 编辑页。
-- 后端 / 数据契约：`APIKeyProfile.useStrategy` 已贯通 GraphQL schema、前端 Zod schema 和 update mutation；`ChannelSettings.Share` 元数据 / 默认值已存在于对象层，但渠道 schema / 前端表单尚未暴露 share 字段。
-- 兼容性：现有渠道管理、API Key Profile、配额、模型映射、负载均衡和重试行为保持原状。
+1. **每个用户的共享池都必须排除自己的渠道**。
+2. **自己标记为 `shared` 的渠道，对自己仍然属于自有渠道池**，只对其他用户进入共享池。
+3. **只有跨用户的成功请求才触发积分结算**；自己使用自己的渠道不产生共享收益。
+4. **分发语义先于现有负载均衡**：先决定“看自己的还是别人的”，再进入现有评分系统。
+5. **项目 / API Key / 请求级策略都应该存在**，让用户能从项目 API 延伸出“优先用自己的还是优先用别人的”默认行为。
 
-### 尚未实现的完整行为
+## 核心对象
 
-- Share 页面真实创建 / 编辑 / 归档表单、所有者权限、敏感字段脱敏、5 小时刷新窗口与并发刷新控制。
-- 渠道 schema / API / 前端表单尚未暴露 `ChannelSettings.Share`、owner/visibility、`nextRefreshAt` 等真实字段，因此 Share 语义仍未接入实体 CRUD。
-- 请求路由尚未按 `useStrategy` 做自有 / 共享候选过滤、own-first、soonest-refresh-first、配额强制和可观测日志。
-- `/use` 已支持通过 `/use?apiKeyId=<id>` 深链加载既有 user API Key，并编辑当前 active profile 的 `modelIDs/useStrategy`；下一步再补更完整的高级 Profile 字段（如 quota / channelTags / modelMappings）编辑体验。
-- 面向共享容量的端到端测试、前端 E2E 和完整后端 selector / orchestrator 回归仍需补齐。
+| 对象               | 含义                             | 关键字段 / 说明                                                     |
+| ------------------ | -------------------------------- | ------------------------------------------------------------------- |
+| `OwnPool`          | 当前用户自己的可用渠道集合       | 包含自己名下的 `private` 和 `shared` 渠道                           |
+| `SharedPool`       | 当前用户可使用的他人共享渠道集合 | 只包含 `visibility=shared` 且 `ownerUserID != currentUserID` 的渠道 |
+| `useStrategy`      | 使用策略                         | 决定先用自己的渠道还是先用别人的共享渠道                            |
+| `CreditLedger`     | 平台积分流水                     | 记录赚取、消耗、冻结、退款等动作                                    |
+| `SettlementRecord` | 共享分发结算记录                 | 记录谁使用了谁的渠道、成功成本、积分增减                            |
 
-### 不做的事
+## 页面与用户旅程
 
-- 不引入复杂资源池、市场、结算或多租户套餐模型。
-- 不要求普通用户理解 API Key Profile、渠道标签或完整负载均衡配置。
-- 不改变现有管理员渠道管理、模型映射、配额和重试能力；MVP 只在其上增加用户视角。
+| 页面     | 角色目标             | 目标 MVP 能力                                                                   |
+| -------- | -------------------- | ------------------------------------------------------------------------------- |
+| `Share`  | 上传并管理自己的渠道 | 创建 / 编辑 / 归档渠道，设置 `private/shared`，查看支持模型、测试状态与刷新窗口 |
+| `Use`    | 通过平台消费模型     | 选择模型、设置默认 `useStrategy`、查看当前是否优先走自有渠道或共享池            |
+| `Wallet` | 查看收益和支出       | 查看“别人用了我的共享渠道我赚了多少”“我用了别人渠道我花了多少”                  |
 
-## 下一步开发计划
+### 当前仓库状态（2026-05-02）
 
-当前最小闭环已经能创建 / 编辑 Use API Key 的 `modelIDs/useStrategy`。下一步应先把 Share 的实体语义落到数据契约和权限层，再接入请求路由；否则前端即使先做完整表单，也无法保证共享渠道的安全边界、刷新窗口和调度行为一致。
+- `/share` 仍是指南包装页，真实的渠道创建 / 编辑 / 测试仍在现有渠道管理页面完成。
+- `/use` 已恢复为最小可用表单，支持创建 API Key、选择 `modelIDs`、保存 `useStrategy`，并通过 `apiKeyId` 深链编辑既有 key。
+- `ChannelSettings.Share` 目前只到对象层，渠道 schema / API / 表单尚未完整暴露 `ownerUserID`、`visibility`、`nextRefreshAt` 等实体字段。
+- 平台积分 / 代币结算、共享收益流水、钱包页、跨用户消费扣分还没有真正落地。
 
-### 推荐实施顺序
+## 共享页面（Share）
 
-| 优先级 | 阶段                       | 目标                                                                   | 主要落点                                                          | 完成标准                                                                                              |
-| ------ | -------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| P0     | 稳定当前 Use 闭环          | 给已完成的 `/use` 创建 / 编辑能力补回归保护                            | `/use` 页面、API Keys 行操作、API Key Profile mutation            | 创建模式、`apiKeyId` 编辑模式、无模型保存失败、无权限提示均有测试或手工验收记录                       |
-| P1     | Share 数据契约实体化       | 在渠道 schema / API 中暴露 owner、visibility、刷新窗口字段             | Channel schema、GraphQL input/output、迁移默认值                  | 历史渠道有默认 owner/visibility 策略；`private/shared` 非法值被拒绝；敏感字段默认不外泄               |
-| P2     | Share 服务端权限与刷新窗口 | 实现普通用户只管理自有渠道、shared 脱敏读取、5 小时刷新冷却和并发保护  | Channel service、permission scope、refresh mutation               | 非所有者无法读写 private；shared 只暴露可路由信息；同渠道并发刷新只有一次成功                         |
-| P3     | Share 前端真实页面         | 用真实列表和表单替换 `/share` 指南包装页                               | `/share` route、渠道表单、状态提示、i18n                          | 可创建 / 编辑 / 归档自有渠道；可见性、支持模型、默认测试模型、刷新冷却状态可见                        |
-| P4     | Use 策略接入请求路由       | 按 `useStrategy`、owner/visibility 和 `nextRefreshAt` 过滤排序候选渠道 | request processing、selector/orchestrator、load balancer 前置过滤 | `only_own` 不使用共享；`prefer_own` 自有优先且可回退；`allow_shared` 保留共享候选；旧配额和重试不回归 |
-| P5     | Use 高级 Profile 编辑      | 在最小表单之上补 quota、channelTags、modelMappings 等高级字段          | `/use` 页面、API Key Profile UI、schema 校验                      | 默认模式仍简单；高级模式只覆盖用户明确编辑的字段，不破坏既有 profile                                  |
-| P6     | 可观测与端到端验收         | 补齐共享容量链路的日志、指标、E2E 和后端回归                           | orchestrator logs、frontend e2e、Go tests                         | 日志包含策略和候选桶；Share/Use 主流程有 e2e；测试矩阵中的目标项可稳定运行                            |
+### 用户目标
 
-### 最近两个开发切片
+用户把自己的上游账号贡献给平台，让平台在需要时可以分发给其他用户使用。
 
-1. **P0：当前 Use 闭环回归**
+### 基本字段
 
-   - 给 `/use` 创建模式补前端测试：选择模型、保存 `prefer_own`、复制生成 key。
-   - 给 `/use?apiKeyId=<id>` 编辑模式补测试：加载既有 user key，仅更新 active profile 的 `modelIDs/useStrategy`，保留 `quota/channelTags/modelMappings`。
-   - 给 API Keys 行操作补断言：只有 user key 显示 `Use 配置`，点击后带 `apiKeyId` 进入 `/use`。
-   - 验证命令优先使用 `cd frontend && npm run build`，如有 E2E 基础数据再补 `cd frontend && npm run test:e2e -- apikeys/share-use.spec.ts`。
+| 字段               | 要求                                           |
+| ------------------ | ---------------------------------------------- |
+| `ownerUserID`      | 渠道所有者；普通用户只能管理自己的渠道         |
+| `visibility`       | `private` 或 `shared`                          |
+| `supportedModels`  | 该渠道可承载的模型列表，必须至少包含一个模型   |
+| `defaultTestModel` | 测试连接的默认模型，必须属于 `supportedModels` |
+| `lastRefreshedAt`  | 最近一次成功刷新时间                           |
+| `nextRefreshAt`    | 下一次允许刷新时间，等于成功刷新后顺延 5 小时  |
+| `status`           | 渠道启用、禁用、健康、降级等状态               |
 
-2. **P1/P2：Share 字段与权限后端切片**
-   - 明确历史渠道的兼容默认值：管理员渠道默认 `private` 且 owner 为空时只保留管理员可见，还是迁移到创建者 / 默认项目所有者。
-   - 在渠道对象和 GraphQL 层增加 `ownerUserID`、`visibility`、`supportedModels`、`defaultTestModel`、`lastRefreshedAt`、`nextRefreshAt` 的读写契约。
-   - 增加服务端校验：普通用户不能改 owner；`supportedModels` 不能为空；`defaultTestModel` 必须属于 `supportedModels`；刷新冷却按服务端时间判断。
-   - 先做后端单元测试，再接 `/share` 前端表单，避免 UI 先行导致权限和脱敏语义返工。
+### 可见性与池子语义
 
-### 关键依赖和阻塞点
+| `visibility` | 对 owner 的含义                  | 对其他用户的含义                                                 |
+| ------------ | -------------------------------- | ---------------------------------------------------------------- |
+| `private`    | 只进入 owner 自己的 `OwnPool`    | 不进入任何其他人的 `SharedPool`                                  |
+| `shared`     | 对 owner 自己仍按 `OwnPool` 处理 | 对其他用户进入 `SharedPool`，前提是渠道健康且满足模型 / 权限要求 |
 
-- **权限模型**：必须先确认“渠道所有者”到底绑定 user、project，还是二者都要记录；这会影响 private/shared 的可见范围。
-- **历史数据迁移**：没有 owner/visibility 的渠道必须有明确默认值，否则路由过滤会出现灰区。
-- **刷新窗口一致性**：5 小时窗口应以服务端成功刷新时间为准，并在事务或锁内更新 `nextRefreshAt`。
-- **调度层插入点**：own-first 与 soonest-refresh-first 应放在现有负载均衡和重试之前，但不能绕过现有模型关联、配额、健康、熔断规则。
-- **前端降级**：在后端字段未全量发布前，`/share` 和 `/use` 需要能显示“暂不可配置”的明确状态，而不是静默保存不完整数据。
+**关键规则**：`shared` 的含义是“对别人开放”，不是“owner 自己也必须从共享池视角使用”。
 
-## 共享页面
+### 共享池计算规则
 
-共享页面管理“我上传的渠道”。每个渠道仍然是 AxonHub 渠道，但必须带有所有者和可见性语义。
+对任意用户 `U`：
 
-### 字段约定
+```text
+OwnPool(U) = ownerUserID == U 的可用渠道（private + shared）
+SharedPool(U) = ownerUserID != U 且 visibility == shared 的可用渠道
+```
 
-| 字段               | 要求                                              |
-| ------------------ | ------------------------------------------------- |
-| `ownerUserID`      | 渠道所有者；普通用户只能管理自己的渠道            |
-| `visibility`       | `private` 或 `shared`；默认建议为 `private`       |
-| `supportedModels`  | 该渠道可承载的模型列表，必须至少包含一个模型      |
-| `defaultTestModel` | 测试连接默认模型，必须属于 `supportedModels`      |
-| `lastRefreshedAt`  | 最近一次用户主动刷新时间                          |
-| `nextRefreshAt`    | 下一次允许刷新时间，等于最近一次成功刷新后 5 小时 |
+也就是说：
 
-### 可见性
-
-| 可见性    | 路由范围                                 | 凭据可见性                                   | 可编辑者       |
-| --------- | ---------------------------------------- | -------------------------------------------- | -------------- |
-| `private` | 仅渠道所有者自己的 Use API Key 可用      | 仅所有者和有权限的管理员可见                 | 所有者或管理员 |
-| `shared`  | 所有允许使用共享容量的用户可作为候选渠道 | 非所有者不得看到凭据、完整错误细节或敏感备注 | 所有者或管理员 |
+- `SharedPool(U)` 永远排除 `ownerUserID == U` 的渠道。
+- 用户把自己的渠道标记为 `shared`，是为了给别人用，不是为了自己再从共享池里“绕回来”使用。
 
 ### 5 小时刷新窗口
 
 - 每个渠道独立计算刷新窗口。
 - 第一次刷新应允许立即执行。
 - 刷新成功后，`nextRefreshAt = refreshedAt + 5h`。
-- 在 `nextRefreshAt` 之前再次刷新必须被拒绝，并返回清晰的下一次可刷新时间。
-- 到达或超过 `nextRefreshAt` 后，下一次刷新应允许执行。
-- 并发刷新只能有一个成功，不能双花刷新额度。
+- 在 `nextRefreshAt` 之前再次刷新必须被拒绝。
+- 并发刷新同一渠道时，只允许一个成功。
 
-## 使用页面
+## 使用页面与平台 API
 
-使用页面面向“我要调用模型”。用户不需要直接理解多个 Profile，MVP 可以使用单一默认 Profile 存储配置。
+### 用户目标
 
-### API Key 配置
+用户不需要手动挑渠道，只需要决定：优先使用自己的渠道，还是优先使用其他用户共享出来的渠道。
 
-| 字段            | 要求                                                 |
-| --------------- | ---------------------------------------------------- |
-| `modelIDs`      | 用户显式选择的模型列表；请求模型不在列表内时必须拒绝 |
-| `useStrategy`   | 使用策略：`prefer_own`、`only_own`、`allow_shared`   |
-| `quota`         | 可沿用 API Key Profile 配额；不是 MVP 必填项         |
-| `modelMappings` | 默认空；高级兼容场景可继续沿用现有 Profile 能力      |
+### 策略来源优先级
 
-示例：
+建议采用以下优先级：
 
-```json
-{
-  "activeProfile": "default",
-  "profiles": [
-    {
-      "name": "default",
-      "modelIDs": ["gpt-4o", "claude-3-5-sonnet"],
-      "useStrategy": "prefer_own",
-      "modelMappings": []
-    }
-  ]
-}
+```text
+request override > api key default > project default > platform default
 ```
+
+这意味着：
+
+- 平台可以有一个全局默认策略；
+- 每个项目可以覆盖项目默认策略；
+- 每个 API Key 可以继续覆盖项目默认策略；
+- 某次请求还可以临时指定单次策略。
 
 ### 使用策略
 
-| `useStrategy`  | 含义                                                   | 无匹配自有渠道时     |
-| -------------- | ------------------------------------------------------ | -------------------- |
-| `prefer_own`   | 优先使用自己的渠道，自己的渠道不可用时允许使用共享渠道 | 回退到共享渠道       |
-| `only_own`     | 只使用自己的渠道，不使用其他人的共享渠道               | 返回无可用渠道错误   |
-| `allow_shared` | 自有和共享渠道都可以作为候选                           | 在所有候选中继续排序 |
+| `useStrategy`  | 含义                                             | 无匹配候选时       |
+| -------------- | ------------------------------------------------ | ------------------ |
+| `own_only`     | 只使用自己的渠道                                 | 返回无可用渠道错误 |
+| `own_first`    | 先使用自己的渠道，不可用时回退到他人共享池       | 回退到共享池       |
+| `shared_first` | 先使用他人共享池，共享池不可用时回退到自己的渠道 | 回退到自有渠道     |
+| `shared_only`  | 只使用他人共享池                                 | 返回无可用渠道错误 |
 
-建议默认值为 `prefer_own`，因为它兼顾用户自有资源优先和共享兜底。
+建议平台默认值为 `own_first`，这样既能优先消耗用户自己的资源，又能在自有渠道不可用时兜底到共享池。
 
-## 调度规则
+### 为什么不让用户直接选渠道
 
-调度规则必须保持简单、可解释，并且不绕过现有模型访问、配额、健康检查和重试逻辑。
+- 渠道凭据和健康状态属于敏感信息，不适合直接暴露给普通调用者。
+- 平台需要在模型匹配、共享池过滤、刷新窗口、健康状态和积分结算之间统一调度。
+- “选策略”比“选具体渠道”更符合用户心智，也更容易做风控和计费。
+
+## 积分 / 代币结算
+
+### 结算触发条件
+
+只有同时满足以下条件时，才发生共享收益结算：
+
+1. 请求成功到达上游并得到可计费响应；
+2. 最终命中的渠道属于 `SharedPool(caller)`；
+3. `callerUserID != ownerUserID`。
+
+### 结算方向
+
+- **消费方**：使用别人的共享渠道，消耗平台积分 / 代币。
+- **贡献方**：自己的共享渠道被别人成功使用，获得平台积分 / 代币。
+- **平台**：可抽取固定比例或固定额度作为平台服务费。
+
+### 计价建议
+
+对用户文案可以表达为“别人用了我的 token，我赚到了代币”；但实现上更推荐：
+
+- 先按平台统一的成本单位结算；
+- 再把成本折算成积分 / 代币；
+- 不建议直接按原始 token 数量 1:1 结算，否则不同模型和供应商之间很容易被套利。
+
+### 不应结算的情况
+
+- 用户使用了自己的渠道，即使该渠道 `visibility == shared`。
+- 请求失败、超时、被拒绝或没有形成有效计费结果。
+- 健康检查、管理员测试、人工排障等内部流量。
+
+## 请求分发规则
 
 ### 候选过滤
 
-请求进入路由前应依次过滤：
+请求进入平台后，先做这些过滤：
 
-1. API Key 有效，且当前 Profile 存在。
-2. 请求模型命中 `modelIDs`；未命中直接拒绝。
-3. 渠道状态为启用，且支持请求模型。
-4. `private` 渠道只保留所有者自己的渠道。
-5. `shared` 渠道可被其他用户使用，但不得暴露敏感字段。
-6. 继续应用现有项目/Profile 的渠道 ID、渠道标签、模型关联、配额和重试规则。
+1. 识别当前用户、项目、API Key 和生效的 `useStrategy`。
+2. 校验请求模型是否命中 `modelIDs`。
+3. 构建 `OwnPool(currentUser)` 和 `SharedPool(currentUser)`，其中共享池默认排除自己渠道。
+4. 过滤掉未启用、不支持模型、健康状态异常、处于刷新冷却中的渠道。
+5. 应用 `private/shared` 可见性和脱敏规则。
+6. 继续叠加现有模型关联、渠道标签、额度、重试等约束。
 
-### 排序顺序
+### 候选顺序
 
-在候选过滤后执行排序：
+| 策略           | 候选顺序                |
+| -------------- | ----------------------- |
+| `own_only`     | `OwnPool`               |
+| `own_first`    | `OwnPool -> SharedPool` |
+| `shared_first` | `SharedPool -> OwnPool` |
+| `shared_only`  | `SharedPool`            |
 
-1. **own-first**：在 `prefer_own` 下，自有渠道排在共享渠道前；`only_own` 不保留共享渠道；`allow_shared` 不强制自有优先，除非产品决定也沿用 own-first。
-2. **soonest-refresh-first**：同一优先级桶内，`nextRefreshAt` 越早的渠道越靠前；没有刷新时间的渠道按“可立即刷新/最早”处理。
-3. **现有负载均衡**：在前两层仍无法区分时，继续使用现有负载均衡、健康、限流、熔断和重试排序。
+### 桶内排序
 
-推荐伪流程：
+当候选集合已经按策略分成“自有桶”或“共享桶”后，再继续做桶内排序：
+
+1. **soonest-refresh-first**：`nextRefreshAt` 越早的渠道越靠前；没有刷新时间的渠道按“可立即刷新 / 最早”处理。
+2. **现有负载均衡**：在同一桶内继续使用当前实现里的评分因子：
+   - 关联优先级
+   - 会话感知
+   - 错误感知
+   - 加权轮询
+   - 延迟感知
+   - 速率限制感知
+
+这意味着：
+
+- “先用自己的还是先用别人的”是平台策略；
+- “同一桶里哪个渠道更优”才交给现有负载均衡系统判断。
+
+### 调试与排障
+
+如果要排查为什么某次请求最终命中了某个渠道，建议至少查看：
+
+- 当前请求命中的 `useStrategy`
+- `OwnPool` / `SharedPool` 的候选数量
+- 是否因为 `private/shared`、冷却窗口、健康状态被提前过滤
+- 在同一桶内是否因为 `soonest-refresh-first` 或现有评分因子改变了最终顺序
+
+### 推荐伪流程
 
 ```text
-请求模型 -> 校验 modelIDs -> 找支持模型的启用渠道 -> 应用 private/shared 可见性
-  -> 按 useStrategy 分桶 -> own-first -> soonest-refresh-first -> 现有 LoadBalancer/Retry
+请求进入
+  -> 识别 user / project / api key / useStrategy
+  -> 校验 modelIDs
+  -> 计算 OwnPool 与 SharedPool（共享池排除自己）
+  -> 过滤 disabled / unsupported / unhealthy / cooling 渠道
+  -> 按策略决定先看 OwnPool 还是 SharedPool
+  -> 桶内按 soonest-refresh-first 排序
+  -> 进入现有 LoadBalancer / Retry
+  -> 选中渠道并请求上游
+  -> 如果 caller != owner 且请求成功，则写积分结算流水
 ```
+
+## MVP 聚焦实施顺序
+
+### Phase 1：上传基础字段落地
+
+- 在渠道 schema / API 中暴露 `ownerUserID`、`visibility`、`supportedModels`、`defaultTestModel`、`nextRefreshAt`。
+- 明确历史渠道的 owner / visibility 迁移默认值。
+
+### Phase 2：Share 权限与刷新窗口
+
+- 实现普通用户只能管理自己的渠道。
+- 实现 `shared` 渠道对他人只暴露可路由信息，不暴露敏感凭据。
+- 实现 5 小时刷新窗口与并发保护。
+
+### Phase 3：真实 `/share` 页面
+
+- 用真实列表和表单替换当前包装页。
+- 支持创建 / 编辑 / 归档共享渠道。
+- 能看到支持模型、测试状态、刷新冷却状态。
+
+### Phase 4：分发与结算落地
+
+- 在请求路由里真正接入 `own_only / own_first / shared_first / shared_only`。
+- 实现 `SharedPool` 排除 owner 自己渠道。
+- 对跨用户成功请求写入积分结算流水。
+
+### Phase 5：Wallet 与治理
+
+- 增加钱包页、收益 / 支出明细。
+- 增加共享渠道真实性校验、随机抽检、自刷风控和申诉流程。
 
 ## 验收标准
 
-本节区分“当前切片可验收”和“目标 MVP 后续验收”。除当前切片条目外，下列产品、后端和前端验收标准均表示后续完成项，不代表当前合并已经具备完整行为。
-
 ### 当前切片可验收
 
-- 用户能在导航中看到 **共享** 和 **使用** 两个入口；其中 `/share` 仍是指南包装页，`/use` 已恢复为最小可用表单。
-- `/use` 会强制至少选择一个 `modelIDs`，并把 `useStrategy` 保存到单一 `APIKeyProfile`；创建成功后可立即展示并复制生成的 key。
-- `/use` 已支持通过 `/use?apiKeyId=<id>` 加载既有 user API Key，并仅更新当前 active profile 的 `modelIDs/useStrategy`。
-- API Keys 列表行操作已提供直达 `/use` 编辑入口。
-- GraphQL schema 与前端校验都只接受 `prefer_own`、`only_own`、`allow_shared`；空值按 `prefer_own` 处理。
-- 后端对象层已具备 `ChannelSettings.Share` 元数据 / 默认值，但实际请求路由与渠道 CRUD 仍沿用现有链路，不影响当前渠道管理、API Key 管理、模型映射、配额、负载均衡和重试能力。
+- 用户能在导航中看到 **共享** 和 **使用** 两个入口。
+- `/share` 仍是指南包装页；`/use` 已是最小可用表单。
+- `/use` 已能创建或编辑 user API Key，并保存 `modelIDs/useStrategy`。
+- `ChannelSettings.Share` 元数据 / 默认值已存在于对象层。
 
-### 目标产品验收（后续完成）
+### 目标 MVP 验收
 
-- 共享页面只能展示和管理当前用户自己的渠道；管理员视角不破坏现有渠道管理能力。
-- 用户创建 / 编辑渠道时必须选择 `private` 或 `shared`；未选择时使用默认 `private`。
-- 共享渠道可被其他用户路由使用，但其他用户无法读取凭据、敏感备注和完整错误细节。
-- 刷新按钮展示当前状态：可刷新、冷却中、下一次可刷新时间。
-- 在现有深链编辑能力基础上，进一步补齐高级 Profile 字段（如 quota / channelTags / modelMappings）的完整编辑体验。
-- 请求未选择模型时不能保存 Use 配置；请求未授权模型时返回明确错误。
-- `prefer_own` 有自有候选时优先自有，无自有候选时可回退共享。
-- `only_own` 不使用共享渠道，且无自有候选时返回明确无可用渠道错误。
-- `allow_shared` 可以使用自有和共享候选，并继续遵守模型、配额、健康、重试规则。
-
-### 目标后端验收（后续完成）
-
-- 渠道 schema / API 能暴露所有者、可见性、刷新窗口与下一次可刷新时间，并给历史渠道明确兼容策略。
-- 普通用户不能读取或修改其他用户的 private 渠道。
-- 非所有者读取 shared 渠道时敏感字段被脱敏。
-- 服务端继续只接受 `prefer_own`、`only_own`、`allow_shared`。
-- `modelIDs` 为空时 Use API Key 创建 / 保存被服务端拒绝，除非明确进入管理员高级模式。
-- 5 小时刷新窗口使用服务端时间计算，并处理并发请求。
-- 路由选择输出可观测日志，至少包含策略、候选数量、自有 / 共享桶数量和最终渠道 ID。
-- 现有 API Key Profile 的 `modelIDs`、`quota`、`loadBalanceStrategy` 行为保持兼容。
-
-### 目标前端验收（Share 页面与 Use 页增强后）
-
-- 第一阶段目标已完成：`/use` 已恢复为最小可用表单，支持名称、模型多选、`useStrategy` 选择和保存反馈。
-- 第二阶段的最小编辑闭环也已完成：可通过 `/use?apiKeyId=<id>` 或 API Keys 列表的 `Use 配置` 入口加载既有 user API Key，并保存当前 active profile 的 `modelIDs/useStrategy`。
-- 共享页面真实表单包含渠道名称、类型、Base URL、API Key、支持模型、默认测试模型、可见性。
-- 使用页面后续继续补高级 Profile 字段编辑、更加细粒度的保存状态和更完整的错误提示。
-- 中英文文案清楚区分“私有”“共享”“优先自有”“仅自有”“允许共享”。
-- 保存失败、刷新冷却、无可用渠道、模型未授权都有明确错误提示。
-- 页面可在无后端新增字段时优雅降级，不阻塞现有渠道 / API Key 管理页面。
-
-## 测试矩阵
-
-以下矩阵覆盖目标 MVP。当前仓库应至少验证文档、`/share` 包装页、`/use` 最小创建流程，以及 `useStrategy` / `ChannelSettings.Share` 相关 schema 与保存链路；完整共享路由、刷新窗口和真实 Share 表单测试需在对应实现补齐后启用。
-
-| 模块        | 场景                                            | 预期                              | 建议命令/位置                                                                |
-| ----------- | ----------------------------------------------- | --------------------------------- | ---------------------------------------------------------------------------- |
-| Schema/验证 | `visibility=private/shared`                     | 合法值通过，非法值拒绝            | `go test ./internal/server/biz -run Channel`                                 |
-| Schema/验证 | `useStrategy` 非法值                            | 保存 API Key Profile 失败         | `go test ./internal/server/biz -run APIKey`                                  |
-| Schema/验证 | `modelIDs` 为空                                 | Use API Key 创建/保存失败         | `go test ./internal/server/biz -run APIKey`                                  |
-| 权限        | 用户 A 读取用户 B 的 private 渠道               | 拒绝或返回空                      | `go test ./internal/scopes ./internal/server/biz -run Channel`               |
-| 权限        | 用户 A 读取用户 B 的 shared 渠道                | 可作为候选，但凭据脱敏            | `go test ./internal/server/gql ./internal/server/biz -run Channel`           |
-| 刷新窗口    | 首次刷新                                        | 成功并写入 `nextRefreshAt`        | `go test ./internal/server/biz -run Refresh`                                 |
-| 刷新窗口    | 5 小时内重复刷新                                | 拒绝并返回下一次时间              | `go test ./internal/server/biz -run Refresh`                                 |
-| 刷新窗口    | 正好到达 5 小时                                 | 允许刷新                          | `go test ./internal/server/biz -run Refresh`                                 |
-| 刷新窗口    | 并发刷新同一渠道                                | 只有一个成功                      | `go test ./internal/server/biz -run Refresh -count=20`                       |
-| 模型访问    | 请求模型不在 `modelIDs`                         | 返回模型无权限错误                | `go test ./internal/server/orchestrator -run TestCheckApiKeyModelAccess`     |
-| 路由        | `only_own` 有自有候选                           | 只返回自有渠道                    | `go test ./internal/server/orchestrator -run 'Selector\|Share\|Use'`         |
-| 路由        | `only_own` 只有共享候选                         | 返回无可用渠道                    | `go test ./internal/server/orchestrator -run 'Selector\|Share\|Use'`         |
-| 路由        | `prefer_own` 同时有自有和共享                   | 自有渠道排在共享前                | `go test ./internal/server/orchestrator -run 'Selector\|LoadBalanced'`       |
-| 路由        | `prefer_own` 无自有候选                         | 回退共享渠道                      | `go test ./internal/server/orchestrator -run 'Selector\|LoadBalanced'`       |
-| 路由        | 同桶多个候选                                    | `nextRefreshAt` 最早的排前        | `go test ./internal/server/orchestrator -run 'Refresh\|Selector'`            |
-| 配额        | API Key Profile quota 命中                      | 请求被拒绝，错误为 quota exceeded | `go test ./internal/server/orchestrator -run Quota`                          |
-| 回归        | APIKeyProfile `channelIDs/channelTags/modelIDs` | 旧行为不变                        | `go test ./internal/server/biz -run TestModelService_ListEnabledModels`      |
-| 回归        | Profile `loadBalanceStrategy`                   | 旧策略派生不变                    | `go test ./internal/server/orchestrator -run TestDeriveLoadBalancerStrategy` |
-| 前端        | 共享页创建/编辑/归档                            | 表单可用，列表更新                | `cd frontend && pnpm test:e2e -- channels.spec.ts` 加新增 share spec         |
-| 前端        | 使用页创建 API Key                              | 模型和策略保存成功                | `cd frontend && pnpm test:e2e -- apikeys/share-use.spec.ts`                  |
-| 前端        | 基础质量                                        | lint/build 通过                   | `cd frontend && pnpm lint && pnpm build`                                     |
-
-## 建议验证命令
-
-目标 MVP 完成前建议至少运行：
-
-```bash
-go test ./internal/server/biz -run 'TestAPIKeyService_UpdateAPIKeyProfiles|TestValidateProfileQuota|TestQuotaService|TestQuotaWindow|TestModelService_ListEnabledModels'
-go test ./internal/server/orchestrator -run 'TestCheckApiKeyModelAccess|TestDeriveLoadBalancerStrategy|TestLoadBalancedSelector|TestDefaultChannelSelector|TestChatCompletionOrchestrator_Process_MinuteQuotaExceeded'
-go test ./internal/scopes ./internal/ent -run 'TestAPIKey|TestChannel|Scope'
-cd frontend && pnpm lint
-cd frontend && pnpm test:e2e -- channels.spec.ts models.spec.ts
-```
-
-完整回归：
-
-```bash
-make test-backend-all
-make build
-```
-
-## 文档落点
-
-- 本文作为 MVP 验收和联调入口：`docs/zh/guides/share-use-mvp.md`。
-- `docs/zh/guides/api-key-profiles.md` 已补充 `/use` 最小表单、`modelIDs/useStrategy` 以及通过 `apiKeyId` 深链编辑既有 key 的关系。
-- `docs/zh/guides/channel-management.md` 已补充当前 `/share` 仍为包装页，以及 `private/shared` 与 5 小时刷新窗口的现阶段关系。
-- `docs/zh/guides/permissions.md` 已补充 `/share` 依赖 `read_channels`、`/use` 依赖 `read_api_keys` 的访问前提。
-- `docs/zh/getting-started/request-processing.md` 已补充 own-first 与 soonest-refresh-first 在请求链路中的位置。
+- 用户可上传自己的渠道，并设置 `private/shared`。
+- 对任意用户，平台计算出的共享池都默认排除自己的渠道。
+- 项目 / API Key / 请求级都可以设置 `useStrategy`。
+- `own_only / own_first / shared_first / shared_only` 的路由结果符合预期。
+- 只有跨用户成功命中的共享渠道才会发生积分结算。
+- 当自己的渠道额度失效或不可用时，只要积分足够，用户可以继续使用他人的共享渠道。
+- 自己使用自己的渠道不会产生共享收益。
 
 ## 风险和待确认
 
-- 5 小时刷新窗口需确认是滚动窗口还是固定窗口；本文按“每渠道成功刷新后滚动 5 小时”描述。
-- `useStrategy` 建议独立于现有 `loadBalanceStrategy`，避免把“共享使用策略”和“负载均衡算法”混在同一字段。
-- soonest-refresh-first 与现有 TraceAware、ErrorAware、LatencyAware、RateLimitAware、CircuitBreaker 的优先级必须固定，否则测试会不稳定。
-- shared 渠道失败时是否允许系统自动禁用或影响所有者渠道，需要产品和后端确认。
-- 历史渠道没有 owner/visibility 时需要迁移默认值；否则权限和路由可能出现灰区。
+- 渠道 owner 最终只绑定 user，还是需要同时记录 project？
+- 历史渠道没有 owner / visibility 时的迁移默认值是什么？
+- 5 小时刷新窗口最终按滚动窗口还是固定窗口实现？
+- 平台积分最终是锚定标准化成本、统一价格表，还是其他计价单位？
+- 共享渠道失败后，是否影响 owner 自己的使用优先级？
+- 如何识别虚假共享、模型降级、自己刷自己或多账号对刷？
+
+## 相关文档
+
+- [请求处理流程指南](../getting-started/request-processing.md)
+- [渠道配置指南](channel-management.md)
+- [权限管理指南](permissions.md)

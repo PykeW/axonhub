@@ -218,9 +218,9 @@ func (s *SomeService) doWork(ctx context.Context) error {
 4. **同步前端的 schema 与展示**
 
    - 将枚举值加入 [frontend/src/features/channels/data/schema.ts](../../../frontend/src/features/channels/data/schema.ts) 的 Zod schema
-   - 在 [frontend/src/features/channels/data/constants.ts](../../../frontend/src/features/channels/data/constants.ts) 中添加渠道配置
+   - 在 [frontend/src/features/channels/data/config_channels.ts](../../../frontend/src/features/channels/data/config_channels.ts) 中添加渠道配置
 
 5. **添加国际化**
    - 在两个 locale 文件中补充翻译：
-     - [frontend/src/locales/en.json](../../../frontend/src/locales/en.json)
-     - [frontend/src/locales/zh.json](../../../frontend/src/locales/zh.json)
+     - [frontend/src/locales/en/base.json](../../../frontend/src/locales/en/base.json)
+     - [frontend/src/locales/zh-CN/base.json](../../../frontend/src/locales/zh-CN/base.json)

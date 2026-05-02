@@ -170,8 +170,8 @@ antigravity-gemini-2.5-pro      -> Antigravity quota (separate pool)
 
 ```yaml
 supported_models:
-  - gemini-2.5-pro               # Uses Gemini CLI quota
-  - antigravity-gemini-2.5-pro   # Uses Antigravity quota
+  - gemini-2.5-pro # Uses Gemini CLI quota
+  - antigravity-gemini-2.5-pro # Uses Antigravity quota
 ```
 
 当某个配额池耗尽后，AxonHub 可以通过渠道重试逻辑自动切换到另一套配额池。
@@ -180,14 +180,14 @@ supported_models:
 
 ## 模型路由示例
 
-| 模型名称 | 配额池 | 初始端点 | 回退顺序 |
-| -------- | ------ | -------- | -------- |
-| `claude-sonnet-4-5` | Antigravity | Daily | Daily -> Autopush -> Prod |
-| `gemini-2.5-pro` | Gemini CLI | Prod | Prod -> Daily -> Autopush |
-| `gemini-2.5-pro:antigravity` | Antigravity | Daily | Daily -> Autopush -> Prod |
-| `antigravity-gemini-2.5-pro` | Antigravity | Daily | Daily -> Autopush -> Prod |
-| `gemini-3-flash` | Antigravity | Daily | Daily -> Autopush -> Prod |
-| `gpt-oss-120b-medium` | Antigravity | Daily | Daily -> Autopush -> Prod |
+| 模型名称                     | 配额池      | 初始端点 | 回退顺序                  |
+| ---------------------------- | ----------- | -------- | ------------------------- |
+| `claude-sonnet-4-5`          | Antigravity | Daily    | Daily -> Autopush -> Prod |
+| `gemini-2.5-pro`             | Gemini CLI  | Prod     | Prod -> Daily -> Autopush |
+| `gemini-2.5-pro:antigravity` | Antigravity | Daily    | Daily -> Autopush -> Prod |
+| `antigravity-gemini-2.5-pro` | Antigravity | Daily    | Daily -> Autopush -> Prod |
+| `gemini-3-flash`             | Antigravity | Daily    | Daily -> Autopush -> Prod |
+| `gpt-oss-120b-medium`        | Antigravity | Daily    | Daily -> Autopush -> Prod |
 
 ---
 
@@ -324,7 +324,7 @@ fmt.Printf("Expired: %d\n", stats.Expired)
 
 - [渠道管理指南](channel-management.md)
 - [模型管理指南](model-management.md)
-- [负载均衡指南](load-balance.md)
+- [请求处理流程指南](../getting-started/request-processing.md)
 - [请求追踪指南](tracing.md)
 - [OpenAI API](../api-reference/openai-api.md)
 - [Anthropic API](../api-reference/anthropic-api.md)

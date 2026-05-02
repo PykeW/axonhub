@@ -121,7 +121,7 @@ Share / Use 方向现在处于“文档 + 最小可用表单”阶段，权限�
 ## 相关文档
 
 - [共享/使用 MVP 指南](share-use-mvp.md) - 查看 Share / Use 的当前能力边界
-- [API Key Profile 指南](api-key-profiles.md) - 了解 `/use` 页面实际写入的配置
+- [请求处理流程指南](../getting-started/request-processing.md) - 了解共享池与渠道选择在请求链路中的位置
 - [渠道配置指南](channel-management.md) - 了解渠道管理与 Share 语义的当前关系
 - [实体关系图](../development/erd.md) - 查看 Role、Scope、API Key、Project 关系
 - [授权编码规范](../development/authz-coding-guidelines.md) - 查看开发侧权限实现约定

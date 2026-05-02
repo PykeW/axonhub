@@ -35,7 +35,7 @@ flowchart TD
     K --> L[返回客户端]
 ```
 
-如果把 Share / Use 方案也放进这条链路里，可以把 `own-first` 和 `soonest-refresh-first` 理解为 **第 4 步“选择渠道”的细化**：它们发生在候选渠道已经找出来之后、进入现有负载均衡评分之前。当前这部分仍以 [共享/使用 MVP 指南](../guides/share-use-mvp.md#调度规则) 中定义的目标行为为准，不代表所有部署都已经完整启用。
+如果把 Share / Use 方案也放进这条链路里，可以把“共享池排除自己”“先看自有渠道还是先看他人共享池”“soonest-refresh-first”理解为 **第 4 步“选择渠道”的细化**：它们发生在候选渠道已经找出来之后、进入现有负载均衡评分之前。当前这部分仍以 [共享/使用 MVP 指南](../guides/share-use-mvp.md#请求分发规则) 中定义的目标行为为准，不代表所有部署都已经完整启用。
 
 ## 各阶段说明
 
@@ -79,7 +79,7 @@ API Key Profile: gpt-4 → claude-3-opus
 
 - 校验请求模型是否命中 `modelIDs`
 - 应用 `private/shared` 可见性过滤
-- 按 `useStrategy`（如 `prefer_own`、`only_own`、`allow_shared`）把候选渠道分桶
+- 按 `useStrategy`（如 `own_only`、`own_first`、`shared_first`、`shared_only`）把候选渠道分桶
 
 ### 5. 内容处理
 
@@ -94,7 +94,7 @@ API Key Profile: gpt-4 → claude-3-opus
 
 在 Share / Use 场景里，进入这一步之前还会先经过两层前置排序：
 
-- `own-first`：在 `prefer_own` 下先排自有渠道，再排共享渠道
+- 策略优先顺序：例如 `own_first` 先排自有渠道，`shared_first` 先排他人共享池
 - `soonest-refresh-first`：同一桶内，让 `nextRefreshAt` 更早的渠道排前
 
 完成这两层前置排序后，系统才继续应用现有负载均衡策略。
@@ -125,7 +125,7 @@ API Key Profile: gpt-4 → claude-3-opus
 
 | 如果你的问题是                                   | 优先看             |
 | ------------------------------------------------ | ------------------ |
-| 想改客户端请求的模型名                           | API Key Profile    |
+| 想设定 `/use` 的模型白名单和共享分发策略         | 共享/使用 MVP 指南 |
 | 想决定请求走哪个渠道                             | 模型关联           |
 | 想了解共享渠道、自有优先和刷新窗口在链路中的位置 | 共享/使用 MVP 指南 |
 | 想改发给上游的模型名或请求参数                   | 渠道配置           |
@@ -134,6 +134,4 @@ API Key Profile: gpt-4 → claude-3-opus
 
 - [渠道管理指南](../guides/channel-management.md)
 - [模型管理指南](../guides/model-management.md)
-- [API Key Profile 指南](../guides/api-key-profiles.md)
 - [共享/使用 MVP 指南](../guides/share-use-mvp.md)
-- [负载均衡指南](../guides/load-balance.md)
