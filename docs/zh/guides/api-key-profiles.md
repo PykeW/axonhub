@@ -1,6 +1,6 @@
 # API Key Profile 指南
 
-本文介绍如何配置 API Key Profile，实现模型映射、访问控制和多 Profile 切换。当前 Share / Use 方向里，`/use` 最小表单正是通过写入单一 `APIKeyProfile` 的 `modelIDs` 与 `useStrategy` 来完成模型白名单和使用策略保存。
+本文介绍如何配置 API Key Profile，实现模型映射、访问控制和多 Profile 切换。当前 Share / Use 方向里，`/use` 最小表单正是通过写入单一 `APIKeyProfile` 的 `modelIDs` 与 `useStrategy` 来完成模型白名单和使用策略保存；现在也支持通过 `apiKeyId` 深链直接编辑既有 user API Key 的当前生效 profile。
 
 ## 什么是 API Key Profile？
 
@@ -55,10 +55,12 @@ API Key Profile 的模型映射是三层流水线中的**第一步**。完整说
 
 ### 场景 4：作为 `/use` 最小表单的配置落点
 
-当前 `/use` 页面恢复后的最小可用表单会做两件事：
+当前 `/use` 页面恢复后的最小可用表单会做两类操作：
 
 1. 创建一个新的 API Key。
-2. 为该 Key 写入单一 `APIKeyProfile`，其中至少包含：
+2. 或通过 `/use?apiKeyId=<id>` 直接加载既有 user API Key，更新其当前 active profile。
+3. 为该 Key 写入或更新单一 `APIKeyProfile`，其中至少包含：
+
    - `modelIDs`：允许调用的模型列表
    - `useStrategy`：`prefer_own` / `only_own` / `allow_shared`
 
@@ -86,7 +88,7 @@ API Key Profile 的模型映射是三层流水线中的**第一步**。完整说
 2. 进入 **API Keys** 页面
 3. 找到要配置的 API Key
 4. 点击右侧的 **操作** 菜单
-5. 选择 **Profiles** 或 **配置**
+5. 选择 **Profiles** / **配置文件**，或直接进入 **Use 配置** 入口
 
 ### 步骤 2：创建 Profile
 
@@ -94,6 +96,7 @@ API Key Profile 的模型映射是三层流水线中的**第一步**。完整说
 2. 输入 Profile 名称
 3. 配置模型映射、渠道限制或模型限制
 4. 如果用于 Share / Use 最小方案，至少设置 `modelIDs`；需要共享使用语义时再设置 `useStrategy`
+5. 如果从 API Keys 列表进入 `/use` 编辑模式，则只覆盖当前 active profile 的 `modelIDs/useStrategy`，其余 profile 字段保持不变
 
 ### 步骤 3：配置模型映射
 

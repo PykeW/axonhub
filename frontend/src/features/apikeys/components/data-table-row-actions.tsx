@@ -1,7 +1,8 @@
 import React from 'react';
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
+import { useNavigate } from '@tanstack/react-router';
 import { Row } from '@tanstack/react-table';
-import { IconUserOff, IconUserCheck, IconEdit, IconSettings, IconArchive } from '@tabler/icons-react';
+import { IconArchive, IconEdit, IconSettings, IconUserCheck, IconUserOff } from '@tabler/icons-react';
 import { BarChart3 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -16,6 +17,7 @@ interface DataTableRowActionsProps {
 }
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const { openDialog } = useApiKeysContext();
   const { apiKeyPermissions } = usePermissions();
@@ -23,33 +25,39 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const [open, setOpen] = React.useState(false);
   const [chartOpen, setChartOpen] = React.useState(false);
 
-  // Don't show menu if user has no permissions
   if (!apiKeyPermissions.canRead && !apiKeyPermissions.canWrite) {
     return null;
   }
 
-  const handleEdit = (apiKey: ApiKey) => {
+  const handleEdit = (target: ApiKey) => {
     setOpen(false);
-    setTimeout(() => openDialog('edit', apiKey), 0);
+    setTimeout(() => openDialog('edit', target), 0);
   };
 
-  const handleStatusChange = (apiKey: ApiKey) => {
-    if (apiKey.status === 'archived') {
-      // Archived API keys cannot be enabled/disabled
+  const handleStatusChange = (target: ApiKey) => {
+    if (target.status === 'archived') {
       return;
     }
+
     setOpen(false);
-    setTimeout(() => openDialog('status', apiKey), 0);
+    setTimeout(() => openDialog('status', target), 0);
   };
 
-  const handleArchive = (apiKey: ApiKey) => {
+  const handleArchive = (target: ApiKey) => {
     setOpen(false);
-    setTimeout(() => openDialog('archive', apiKey), 0);
+    setTimeout(() => openDialog('archive', target), 0);
   };
 
-  const handleProfiles = (apiKey: ApiKey) => {
+  const handleProfiles = (target: ApiKey) => {
     setOpen(false);
-    setTimeout(() => openDialog('profiles', apiKey), 0);
+    setTimeout(() => openDialog('profiles', target), 0);
+  };
+
+  const handleUseSetup = (target: ApiKey) => {
+    setOpen(false);
+    setTimeout(() => {
+      navigate({ to: '/use', search: { apiKeyId: target.id } });
+    }, 0);
   };
 
   const handleViewChart = () => {
@@ -66,7 +74,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             <span className='sr-only'>Open menu</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align='end' className='w-[160px]'>
+        <DropdownMenuContent align='end' className='w-[190px]'>
           <DropdownMenuItem onClick={handleViewChart}>
             <BarChart3 className='mr-2 h-4 w-4' />
             {t('apikeys.actions.viewTokenChart')}
@@ -78,13 +86,19 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
                 <IconEdit className='mr-2 h-4 w-4' />
                 {t('common.actions.edit')}
               </DropdownMenuItem>
-              {apiKey.type !== 'service_account' && (
+              {apiKey.type === 'user' ? (
+                <DropdownMenuItem onClick={() => handleUseSetup(apiKey)}>
+                  <IconSettings className='mr-2 h-4 w-4' />
+                  {t('apikeys.actions.useSetup')}
+                </DropdownMenuItem>
+              ) : null}
+              {apiKey.type !== 'service_account' ? (
                 <DropdownMenuItem onClick={() => handleProfiles(apiKey)}>
                   <IconSettings className='mr-2 h-4 w-4' />
                   {t('apikeys.actions.profiles')}
                 </DropdownMenuItem>
-              )}
-              {apiKey.status !== 'archived' && (
+              ) : null}
+              {apiKey.status !== 'archived' ? (
                 <DropdownMenuItem
                   onClick={() => handleStatusChange(apiKey)}
                   className={apiKey.status === 'enabled' ? 'text-orange-600' : 'text-green-600'}
@@ -101,13 +115,13 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
                     </>
                   )}
                 </DropdownMenuItem>
-              )}
-              {apiKey.status !== 'archived' && (
+              ) : null}
+              {apiKey.status !== 'archived' ? (
                 <DropdownMenuItem onClick={() => handleArchive(apiKey)} className='text-orange-600'>
                   <IconArchive className='mr-2 h-4 w-4' />
                   {t('common.buttons.archive')}
                 </DropdownMenuItem>
-              )}
+              ) : null}
             </>
           )}
         </DropdownMenuContent>

@@ -1,5 +1,5 @@
 import { type SubmitEventHandler, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createFileRoute, type FileRoutesByPath } from '@tanstack/react-router';
+import { createFileRoute, type FileRoutesByPath, useNavigate } from '@tanstack/react-router';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -74,6 +74,10 @@ type EditableProfileTarget = {
   profileIndex: number;
   activeProfileName: string;
   existsInApiKey: boolean;
+};
+
+type UsePageSearch = {
+  apiKeyId?: string;
 };
 
 function getErrorMessage(error: unknown) {
@@ -185,6 +189,9 @@ function buildMergedProfileInput(apiKey: ApiKey, modelIDs: string[], useStrategy
 }
 
 function UsePage() {
+  const navigate = useNavigate();
+  const search = Route.useSearch() as UsePageSearch;
+
   const selectedProjectId = useSelectedProjectId();
   const { apiKeyPermissions, modelPermissions } = usePermissions();
   const createApiKey = useCreateApiKey();
@@ -204,7 +211,6 @@ function UsePage() {
     }
   );
 
-  const [editingApiKeyId, setEditingApiKeyId] = useState('');
   const [apiKeyName, setApiKeyName] = useState(DEFAULT_API_KEY_NAME);
   const [selectedModelIDs, setSelectedModelIDs] = useState<string[]>([]);
   const [useStrategy, setUseStrategy] = useState<string>(DEFAULT_USE_STRATEGY);
@@ -218,11 +224,20 @@ function UsePage() {
 
   const generatedKey = generatedApiKey?.key ?? '';
   const { isCopied, handleCopy } = useCopyToClipboard({ text: generatedKey });
+  const editingApiKeyId = search.apiKeyId?.trim() ?? '';
   const isEditMode = editingApiKeyId.length > 0;
   const editingApiKeyQuery = useApiKey(editingApiKeyId);
   const editingApiKey = editingApiKeyQuery.data;
   const editingProfileTarget = useMemo(() => resolveEditableProfile(editingApiKey), [editingApiKey]);
-  const existingApiKeys = useMemo(() => existingApiKeysQuery.data?.edges.map((edge) => edge.node) ?? [], [existingApiKeysQuery.data]);
+  const existingApiKeys = useMemo(() => {
+    const apiKeys = existingApiKeysQuery.data?.edges.map((edge) => edge.node) ?? [];
+
+    if (editingApiKey && apiKeys.every((apiKey) => apiKey.id !== editingApiKey.id)) {
+      return [editingApiKey, ...apiKeys];
+    }
+
+    return apiKeys;
+  }, [editingApiKey, existingApiKeysQuery.data]);
   const existingApiKeyValue = isEditMode ? editingApiKeyId : CREATE_NEW_API_KEY_OPTION;
   const isLoadingExistingApiKeys = existingApiKeysQuery.isLoading;
   const isLoadingEditingApiKey = isEditMode && (editingApiKeyQuery.isLoading || editingApiKeyQuery.isFetching);
@@ -254,12 +269,22 @@ function UsePage() {
   }, [loadModels, modelPermissions.canRead, selectedProjectId]);
 
   useEffect(() => {
-    if (!isEditMode) {
-      hydratedEditSnapshotRef.current = '';
-      return;
-    }
+    hydratedEditSnapshotRef.current = '';
+    setSubmitError(null);
+    setProfileSaveError(null);
+    setGeneratedApiKey(null);
+    setProfileSaved(false);
+    setSaveSummary(null);
 
-    if (!editingApiKey) {
+    if (!isEditMode) {
+      setApiKeyName(DEFAULT_API_KEY_NAME);
+      setSelectedModelIDs([]);
+      setUseStrategy(DEFAULT_USE_STRATEGY);
+    }
+  }, [editingApiKeyId, isEditMode]);
+
+  useEffect(() => {
+    if (!isEditMode || !editingApiKey) {
       return;
     }
 
@@ -282,23 +307,40 @@ function UsePage() {
     hydratedEditSnapshotRef.current = snapshot;
   }, [editingApiKey, editingProfileTarget, isEditMode]);
 
-  const handleApiKeySelectionChange = useCallback((value: string) => {
-    const nextApiKeyId = value === CREATE_NEW_API_KEY_OPTION ? '' : value;
+  const handleApiKeySelectionChange = useCallback(
+    (value: string) => {
+      const nextApiKeyId = value === CREATE_NEW_API_KEY_OPTION ? undefined : value;
 
-    hydratedEditSnapshotRef.current = '';
-    setEditingApiKeyId(nextApiKeyId);
-    setSubmitError(null);
-    setProfileSaveError(null);
-    setGeneratedApiKey(null);
-    setProfileSaved(false);
-    setSaveSummary(null);
+      hydratedEditSnapshotRef.current = '';
+      setSubmitError(null);
+      setProfileSaveError(null);
+      setGeneratedApiKey(null);
+      setProfileSaved(false);
+      setSaveSummary(null);
 
-    if (!nextApiKeyId) {
-      setApiKeyName(DEFAULT_API_KEY_NAME);
-      setSelectedModelIDs([]);
-      setUseStrategy(DEFAULT_USE_STRATEGY);
-    }
-  }, []);
+      if (!nextApiKeyId) {
+        setApiKeyName(DEFAULT_API_KEY_NAME);
+        setSelectedModelIDs([]);
+        setUseStrategy(DEFAULT_USE_STRATEGY);
+      }
+
+      navigate({
+        search: ((prev: UsePageSearch | undefined) => {
+          const nextSearch: UsePageSearch = { ...(prev ?? {}) };
+
+          if (nextApiKeyId) {
+            nextSearch.apiKeyId = nextApiKeyId;
+          } else {
+            delete nextSearch.apiKeyId;
+          }
+
+          return nextSearch;
+        }) as any,
+        replace: true,
+      } as any);
+    },
+    [navigate]
+  );
 
   const availableModels = useMemo(() => [...(models ?? [])].sort((a, b) => a.id.localeCompare(b.id)), [models]);
   const availableModelIDs = useMemo(() => new Set(availableModels.map((model) => model.id)), [availableModels]);
@@ -454,7 +496,7 @@ function UsePage() {
         <div className='space-y-2'>
           <h1 className='text-3xl font-bold tracking-tight'>Create or update a Use API key</h1>
           <p className='text-muted-foreground max-w-3xl text-sm md:text-base'>
-            Create a new Use API key, or load an existing key and update the active profile&apos;s model IDs and useStrategy without touching the rest of its profile fields.
+            Create a new Use API key, or load an existing key and update the active profile model IDs and useStrategy without touching the rest of its profile fields.
           </p>
         </div>
       </div>
@@ -594,13 +636,7 @@ function UsePage() {
                     <Label>Available models</Label>
                     <p className='text-muted-foreground text-sm'>Select one or more enabled models for the profile currently in scope.</p>
                   </div>
-                  <Button
-                    type='button'
-                    variant='outline'
-                    size='sm'
-                    onClick={() => void loadModels()}
-                    disabled={isFetchingModels || isSaving || !modelPermissions.canRead}
-                  >
+                  <Button type='button' variant='outline' size='sm' onClick={() => void loadModels()} disabled={isFetchingModels || isSaving || !modelPermissions.canRead}>
                     {isFetchingModels ? 'Loading...' : 'Reload models'}
                   </Button>
                 </div>
@@ -684,9 +720,7 @@ function UsePage() {
                 Refresh models
               </Button>
             </div>
-            {saveSummary?.mode === 'create' ? (
-              <p className='text-sm text-muted-foreground'>Profile {saveSummary.profileName} was saved with {saveSummary.modelCount} model IDs and strategy {saveSummary.useStrategy}.</p>
-            ) : null}
+            {saveSummary?.mode === 'create' ? <p className='text-sm text-muted-foreground'>Profile {saveSummary.profileName} was saved with {saveSummary.modelCount} model IDs and strategy {saveSummary.useStrategy}.</p> : null}
             {profileSaveError ? <p className='text-sm text-destructive'>{profileSaveError}</p> : null}
           </AlertDescription>
         </Alert>
@@ -697,4 +731,7 @@ function UsePage() {
 
 export const Route = createFileRoute('/_authenticated/use' as keyof FileRoutesByPath)({
   component: UsePage,
+  validateSearch: (search: UsePageSearch) => ({
+    apiKeyId: typeof search.apiKeyId === 'string' && search.apiKeyId.trim().length > 0 ? search.apiKeyId : undefined,
+  }),
 });

@@ -16,6 +16,7 @@
   "apikeys.status.disabled": "已禁用",
   "apikeys.status.archived": "已归档",
   "apikeys.actions.profiles": "配置文件",
+  "apikeys.actions.useSetup": "Use 配置",
   "apikeys.actions.copy": "复制",
   "apikeys.actions.view": "查看",
   "apikeys.actions.show": "显示",

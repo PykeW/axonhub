@@ -16,6 +16,7 @@
   "apikeys.status.disabled": "Disabled",
   "apikeys.status.archived": "Archived",
   "apikeys.actions.profiles": "Profiles",
+  "apikeys.actions.useSetup": "Use Setup",
   "apikeys.actions.copy": "Copy",
   "apikeys.actions.view": "View",
   "apikeys.actions.show": "Show",
