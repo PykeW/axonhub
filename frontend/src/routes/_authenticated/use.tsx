@@ -1,5 +1,9 @@
 import { type SubmitEventHandler, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createFileRoute, type FileRoutesByPath, useNavigate } from '@tanstack/react-router';
+import { useQueryModels } from '@/gql/models';
+import { useSelectedProjectId } from '@/stores/projectStore';
+import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,10 +21,8 @@ import {
   type ApiKeyUseStrategy,
   type UpdateApiKeyProfilesInput,
 } from '@/features/apikeys/data/schema';
-import { useQueryModels } from '@/gql/models';
-import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
-import { usePermissions } from '@/hooks/usePermissions';
-import { useSelectedProjectId } from '@/stores/projectStore';
+import { useShareUseUsageQuery } from '@/features/share-use-wallet/data';
+import { ShareUseWalletPanel } from '@/features/share-use-wallet/panel';
 
 const CREATE_NEW_API_KEY_OPTION = '__create_new_api_key__';
 const DEFAULT_API_KEY_NAME = 'Use MVP API Key';
@@ -98,7 +100,9 @@ function isAuthorizationIssue(error: unknown) {
     typeof error === 'object' && error !== null && 'status' in error ? Number((error as { status?: unknown }).status) : undefined;
   const message = getErrorMessage(error).toLowerCase();
 
-  return status === 401 || status === 403 || message.includes('unauthorized') || message.includes('forbidden') || message.includes('permission');
+  return (
+    status === 401 || status === 403 || message.includes('unauthorized') || message.includes('forbidden') || message.includes('permission')
+  );
 }
 
 function createDefaultProfile(name: string = DEFAULT_PROFILE_NAME): ApiKeyProfile {
@@ -199,6 +203,7 @@ function UsePage() {
 
   const selectedProjectId = useSelectedProjectId();
   const { apiKeyPermissions, modelPermissions } = usePermissions();
+  const shareUseUsageQuery = useShareUseUsageQuery(apiKeyPermissions.canRead && Boolean(selectedProjectId));
   const createApiKey = useCreateApiKey();
   const updateApiKeyProfiles = useUpdateApiKeyProfiles();
   const { data: models, mutateAsync: fetchModels, isPending: isFetchingModels } = useQueryModels();
@@ -501,7 +506,8 @@ function UsePage() {
         <div className='space-y-2'>
           <h1 className='text-3xl font-bold tracking-tight'>Create or update a Use API key</h1>
           <p className='text-muted-foreground max-w-3xl text-sm md:text-base'>
-            Create a new Use API key, or load an existing key and update the active profile model IDs and useStrategy without touching the rest of its profile fields.
+            Create a new Use API key, or load an existing key and update the active profile model IDs and useStrategy without touching the
+            rest of its profile fields.
           </p>
         </div>
       </div>
@@ -511,7 +517,8 @@ function UsePage() {
           <CardHeader>
             <CardTitle>API key setup</CardTitle>
             <CardDescription>
-              Create mode still produces a fresh key. Edit mode only updates the selected API key profile with the current model IDs and useStrategy.
+              Create mode still produces a fresh key. Edit mode only updates the selected API key profile with the current model IDs and
+              useStrategy.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -570,12 +577,14 @@ function UsePage() {
                 </p>
                 {isLoadingExistingApiKeys ? <Skeleton className='h-9 w-full rounded-md' /> : null}
                 {apiKeyPermissions.canRead && !isLoadingExistingApiKeys && existingApiKeys.length === 0 ? (
-                  <div className='rounded-md border border-dashed p-3 text-sm text-muted-foreground'>No existing user API keys were found in this project yet.</div>
+                  <div className='text-muted-foreground rounded-md border border-dashed p-3 text-sm'>
+                    No existing user API keys were found in this project yet.
+                  </div>
                 ) : null}
               </div>
 
               {isEditMode ? (
-                <div className='rounded-md border bg-muted/30 p-3 text-sm'>
+                <div className='bg-muted/30 rounded-md border p-3 text-sm'>
                   {isLoadingEditingApiKey ? (
                     <div className='space-y-2'>
                       <Skeleton className='h-4 w-2/3 rounded' />
@@ -589,7 +598,9 @@ function UsePage() {
                       <div>
                         Active profile in scope: <span className='font-medium'>{editingProfileTarget.profile.name}</span>
                       </div>
-                      <div className='text-muted-foreground'>Only model IDs and useStrategy are updated here. Other profile fields stay unchanged.</div>
+                      <div className='text-muted-foreground'>
+                        Only model IDs and useStrategy are updated here. Other profile fields stay unchanged.
+                      </div>
                     </div>
                   ) : (
                     <div className='text-muted-foreground'>Select an existing API key to load its current profile settings.</div>
@@ -606,12 +617,20 @@ function UsePage() {
                   placeholder={DEFAULT_API_KEY_NAME}
                   disabled={isSaving || isEditMode}
                 />
-                {isEditMode ? <p className='text-muted-foreground text-sm'>Name is shown for context only here. Rename existing keys from the API Keys management page if needed.</p> : null}
+                {isEditMode ? (
+                  <p className='text-muted-foreground text-sm'>
+                    Name is shown for context only here. Rename existing keys from the API Keys management page if needed.
+                  </p>
+                ) : null}
               </div>
 
               <div className='space-y-2'>
                 <Label>Use strategy</Label>
-                <Select value={useStrategy || DEFAULT_USE_STRATEGY} onValueChange={setUseStrategy} disabled={isSaving || isLoadingEditingApiKey}>
+                <Select
+                  value={useStrategy || DEFAULT_USE_STRATEGY}
+                  onValueChange={setUseStrategy}
+                  disabled={isSaving || isLoadingEditingApiKey}
+                >
                   <SelectTrigger className='w-full'>
                     <SelectValue placeholder='own_first' />
                   </SelectTrigger>
@@ -641,7 +660,13 @@ function UsePage() {
                     <Label>Available models</Label>
                     <p className='text-muted-foreground text-sm'>Select one or more enabled models for the profile currently in scope.</p>
                   </div>
-                  <Button type='button' variant='outline' size='sm' onClick={() => void loadModels()} disabled={isFetchingModels || isSaving || !modelPermissions.canRead}>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    onClick={() => void loadModels()}
+                    disabled={isFetchingModels || isSaving || !modelPermissions.canRead}
+                  >
                     {isFetchingModels ? 'Loading...' : 'Reload models'}
                   </Button>
                 </div>
@@ -655,8 +680,10 @@ function UsePage() {
                 ) : null}
 
                 {!isFetchingModels && availableModels.length === 0 ? (
-                  <div className='rounded-md border border-dashed p-4 text-sm text-muted-foreground'>
-                    {selectedProjectId ? 'No enabled models loaded yet. Use Reload models to fetch the current model list.' : 'Pick a project first to load models.'}
+                  <div className='text-muted-foreground rounded-md border border-dashed p-4 text-sm'>
+                    {selectedProjectId
+                      ? 'No enabled models loaded yet. Use Reload models to fetch the current model list.'
+                      : 'Pick a project first to load models.'}
                   </div>
                 ) : null}
 
@@ -666,9 +693,13 @@ function UsePage() {
                       const checked = selectedModelIDs.includes(model.id);
                       return (
                         <label key={model.id} className='flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm'>
-                          <Checkbox checked={checked} onCheckedChange={(nextChecked) => toggleModel(model.id, nextChecked === true)} disabled={isSaving || isLoadingEditingApiKey} />
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(nextChecked) => toggleModel(model.id, nextChecked === true)}
+                            disabled={isSaving || isLoadingEditingApiKey}
+                          />
                           <div className='space-y-1'>
-                            <div className='font-mono text-xs text-foreground'>{model.id}</div>
+                            <div className='text-foreground font-mono text-xs'>{model.id}</div>
                             <div className='text-muted-foreground text-xs'>Status: {model.status}</div>
                           </div>
                         </label>
@@ -679,26 +710,40 @@ function UsePage() {
               </div>
 
               <Button type='submit' disabled={isSaving || !selectedProjectId || isLoadingEditingApiKey}>
-                {isSaving ? (isEditMode ? 'Updating Use API key...' : 'Saving Use API key...') : isEditMode ? 'Update Use API key' : 'Create Use API key'}
+                {isSaving
+                  ? isEditMode
+                    ? 'Updating Use API key...'
+                    : 'Saving Use API key...'
+                  : isEditMode
+                    ? 'Update Use API key'
+                    : 'Create Use API key'}
               </Button>
             </form>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Current scope</CardTitle>
-            <CardDescription>Keep this iteration focused on modelIDs and useStrategy while preserving the rest of the existing profile payload.</CardDescription>
-          </CardHeader>
-          <CardContent className='space-y-3 text-sm'>
-            <div className='rounded-lg bg-muted/40 p-3'>Mode: {isEditMode ? 'Edit existing API key' : 'Create new API key'}</div>
-            <div className='rounded-lg bg-muted/40 p-3'>Selected project: {selectedProjectId ?? 'None'}</div>
-            <div className='rounded-lg bg-muted/40 p-3'>Selected models: {selectedModelIDs.length}</div>
-            <div className='rounded-lg bg-muted/40 p-3'>Active profile name: {activeProfileName}</div>
-            <div className='rounded-lg bg-muted/40 p-3'>Saved strategy default: {useStrategy || DEFAULT_USE_STRATEGY}</div>
-            <div className='rounded-lg bg-muted/40 p-3'>Next step after this edit flow: surface richer profile options and wire Share settings through schema, API, and UI.</div>
-          </CardContent>
-        </Card>
+        <div className='space-y-6'>
+          <Card>
+            <CardHeader>
+              <CardTitle>Current scope</CardTitle>
+              <CardDescription>
+                Keep this iteration focused on modelIDs and useStrategy while preserving the rest of the existing profile payload.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className='space-y-3 text-sm'>
+              <div className='bg-muted/40 rounded-lg p-3'>Mode: {isEditMode ? 'Edit existing API key' : 'Create new API key'}</div>
+              <div className='bg-muted/40 rounded-lg p-3'>Selected project: {selectedProjectId ?? 'None'}</div>
+              <div className='bg-muted/40 rounded-lg p-3'>Selected models: {selectedModelIDs.length}</div>
+              <div className='bg-muted/40 rounded-lg p-3'>Active profile name: {activeProfileName}</div>
+              <div className='bg-muted/40 rounded-lg p-3'>Saved strategy default: {useStrategy || DEFAULT_USE_STRATEGY}</div>
+              <div className='bg-muted/40 rounded-lg p-3'>
+                Next step after this edit flow: surface richer profile options and wire Share settings through schema, API, and UI.
+              </div>
+            </CardContent>
+          </Card>
+
+          <ShareUseWalletPanel usage={shareUseUsageQuery.data} isLoading={shareUseUsageQuery.isLoading} error={shareUseUsageQuery.error} />
+        </div>
       </div>
 
       {saveSummary?.mode === 'edit' ? (
@@ -706,7 +751,9 @@ function UsePage() {
           <AlertTitle>Use API key updated</AlertTitle>
           <AlertDescription className='space-y-2'>
             <p className='text-sm'>Saved model IDs and useStrategy for {saveSummary.apiKeyName}.</p>
-            <p className='text-sm text-muted-foreground'>Profile {saveSummary.profileName} now tracks {saveSummary.modelCount} model IDs and strategy {saveSummary.useStrategy}.</p>
+            <p className='text-muted-foreground text-sm'>
+              Profile {saveSummary.profileName} now tracks {saveSummary.modelCount} model IDs and strategy {saveSummary.useStrategy}.
+            </p>
           </AlertDescription>
         </Alert>
       ) : null}
@@ -716,7 +763,7 @@ function UsePage() {
           <AlertTitle>{profileSaved ? 'Use API key created' : 'API key created, profile save needs attention'}</AlertTitle>
           <AlertDescription className='space-y-3'>
             <p className='text-sm'>Copy this generated key now. The value may not be shown again in later views.</p>
-            <div className='rounded-md border bg-muted/40 p-3 font-mono text-sm break-all'>{generatedKey}</div>
+            <div className='bg-muted/40 rounded-md border p-3 font-mono text-sm break-all'>{generatedKey}</div>
             <div className='flex flex-wrap gap-2'>
               <Button type='button' variant='outline' size='sm' onClick={handleCopy}>
                 {isCopied ? 'Copied' : 'Copy API key'}
@@ -725,8 +772,12 @@ function UsePage() {
                 Refresh models
               </Button>
             </div>
-            {saveSummary?.mode === 'create' ? <p className='text-sm text-muted-foreground'>Profile {saveSummary.profileName} was saved with {saveSummary.modelCount} model IDs and strategy {saveSummary.useStrategy}.</p> : null}
-            {profileSaveError ? <p className='text-sm text-destructive'>{profileSaveError}</p> : null}
+            {saveSummary?.mode === 'create' ? (
+              <p className='text-muted-foreground text-sm'>
+                Profile {saveSummary.profileName} was saved with {saveSummary.modelCount} model IDs and strategy {saveSummary.useStrategy}.
+              </p>
+            ) : null}
+            {profileSaveError ? <p className='text-destructive text-sm'>{profileSaveError}</p> : null}
           </AlertDescription>
         </Alert>
       ) : null}

@@ -10,6 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 
+	"github.com/looplj/axonhub/internal/contexts"
+	"github.com/looplj/axonhub/internal/ent"
 	"github.com/looplj/axonhub/internal/objects"
 	"github.com/looplj/axonhub/internal/server/biz"
 )
@@ -17,11 +19,13 @@ import (
 type RelaySubKeyHandlersParams struct {
 	fx.In
 
-	RelayAdminService *biz.RelayAdminService
+	RelayAdminService      *biz.RelayAdminService
+	ShareUseWalletService  *biz.ShareUseWalletService
 }
 
 type RelaySubKeyHandlers struct {
-	RelayAdminService *biz.RelayAdminService
+	RelayAdminService     *biz.RelayAdminService
+	ShareUseWalletService *biz.ShareUseWalletService
 }
 
 type RelaySubKeyEndpoint struct {
@@ -30,7 +34,10 @@ type RelaySubKeyEndpoint struct {
 }
 
 func NewRelaySubKeyHandlers(params RelaySubKeyHandlersParams) *RelaySubKeyHandlers {
-	return &RelaySubKeyHandlers{RelayAdminService: params.RelayAdminService}
+	return &RelaySubKeyHandlers{
+		RelayAdminService:     params.RelayAdminService,
+		ShareUseWalletService: params.ShareUseWalletService,
+	}
 }
 
 func RelaySubKeyRESTContract() []RelaySubKeyEndpoint {
@@ -52,6 +59,9 @@ func RelaySubKeyRESTContract() []RelaySubKeyEndpoint {
 		{Method: http.MethodPost, Path: "/admin/relay-subkeys/wallets/recharge"},
 		{Method: http.MethodGet, Path: "/admin/relay-subkeys/requests"},
 		{Method: http.MethodGet, Path: "/admin/relay-subkeys/channel-pool-health"},
+		{Method: http.MethodGet, Path: "/admin/share-use/wallet"},
+		{Method: http.MethodGet, Path: "/admin/share-use/ledger"},
+		{Method: http.MethodGet, Path: "/admin/share-use/usage"},
 		{Method: http.MethodGet, Path: "/admin/projects/:projectId/relay-subkeys/overview"},
 		{Method: http.MethodGet, Path: "/admin/projects/:projectId/relay-subkeys/usage"},
 	}
@@ -285,6 +295,45 @@ func (h *RelaySubKeyHandlers) ChannelPoolHealth(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"channelPoolHealth": health, "data": health})
 }
 
+func (h *RelaySubKeyHandlers) GetShareUseWallet(c *gin.Context) {
+	user, exists := currentRelaySubKeyUser(c)
+	if !exists {
+		return
+	}
+	wallet, err := h.ShareUseWalletService.GetWallet(c.Request.Context(), user.ID)
+	if err != nil {
+		relaySubKeyJSONError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"wallet": wallet, "data": wallet})
+}
+
+func (h *RelaySubKeyHandlers) ListShareUseLedger(c *gin.Context) {
+	user, exists := currentRelaySubKeyUser(c)
+	if !exists {
+		return
+	}
+	ledgerEntries, err := h.ShareUseWalletService.ListLedgerEntries(c.Request.Context(), user.ID)
+	if err != nil {
+		relaySubKeyJSONError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ledgerEntries": ledgerEntries, "data": ledgerEntries})
+}
+
+func (h *RelaySubKeyHandlers) GetShareUseUsage(c *gin.Context) {
+	user, exists := currentRelaySubKeyUser(c)
+	if !exists {
+		return
+	}
+	usage, err := h.ShareUseWalletService.GetUsage(c.Request.Context(), user.ID)
+	if err != nil {
+		relaySubKeyJSONError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"usage": usage, "data": usage})
+}
+
 func (h *RelaySubKeyHandlers) ProjectOverview(c *gin.Context) {
 	projectID, ok := relaySubKeyIDParam(c, "projectId")
 	if !ok {
@@ -310,8 +359,17 @@ func (h *RelaySubKeyHandlers) ProjectUsage(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"usage": usage, "data": usage})
 }
+func currentRelaySubKeyUser(c *gin.Context) (*ent.User, bool) {
+	user, exists := contexts.GetUser(c.Request.Context())
+	if !exists || user == nil || user.ID <= 0 {
+		JSONError(c, http.StatusUnauthorized, fmt.Errorf("current user context is required"))
+		return nil, false
+	}
+	return user, true
+}
 
 func relaySubKeyBindJSON(c *gin.Context, dest any) bool {
+
 	if err := c.ShouldBindJSON(dest); err != nil {
 		JSONError(c, http.StatusBadRequest, fmt.Errorf("invalid request body: %w", err))
 		return false

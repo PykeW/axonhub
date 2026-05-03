@@ -32,11 +32,15 @@ func TestRelaySubKeyRESTContract(t *testing.T) {
 		{Method: http.MethodPost, Path: "/admin/relay-subkeys/wallets/recharge"},
 		{Method: http.MethodGet, Path: "/admin/relay-subkeys/requests"},
 		{Method: http.MethodGet, Path: "/admin/relay-subkeys/channel-pool-health"},
+		{Method: http.MethodGet, Path: "/admin/share-use/wallet"},
+		{Method: http.MethodGet, Path: "/admin/share-use/ledger"},
+		{Method: http.MethodGet, Path: "/admin/share-use/usage"},
 		{Method: http.MethodGet, Path: "/admin/projects/:projectId/relay-subkeys/overview"},
 		{Method: http.MethodGet, Path: "/admin/projects/:projectId/relay-subkeys/usage"},
 	}
 
 	if len(got) != len(want) {
+
 		t.Fatalf("RelaySubKeyRESTContract length = %d, want %d", len(got), len(want))
 	}
 	for i := range want {

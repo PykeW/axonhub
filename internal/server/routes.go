@@ -37,6 +37,7 @@ type Handlers struct {
 	RequestContent *api.RequestContentHandlers
 	RequestPreview *api.RequestPreviewHandlers
 	RelaySubKeys   *api.RelaySubKeyHandlers
+	ShareUseWallet *api.ShareUseWalletHandlers
 }
 
 type Services struct {
@@ -150,6 +151,13 @@ func SetupRoutes(server *Server, handlers Handlers, client *ent.Client, services
 			relaySubKeysGroup.POST("/wallets/recharge", middleware.RequireScopes(scopes.ScopeWriteAPIKeys), handlers.RelaySubKeys.RechargeWallet)
 			relaySubKeysGroup.GET("/requests", middleware.RequireScopes(scopes.ScopeReadRequests), handlers.RelaySubKeys.ListRequests)
 			relaySubKeysGroup.GET("/channel-pool-health", middleware.RequireScopes(scopes.ScopeReadChannels), handlers.RelaySubKeys.ChannelPoolHealth)
+		}
+
+		shareUseGroup := adminGroup.Group("/share-use", middleware.WithTimeout(server.Config.RequestTimeout))
+		{
+			shareUseGroup.GET("/wallet", middleware.RequireScopes(scopes.ScopeReadAPIKeys), handlers.ShareUseWallet.GetWallet)
+			shareUseGroup.GET("/ledger", middleware.RequireScopes(scopes.ScopeReadAPIKeys), handlers.ShareUseWallet.ListLedger)
+			shareUseGroup.GET("/usage", middleware.RequireScopes(scopes.ScopeReadAPIKeys), handlers.ShareUseWallet.GetUsage)
 		}
 
 		projectRelaySubKeysGroup := adminGroup.Group(

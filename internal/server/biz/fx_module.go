@@ -37,6 +37,7 @@ var Module = fx.Module("biz",
 	fx.Provide(NewRelayAccessService),
 	fx.Provide(NewRelaySettlementService),
 	fx.Provide(NewShareUseSettlementService),
+	fx.Provide(NewShareUseWalletService),
 
 	fx.Invoke(func(runtime *RelayRuntimeService, access *RelayAccessService, settlement *RelaySettlementService) {
 		runtime.SetResolver(access)
