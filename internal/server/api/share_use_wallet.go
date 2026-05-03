@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
@@ -44,12 +45,23 @@ func (h *ShareUseWalletHandlers) ListLedger(c *gin.Context) {
 	if !exists {
 		return
 	}
-	ledgerEntries, err := h.ShareUseWalletService.ListLedgerEntries(c.Request.Context(), user.ID)
+	page := parseShareUseLedgerInt(c, "page", 0)
+	pageSize := parseShareUseLedgerInt(c, "pageSize", 20)
+	ledgerPage, err := h.ShareUseWalletService.ListLedgerPage(c.Request.Context(), user.ID, page, pageSize)
 	if err != nil {
 		JSONError(c, http.StatusInternalServerError, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"ledgerEntries": ledgerEntries, "data": ledgerEntries})
+	c.JSON(http.StatusOK, gin.H{
+		"entries":      ledgerPage.Entries,
+		"ledgerEntries": ledgerPage.Entries,
+		"totalCount":   ledgerPage.TotalCount,
+		"page":         ledgerPage.Page,
+		"pageSize":     ledgerPage.PageSize,
+		"hasNext":      ledgerPage.HasNext,
+		"hasPrev":      ledgerPage.HasPrev,
+		"data":         ledgerPage,
+	})
 }
 
 func (h *ShareUseWalletHandlers) GetUsage(c *gin.Context) {
@@ -72,4 +84,16 @@ func currentShareUseWalletUser(c *gin.Context) (*ent.User, bool) {
 		return nil, false
 	}
 	return user, true
+}
+
+func parseShareUseLedgerInt(c *gin.Context, key string, fallback int) int {
+	raw := c.Query(key)
+	if raw == "" {
+		return fallback
+	}
+	parsed, err := strconv.Atoi(raw)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }

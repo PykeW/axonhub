@@ -21,8 +21,7 @@ import {
   type ApiKeyUseStrategy,
   type UpdateApiKeyProfilesInput,
 } from '@/features/apikeys/data/schema';
-import { useShareUseUsageQuery } from '@/features/share-use-wallet/data';
-import { ShareUseWalletPanel } from '@/features/share-use-wallet/panel';
+import { ShareUseWalletSection } from '@/features/share-use-wallet/section';
 
 const CREATE_NEW_API_KEY_OPTION = '__create_new_api_key__';
 const DEFAULT_API_KEY_NAME = 'Use MVP API Key';
@@ -203,9 +202,9 @@ function UsePage() {
 
   const selectedProjectId = useSelectedProjectId();
   const { apiKeyPermissions, modelPermissions } = usePermissions();
-  const shareUseUsageQuery = useShareUseUsageQuery(apiKeyPermissions.canRead && Boolean(selectedProjectId));
   const createApiKey = useCreateApiKey();
   const updateApiKeyProfiles = useUpdateApiKeyProfiles();
+
   const { data: models, mutateAsync: fetchModels, isPending: isFetchingModels } = useQueryModels();
   const existingApiKeysQuery = useApiKeys(
     {
@@ -741,8 +740,8 @@ function UsePage() {
               </div>
             </CardContent>
           </Card>
+<ShareUseWalletSection enabled={apiKeyPermissions.canRead && Boolean(selectedProjectId)} />
 
-          <ShareUseWalletPanel usage={shareUseUsageQuery.data} isLoading={shareUseUsageQuery.isLoading} error={shareUseUsageQuery.error} />
         </div>
       </div>
 

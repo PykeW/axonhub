@@ -1,14 +1,13 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { ShareUseWalletUsage } from './data';
-import { ShareUseLedgerTable } from './table';
+import type { ShareUsePointWallet } from './data';
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(value);
 }
 
-export function ShareUseWalletPanel({ usage, isLoading, error }: { usage?: ShareUseWalletUsage; isLoading: boolean; error: unknown }) {
+export function ShareUseWalletPanel({ wallet, isLoading, error }: { wallet?: ShareUsePointWallet | null; isLoading: boolean; error: unknown }) {
   return (
     <Card>
       <CardHeader>
@@ -24,21 +23,14 @@ export function ShareUseWalletPanel({ usage, isLoading, error }: { usage?: Share
           </Alert>
         ) : null}
         {!isLoading && !error ? (
-          <>
-            <div className='grid gap-3 sm:grid-cols-2'>
-              <div className='bg-muted/40 rounded-lg p-3'>Available points: {formatNumber(usage?.wallet?.availablePoints ?? 0)}</div>
-              <div className='bg-muted/40 rounded-lg p-3'>Pending points: {formatNumber(usage?.wallet?.pendingPoints ?? 0)}</div>
-              <div className='bg-muted/40 rounded-lg p-3'>Frozen points: {formatNumber(usage?.wallet?.frozenPoints ?? 0)}</div>
-              <div className='bg-muted/40 rounded-lg p-3'>
-                Lifetime earned / spent: {formatNumber(usage?.wallet?.lifetimeEarned ?? 0)} /{' '}
-                {formatNumber(usage?.wallet?.lifetimeSpent ?? 0)}
-              </div>
+          <div className='grid gap-3 sm:grid-cols-2'>
+            <div className='bg-muted/40 rounded-lg p-3'>Available points: {formatNumber(wallet?.availablePoints ?? 0)}</div>
+            <div className='bg-muted/40 rounded-lg p-3'>Pending points: {formatNumber(wallet?.pendingPoints ?? 0)}</div>
+            <div className='bg-muted/40 rounded-lg p-3'>Frozen points: {formatNumber(wallet?.frozenPoints ?? 0)}</div>
+            <div className='bg-muted/40 rounded-lg p-3'>
+              Lifetime earned / spent: {formatNumber(wallet?.lifetimeEarned ?? 0)} / {formatNumber(wallet?.lifetimeSpent ?? 0)}
             </div>
-            <div className='space-y-2'>
-              <div className='text-sm font-medium'>Settlement ledger</div>
-              <ShareUseLedgerTable entries={usage?.ledgerEntries ?? []} isLoading={false} />
-            </div>
-          </>
+          </div>
         ) : null}
       </CardContent>
     </Card>

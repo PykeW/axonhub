@@ -36,6 +36,16 @@ export interface ShareUseWalletUsage {
   ledgerEntries: ShareUsePointLedgerEntry[];
 }
 
+export interface ShareUseLedgerPage {
+  entries: ShareUsePointLedgerEntry[];
+  ledgerEntries: ShareUsePointLedgerEntry[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
 async function getShareUseWallet(): Promise<ShareUsePointWallet | null | undefined> {
   const response = await apiRequest<{ wallet?: ShareUsePointWallet | null; data?: ShareUsePointWallet | null }>('/admin/share-use/wallet', {
     requireAuth: true,
@@ -43,14 +53,34 @@ async function getShareUseWallet(): Promise<ShareUsePointWallet | null | undefin
   return response.wallet ?? response.data;
 }
 
-async function listShareUseLedger(): Promise<ShareUsePointLedgerEntry[]> {
-  const response = await apiRequest<{ ledgerEntries?: ShareUsePointLedgerEntry[]; data?: ShareUsePointLedgerEntry[] }>(
-    '/admin/share-use/ledger',
-    {
-      requireAuth: true,
-    }
-  );
-  return response.ledgerEntries ?? response.data ?? [];
+async function fetchShareUseLedgerPage(page: number, pageSize: number): Promise<ShareUseLedgerPage> {
+  const searchParams = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  const response = await apiRequest<{
+    entries?: ShareUsePointLedgerEntry[];
+    ledgerEntries?: ShareUsePointLedgerEntry[];
+    totalCount?: number;
+    page?: number;
+    pageSize?: number;
+    hasNext?: boolean;
+    hasPrev?: boolean;
+    data?: ShareUseLedgerPage;
+  }>(`/admin/share-use/ledger?${searchParams.toString()}`, {
+    requireAuth: true,
+  });
+  const data = response.data;
+  const entries = response.entries ?? response.ledgerEntries ?? data?.entries ?? data?.ledgerEntries ?? [];
+  return {
+    entries,
+    ledgerEntries: data?.ledgerEntries ?? entries,
+    totalCount: response.totalCount ?? data?.totalCount ?? entries.length,
+    page: response.page ?? data?.page ?? page,
+    pageSize: response.pageSize ?? data?.pageSize ?? pageSize,
+    hasNext: response.hasNext ?? data?.hasNext ?? false,
+    hasPrev: response.hasPrev ?? data?.hasPrev ?? page > 0,
+  };
 }
 
 async function getShareUseUsage(): Promise<ShareUseWalletUsage> {
@@ -69,10 +99,13 @@ export function useShareUseWalletQuery(enabled = true) {
   });
 }
 
-export function useShareUseLedgerQuery(enabled = true) {
-  return useQuery({
-    queryKey: ['share-use-ledger'],
-    queryFn: listShareUseLedger,
+export function useShareUseLedgerQuery(page: number, pageSize: number, enabled = true) {
+  return useQuery<ShareUseLedgerPage, Error, ShareUseLedgerPage, readonly ['share-use-ledger', number, number]>({
+    queryKey: ['share-use-ledger', page, pageSize],
+    queryFn: ({ queryKey }) => {
+      const [, currentPage, currentPageSize] = queryKey;
+      return fetchShareUseLedgerPage(currentPage, currentPageSize);
+    },
     enabled,
     staleTime: 60_000,
   });

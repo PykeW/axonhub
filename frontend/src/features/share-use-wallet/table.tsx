@@ -1,23 +1,13 @@
-import { useMemo, useState } from 'react';
-import { type ColumnDef, type PaginationState, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { useMemo } from 'react';
+import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { ServerSidePagination } from '@/components/server-side-pagination';
-import { pageInfoSchema, type PageInfo } from '@/gql/pagination';
-import type { ShareUsePointLedgerEntry } from './data';
+import { pageInfoSchema } from '@/gql/pagination';
+import type { ShareUseLedgerPage, ShareUsePointLedgerEntry } from './data';
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(value);
-}
-
-function buildPageInfo(pageIndex: number, pageSize: number, totalCount: number): PageInfo {
-  const pageCount = Math.max(1, Math.ceil(totalCount / pageSize));
-  return pageInfoSchema.parse({
-    hasPreviousPage: pageIndex > 0,
-    hasNextPage: pageIndex < pageCount - 1,
-    startCursor: pageCount > 0 ? String(pageIndex) : null,
-    endCursor: pageCount > 0 ? String(pageIndex) : null,
-  });
 }
 
 const columns: ColumnDef<ShareUsePointLedgerEntry>[] = [
@@ -58,23 +48,34 @@ const columns: ColumnDef<ShareUsePointLedgerEntry>[] = [
 ];
 
 export function ShareUseLedgerTable({
-  entries,
+  ledgerPage,
   isLoading,
+  onNextPage,
+  onPreviousPage,
+  onFirstPage,
+  onPageSizeChange,
 }: {
-  entries: ShareUsePointLedgerEntry[];
+  ledgerPage?: ShareUseLedgerPage;
   isLoading: boolean;
+  onNextPage: () => void;
+  onPreviousPage: () => void;
+  onFirstPage: () => void;
+  onPageSizeChange: (pageSize: number) => void;
 }) {
-  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
-
-  const pagedEntries = useMemo(() => {
-    const start = pagination.pageIndex * pagination.pageSize;
-    return entries.slice(start, start + pagination.pageSize);
-  }, [entries, pagination.pageIndex, pagination.pageSize]);
-
-  const pageInfo = useMemo(() => buildPageInfo(pagination.pageIndex, pagination.pageSize, entries.length), [entries.length, pagination.pageIndex, pagination.pageSize]);
+  const entries = ledgerPage?.entries ?? ledgerPage?.ledgerEntries ?? [];
+  const pageInfo = useMemo(
+    () =>
+      pageInfoSchema.parse({
+        hasPreviousPage: ledgerPage?.hasPrev ?? false,
+        hasNextPage: ledgerPage?.hasNext ?? false,
+        startCursor: ledgerPage ? String(ledgerPage.page) : null,
+        endCursor: ledgerPage ? String(ledgerPage.page) : null,
+      }),
+    [ledgerPage]
+  );
 
   const table = useReactTable({
-    data: pagedEntries,
+    data: entries,
     columns,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
@@ -97,7 +98,7 @@ export function ShareUseLedgerTable({
           </TableHeader>
           <TableBody className='space-y-1 !bg-[var(--table-background)] p-2'>
             {isLoading ? (
-              <TableSkeleton rows={pagination.pageSize} columns={columns.length} />
+              <TableSkeleton rows={ledgerPage?.pageSize ?? 10} columns={columns.length} />
             ) : table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id} className='group/row rounded-xl border-0 !bg-[var(--table-background)]'>
@@ -121,14 +122,14 @@ export function ShareUseLedgerTable({
       <div className='mt-4 flex-shrink-0'>
         <ServerSidePagination
           pageInfo={pageInfo}
-          pageSize={pagination.pageSize}
-          dataLength={pagedEntries.length}
-          totalCount={entries.length}
+          pageSize={ledgerPage?.pageSize ?? 10}
+          dataLength={entries.length}
+          totalCount={ledgerPage?.totalCount ?? entries.length}
           selectedRows={0}
-          onNextPage={() => setPagination((prev) => ({ ...prev, pageIndex: prev.pageIndex + 1 }))}
-          onPreviousPage={() => setPagination((prev) => ({ ...prev, pageIndex: Math.max(0, prev.pageIndex - 1) }))}
-          onFirstPage={() => setPagination((prev) => ({ ...prev, pageIndex: 0 }))}
-          onPageSizeChange={(pageSize) => setPagination({ pageIndex: 0, pageSize })}
+          onNextPage={onNextPage}
+          onPreviousPage={onPreviousPage}
+          onFirstPage={onFirstPage}
+          onPageSizeChange={onPageSizeChange}
         />
       </div>
     </div>

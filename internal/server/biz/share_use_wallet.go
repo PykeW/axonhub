@@ -59,6 +59,15 @@ type ShareUseWalletUsageView struct {
 	LedgerEntries []ShareUsePointLedgerEntryView `json:"ledgerEntries"`
 }
 
+type ShareUseLedgerPage struct {
+	Entries    []ShareUsePointLedgerEntryView `json:"entries"`
+	TotalCount int                           `json:"totalCount"`
+	Page       int                           `json:"page"`
+	PageSize   int                           `json:"pageSize"`
+	HasNext    bool                          `json:"hasNext"`
+	HasPrev    bool                          `json:"hasPrev"`
+}
+
 func NewShareUseWalletService(params ShareUseWalletServiceParams) *ShareUseWalletService {
 	return &ShareUseWalletService{AbstractService: &AbstractService{db: params.Ent}}
 }
@@ -75,7 +84,23 @@ func (s *ShareUseWalletService) GetWallet(ctx context.Context, userID int) (*Sha
 }
 
 func (s *ShareUseWalletService) ListLedgerEntries(ctx context.Context, userID int) ([]ShareUsePointLedgerEntryView, error) {
-	return s.listLedgerEntries(ctx, userID)
+	return s.listLedgerEntries(ctx, userID, 0, 200)
+}
+
+func (s *ShareUseWalletService) ListLedgerPage(ctx context.Context, userID, page, pageSize int) (*ShareUseLedgerPage, error) {
+	page, pageSize = normalizeShareUseLedgerPage(page, pageSize)
+	entries, totalCount, err := s.listLedgerEntriesPage(ctx, userID, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+	return &ShareUseLedgerPage{
+		Entries:    entries,
+		TotalCount: totalCount,
+		Page:       page,
+		PageSize:   pageSize,
+		HasNext:    (page+1)*pageSize < totalCount,
+		HasPrev:    page > 0,
+	}, nil
 }
 
 func (s *ShareUseWalletService) GetUsage(ctx context.Context, userID int) (*ShareUseWalletUsageView, error) {
@@ -106,24 +131,52 @@ func (s *ShareUseWalletService) listWallets(ctx context.Context, userID int) ([]
 	return out, nil
 }
 
-func (s *ShareUseWalletService) listLedgerEntries(ctx context.Context, userID int) ([]ShareUsePointLedgerEntryView, error) {
-	rows, err := s.entFromContext(ctx).UserPointLedgerEntry.Query().
-		Where(userpointledgerentry.UserID(userID)).
+func (s *ShareUseWalletService) listLedgerEntries(ctx context.Context, userID, page, pageSize int) ([]ShareUsePointLedgerEntryView, error) {
+	entries, _, err := s.listLedgerEntriesPage(ctx, userID, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+	return entries, nil
+}
+
+func (s *ShareUseWalletService) listLedgerEntriesPage(ctx context.Context, userID, page, pageSize int) ([]ShareUsePointLedgerEntryView, int, error) {
+	query := s.entFromContext(ctx).UserPointLedgerEntry.Query().
+		Where(userpointledgerentry.UserID(userID))
+	totalCount, err := query.Clone().Count(ctx)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count share/use point ledger entries: %w", err)
+	}
+
+	rows, err := query.
 		Order(
 			userpointledgerentry.ByCreatedAt(entsql.OrderDesc()),
 			userpointledgerentry.ByID(entsql.OrderDesc()),
 		).
-		Limit(200).
+		Offset(page * pageSize).
+		Limit(pageSize).
 		All(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list share/use point ledger entries: %w", err)
+		return nil, 0, fmt.Errorf("failed to list share/use point ledger entries: %w", err)
 	}
 
 	out := make([]ShareUsePointLedgerEntryView, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, shareUseLedgerEntryFromEnt(row))
 	}
-	return out, nil
+	return out, totalCount, nil
+}
+
+func normalizeShareUseLedgerPage(page, pageSize int) (int, int) {
+	if page < 0 {
+		page = 0
+	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+	return page, pageSize
 }
 
 func shareUseWalletFromEnt(row *ent.UserPointAccount) ShareUsePointWalletView {
