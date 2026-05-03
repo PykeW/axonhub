@@ -4,6 +4,7 @@ import { useQueryModels } from '@/gql/models';
 import { useSelectedProjectId } from '@/stores/projectStore';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import { usePermissions } from '@/hooks/usePermissions';
+import { buildDateRangeWhereClause, DEFAULT_END_TIME, DEFAULT_START_TIME, type DateTimeRangeValue } from '@/utils/date-range';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -84,9 +85,122 @@ type EditableProfileTarget = {
 
 type UsePageSearch = {
   apiKeyId?: string;
+  shareUsePage?: number;
+  shareUsePageSize?: number;
+  shareUseScene?: 'contribution_pending' | 'contribution_reward' | 'consume' | 'adjustment';
+  shareUseDirection?: 'credit' | 'debit';
+  shareUseCreatedAtGTE?: string;
+  shareUseCreatedAtLTE?: string;
 };
 
+const shareUseSceneValues = new Set<NonNullable<UsePageSearch['shareUseScene']>>([
+  'contribution_pending',
+  'contribution_reward',
+  'consume',
+  'adjustment',
+]);
+const shareUseDirectionValues = new Set<NonNullable<UsePageSearch['shareUseDirection']>>(['credit', 'debit']);
+
+function parseOptionalSearchString(value: unknown) {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+function parseOptionalNonNegativeInt(value: unknown) {
+  const candidate = typeof value === 'number' ? value : typeof value === 'string' ? Number.parseInt(value, 10) : Number.NaN;
+  if (!Number.isFinite(candidate)) {
+    return undefined;
+  }
+
+  const normalized = Math.floor(candidate);
+  return normalized >= 0 ? normalized : undefined;
+}
+
+function parseOptionalPositiveInt(value: unknown) {
+  const parsed = parseOptionalNonNegativeInt(value);
+  return parsed !== undefined && parsed > 0 ? parsed : undefined;
+}
+
+function parseOptionalShareUseScene(value: unknown): UsePageSearch['shareUseScene'] {
+  const parsed = parseOptionalSearchString(value);
+  return parsed && shareUseSceneValues.has(parsed as NonNullable<UsePageSearch['shareUseScene']>)
+    ? (parsed as UsePageSearch['shareUseScene'])
+    : undefined;
+}
+
+function parseOptionalShareUseDirection(value: unknown): UsePageSearch['shareUseDirection'] {
+  const parsed = parseOptionalSearchString(value);
+  return parsed && shareUseDirectionValues.has(parsed as NonNullable<UsePageSearch['shareUseDirection']>)
+    ? (parsed as UsePageSearch['shareUseDirection'])
+    : undefined;
+}
+
+function parseOptionalShareUseDate(value: unknown) {
+  const parsed = parseOptionalSearchString(value);
+  if (!parsed) {
+    return undefined;
+  }
+
+  const normalized = new Date(parsed);
+  return Number.isNaN(normalized.getTime()) ? undefined : normalized.toISOString();
+}
+
+function normalizeUsePageSearch(search: UsePageSearch) {
+  const shareUseCreatedAtGTE = parseOptionalShareUseDate(search.shareUseCreatedAtGTE);
+  const shareUseCreatedAtLTE = parseOptionalShareUseDate(search.shareUseCreatedAtLTE);
+  const hasInvalidDateRange = shareUseCreatedAtGTE && shareUseCreatedAtLTE && shareUseCreatedAtGTE > shareUseCreatedAtLTE;
+
+  return {
+    apiKeyId: parseOptionalSearchString(search.apiKeyId),
+    shareUsePage: parseOptionalNonNegativeInt(search.shareUsePage),
+    shareUsePageSize: parseOptionalPositiveInt(search.shareUsePageSize),
+    shareUseScene: parseOptionalShareUseScene(search.shareUseScene),
+    shareUseDirection: parseOptionalShareUseDirection(search.shareUseDirection),
+    shareUseCreatedAtGTE: hasInvalidDateRange ? undefined : shareUseCreatedAtGTE,
+    shareUseCreatedAtLTE: hasInvalidDateRange ? undefined : shareUseCreatedAtLTE,
+  } satisfies UsePageSearch;
+}
+
+function compactUsePageSearch(search: UsePageSearch) {
+  const normalized = normalizeUsePageSearch(search);
+  return {
+    ...(normalized.apiKeyId ? { apiKeyId: normalized.apiKeyId } : {}),
+    ...(normalized.shareUsePage !== undefined ? { shareUsePage: normalized.shareUsePage } : {}),
+    ...(normalized.shareUsePageSize !== undefined ? { shareUsePageSize: normalized.shareUsePageSize } : {}),
+    ...(normalized.shareUseScene ? { shareUseScene: normalized.shareUseScene } : {}),
+    ...(normalized.shareUseDirection ? { shareUseDirection: normalized.shareUseDirection } : {}),
+    ...(normalized.shareUseCreatedAtGTE ? { shareUseCreatedAtGTE: normalized.shareUseCreatedAtGTE } : {}),
+    ...(normalized.shareUseCreatedAtLTE ? { shareUseCreatedAtLTE: normalized.shareUseCreatedAtLTE } : {}),
+  } satisfies UsePageSearch;
+}
+function dateToTimeValue(date: Date) {
+  return {
+    hh: String(date.getHours()).padStart(2, '0'),
+    mm: String(date.getMinutes()).padStart(2, '0'),
+    ss: String(date.getSeconds()).padStart(2, '0'),
+  };
+}
+
+function buildShareUseDateRangeValue(createdAtGTE?: string, createdAtLTE?: string): DateTimeRangeValue | undefined {
+  if (!createdAtGTE && !createdAtLTE) {
+    return undefined;
+  }
+
+  const from = createdAtGTE ? new Date(createdAtGTE) : undefined;
+  const to = createdAtLTE ? new Date(createdAtLTE) : undefined;
+  if ((from && Number.isNaN(from.getTime())) || (to && Number.isNaN(to.getTime()))) {
+    return undefined;
+  }
+
+  return {
+    from,
+    to,
+    startTime: from ? dateToTimeValue(from) : DEFAULT_START_TIME,
+    endTime: to ? dateToTimeValue(to) : DEFAULT_END_TIME,
+  };
+}
+
 function getErrorMessage(error: unknown) {
+
   if (error instanceof Error && error.message) {
     return error.message;
   }
@@ -198,7 +312,7 @@ function buildMergedProfileInput(apiKey: ApiKey, modelIDs: string[], useStrategy
 
 function UsePage() {
   const navigate = useNavigate();
-  const search = Route.useSearch() as UsePageSearch;
+  const search = Route.useSearch();
 
   const selectedProjectId = useSelectedProjectId();
   const { apiKeyPermissions, modelPermissions } = usePermissions();
@@ -234,11 +348,34 @@ function UsePage() {
   const generatedKey = generatedApiKey?.key ?? '';
   const { isCopied, handleCopy } = useCopyToClipboard({ text: generatedKey });
   const editingApiKeyId = search.apiKeyId?.trim() ?? '';
+  const shareUseSearch = useMemo(
+    () => ({
+      page: search.shareUsePage ?? 0,
+      pageSize: search.shareUsePageSize ?? 10,
+      scene: search.shareUseScene,
+      direction: search.shareUseDirection,
+      createdAtGTE: search.shareUseCreatedAtGTE,
+      createdAtLTE: search.shareUseCreatedAtLTE,
+    }),
+    [
+      search.shareUseCreatedAtGTE,
+      search.shareUseCreatedAtLTE,
+      search.shareUseDirection,
+      search.shareUsePage,
+      search.shareUsePageSize,
+      search.shareUseScene,
+    ]
+  );
+  const shareUseDateRange = useMemo(
+    () => buildShareUseDateRangeValue(shareUseSearch.createdAtGTE, shareUseSearch.createdAtLTE),
+    [shareUseSearch.createdAtGTE, shareUseSearch.createdAtLTE]
+  );
   const isEditMode = editingApiKeyId.length > 0;
   const editingApiKeyQuery = useApiKey(editingApiKeyId);
   const editingApiKey = editingApiKeyQuery.data;
+
   const editingProfileTarget = useMemo(() => resolveEditableProfile(editingApiKey), [editingApiKey]);
-  const existingApiKeys = useMemo(() => {
+
     const apiKeys = existingApiKeysQuery.data?.edges.map((edge) => edge.node) ?? [];
 
     if (editingApiKey && apiKeys.every((apiKey) => apiKey.id !== editingApiKey.id)) {
@@ -316,6 +453,16 @@ function UsePage() {
     hydratedEditSnapshotRef.current = snapshot;
   }, [editingApiKey, editingProfileTarget, isEditMode]);
 
+  const updateUsePageSearch = useCallback(
+    (updater: (prev: UsePageSearch) => UsePageSearch) => {
+      navigate({
+        search: ((prev: UsePageSearch | undefined) => compactUsePageSearch(updater(prev ?? {}))) as any,
+        replace: true,
+      } as any);
+    },
+    [navigate]
+  );
+
   const handleApiKeySelectionChange = useCallback(
     (value: string) => {
       const nextApiKeyId = value === CREATE_NEW_API_KEY_OPTION ? undefined : value;
@@ -333,22 +480,90 @@ function UsePage() {
         setUseStrategy(DEFAULT_USE_STRATEGY);
       }
 
-      navigate({
-        search: ((prev: UsePageSearch | undefined) => {
-          const nextSearch: UsePageSearch = { ...(prev ?? {}) };
-
-          if (nextApiKeyId) {
-            nextSearch.apiKeyId = nextApiKeyId;
-          } else {
-            delete nextSearch.apiKeyId;
-          }
-
-          return nextSearch;
-        }) as any,
-        replace: true,
-      } as any);
+      updateUsePageSearch((prev) => ({
+        ...prev,
+        apiKeyId: nextApiKeyId,
+      }));
     },
-    [navigate]
+    [updateUsePageSearch]
+  );
+
+  const handleShareUseSceneChange = useCallback(
+    (nextScene?: string) => {
+      updateUsePageSearch((prev) => ({
+        ...prev,
+        shareUsePage: 0,
+        shareUseScene: nextScene as UsePageSearch['shareUseScene'],
+      }));
+    },
+    [updateUsePageSearch]
+  );
+
+  const handleShareUseDirectionChange = useCallback(
+    (nextDirection?: string) => {
+      updateUsePageSearch((prev) => ({
+        ...prev,
+        shareUsePage: 0,
+        shareUseDirection: nextDirection as UsePageSearch['shareUseDirection'],
+      }));
+    },
+    [updateUsePageSearch]
+  );
+
+  const handleShareUseDateRangeChange = useCallback(
+    (nextDateRange: DateTimeRangeValue | undefined) => {
+      const range = buildDateRangeWhereClause(nextDateRange);
+      updateUsePageSearch((prev) => ({
+        ...prev,
+        shareUsePage: 0,
+        shareUseCreatedAtGTE: range.createdAtGTE,
+        shareUseCreatedAtLTE: range.createdAtLTE,
+      }));
+    },
+    [updateUsePageSearch]
+  );
+
+  const handleShareUseResetFilters = useCallback(() => {
+    updateUsePageSearch((prev) => ({
+      ...prev,
+      shareUsePage: 0,
+      shareUseScene: undefined,
+      shareUseDirection: undefined,
+      shareUseCreatedAtGTE: undefined,
+      shareUseCreatedAtLTE: undefined,
+    }));
+  }, [updateUsePageSearch]);
+
+  const handleShareUseNextPage = useCallback(() => {
+    updateUsePageSearch((prev) => ({
+      ...prev,
+      shareUsePage: (prev.shareUsePage ?? 0) + 1,
+    }));
+  }, [updateUsePageSearch]);
+
+  const handleShareUsePreviousPage = useCallback(() => {
+    updateUsePageSearch((prev) => ({
+      ...prev,
+      shareUsePage: Math.max(0, (prev.shareUsePage ?? 0) - 1),
+    }));
+  }, [updateUsePageSearch]);
+
+  const handleShareUseFirstPage = useCallback(() => {
+    updateUsePageSearch((prev) => ({
+      ...prev,
+      shareUsePage: 0,
+    }));
+  }, [updateUsePageSearch]);
+
+  const handleShareUsePageSizeChange = useCallback(
+    (nextPageSize: number) => {
+      updateUsePageSearch((prev) => ({
+        ...prev,
+        shareUsePage: 0,
+        shareUsePageSize: nextPageSize,
+      }));
+    },
+    [updateUsePageSearch]
   );
 
   const availableModels = useMemo(() => [...(models ?? [])].sort((a, b) => a.id.localeCompare(b.id)), [models]);
@@ -740,7 +955,22 @@ function UsePage() {
               </div>
             </CardContent>
           </Card>
-<ShareUseWalletSection enabled={apiKeyPermissions.canRead && Boolean(selectedProjectId)} />
+<ShareUseWalletSection
+            enabled={apiKeyPermissions.canRead && Boolean(selectedProjectId)}
+            page={shareUseSearch.page}
+            pageSize={shareUseSearch.pageSize}
+            scene={shareUseSearch.scene}
+            direction={shareUseSearch.direction}
+            dateRange={shareUseDateRange}
+            onSceneChange={handleShareUseSceneChange}
+            onDirectionChange={handleShareUseDirectionChange}
+            onDateRangeChange={handleShareUseDateRangeChange}
+            onResetFilters={handleShareUseResetFilters}
+            onNextPage={handleShareUseNextPage}
+            onPreviousPage={handleShareUsePreviousPage}
+            onFirstPage={handleShareUseFirstPage}
+            onPageSizeChange={handleShareUsePageSizeChange}
+          />
 
         </div>
       </div>
@@ -788,7 +1018,5 @@ const useRoutePath = '/_authenticated/use' as Extract<keyof FileRoutesByPath, '/
 
 export const Route = createFileRoute(useRoutePath)({
   component: UsePage,
-  validateSearch: (search: UsePageSearch) => ({
-    apiKeyId: typeof search.apiKeyId === 'string' && search.apiKeyId.trim().length > 0 ? search.apiKeyId : undefined,
-  }),
+  validateSearch: (search: UsePageSearch) => compactUsePageSearch(search),
 });

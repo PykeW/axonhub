@@ -1,16 +1,40 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { buildDateRangeWhereClause, type DateTimeRangeValue } from '@/utils/date-range';
 import { ShareUseWalletPanel } from './panel';
 import { type ShareUseLedgerFilters, useShareUseLedgerQuery, useShareUseWalletQuery } from './data';
 import { ShareUseLedgerTable } from './table';
 
-export function ShareUseWalletSection({ enabled }: { enabled: boolean }) {
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
-  const [scene, setScene] = useState<string | undefined>();
-  const [direction, setDirection] = useState<string | undefined>();
-  const [dateRange, setDateRange] = useState<DateTimeRangeValue | undefined>();
-
+export function ShareUseWalletSection({
+  enabled,
+  page,
+  pageSize,
+  scene,
+  direction,
+  dateRange,
+  onSceneChange,
+  onDirectionChange,
+  onDateRangeChange,
+  onResetFilters,
+  onNextPage,
+  onPreviousPage,
+  onFirstPage,
+  onPageSizeChange,
+}: {
+  enabled: boolean;
+  page: number;
+  pageSize: number;
+  scene?: string;
+  direction?: string;
+  dateRange?: DateTimeRangeValue;
+  onSceneChange: (scene?: string) => void;
+  onDirectionChange: (direction?: string) => void;
+  onDateRangeChange: (range: DateTimeRangeValue | undefined) => void;
+  onResetFilters: () => void;
+  onNextPage: () => void;
+  onPreviousPage: () => void;
+  onFirstPage: () => void;
+  onPageSizeChange: (pageSize: number) => void;
+}) {
   const walletQuery = useShareUseWalletQuery(enabled);
   const ledgerFilters = useMemo<ShareUseLedgerFilters>(
     () => ({
@@ -33,31 +57,14 @@ export function ShareUseWalletSection({ enabled }: { enabled: boolean }) {
           scene={scene}
           direction={direction}
           dateRange={dateRange}
-          onSceneChange={(nextScene) => {
-            setPage(0);
-            setScene(nextScene);
-          }}
-          onDirectionChange={(nextDirection) => {
-            setPage(0);
-            setDirection(nextDirection);
-          }}
-          onDateRangeChange={(nextDateRange) => {
-            setPage(0);
-            setDateRange(nextDateRange);
-          }}
-          onResetFilters={() => {
-            setPage(0);
-            setScene(undefined);
-            setDirection(undefined);
-            setDateRange(undefined);
-          }}
-          onNextPage={() => setPage((prev) => prev + 1)}
-          onPreviousPage={() => setPage((prev) => Math.max(0, prev - 1))}
-          onFirstPage={() => setPage(0)}
-          onPageSizeChange={(nextPageSize) => {
-            setPage(0);
-            setPageSize(nextPageSize);
-          }}
+          onSceneChange={onSceneChange}
+          onDirectionChange={onDirectionChange}
+          onDateRangeChange={onDateRangeChange}
+          onResetFilters={onResetFilters}
+          onNextPage={onNextPage}
+          onPreviousPage={onPreviousPage}
+          onFirstPage={onFirstPage}
+          onPageSizeChange={onPageSizeChange}
         />
       </div>
     </div>
