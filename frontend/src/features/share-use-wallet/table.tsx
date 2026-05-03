@@ -1,14 +1,33 @@
 import { useMemo } from 'react';
+import { X } from 'lucide-react';
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { DateRangePicker } from '@/components/date-range-picker';
+import { ServerSidePagination } from '@/components/server-side-pagination';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
-import { ServerSidePagination } from '@/components/server-side-pagination';
 import { pageInfoSchema } from '@/gql/pagination';
+import type { DateTimeRangeValue } from '@/utils/date-range';
 import type { ShareUseLedgerPage, ShareUsePointLedgerEntry } from './data';
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(value);
 }
+
+const sceneFilterOptions = [
+  { value: 'all', label: 'All scenes' },
+  { value: 'contribution_pending', label: 'Contribution pending' },
+  { value: 'contribution_reward', label: 'Contribution reward' },
+  { value: 'consume', label: 'Consume' },
+  { value: 'adjustment', label: 'Adjustment' },
+] as const;
+
+const directionFilterOptions = [
+  { value: 'all', label: 'All directions' },
+  { value: 'credit', label: 'Credit' },
+  { value: 'debit', label: 'Debit' },
+] as const;
 
 const columns: ColumnDef<ShareUsePointLedgerEntry>[] = [
   {
@@ -50,6 +69,13 @@ const columns: ColumnDef<ShareUsePointLedgerEntry>[] = [
 export function ShareUseLedgerTable({
   ledgerPage,
   isLoading,
+  scene,
+  direction,
+  dateRange,
+  onSceneChange,
+  onDirectionChange,
+  onDateRangeChange,
+  onResetFilters,
   onNextPage,
   onPreviousPage,
   onFirstPage,
@@ -57,12 +83,20 @@ export function ShareUseLedgerTable({
 }: {
   ledgerPage?: ShareUseLedgerPage;
   isLoading: boolean;
+  scene?: string;
+  direction?: string;
+  dateRange?: DateTimeRangeValue;
+  onSceneChange: (scene?: string) => void;
+  onDirectionChange: (direction?: string) => void;
+  onDateRangeChange: (range: DateTimeRangeValue | undefined) => void;
+  onResetFilters: () => void;
   onNextPage: () => void;
   onPreviousPage: () => void;
   onFirstPage: () => void;
   onPageSizeChange: (pageSize: number) => void;
 }) {
   const entries = ledgerPage?.entries ?? ledgerPage?.ledgerEntries ?? [];
+  const hasFilters = Boolean(scene || direction || dateRange?.from || dateRange?.to);
   const pageInfo = useMemo(
     () =>
       pageInfoSchema.parse({
@@ -83,6 +117,39 @@ export function ShareUseLedgerTable({
 
   return (
     <div className='flex flex-1 flex-col overflow-hidden'>
+      <div className='mb-4 flex flex-wrap items-center gap-2'>
+        <Select value={scene ?? 'all'} onValueChange={(value) => onSceneChange(value === 'all' ? undefined : value)}>
+          <SelectTrigger size='sm' className='w-[220px]'>
+            <SelectValue placeholder='All scenes' />
+          </SelectTrigger>
+          <SelectContent>
+            {sceneFilterOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={direction ?? 'all'} onValueChange={(value) => onDirectionChange(value === 'all' ? undefined : value)}>
+          <SelectTrigger size='sm' className='w-[180px]'>
+            <SelectValue placeholder='All directions' />
+          </SelectTrigger>
+          <SelectContent>
+            {directionFilterOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <DateRangePicker value={dateRange} onChange={onDateRangeChange} />
+        {hasFilters && (
+          <Button variant='ghost' size='sm' className='h-8 px-2 lg:px-3' onClick={onResetFilters}>
+            Reset filters
+            <X className='ml-2 h-4 w-4' />
+          </Button>
+        )}
+      </div>
       <div className='shadow-soft relative flex-1 overflow-auto overflow-x-hidden rounded-2xl border border-[var(--table-border)]'>
         <Table className='border-separate border-spacing-0 rounded-2xl bg-[var(--table-background)]'>
           <TableHeader className='sticky top-0 z-20 bg-[var(--table-header)] shadow-sm'>
@@ -112,7 +179,7 @@ export function ShareUseLedgerTable({
             ) : (
               <TableRow className='!bg-[var(--table-background)]'>
                 <TableCell colSpan={columns.length} className='h-24 !bg-[var(--table-background)] text-center'>
-                  No point ledger entries yet.
+                  {hasFilters ? 'No point ledger entries match the current filters.' : 'No point ledger entries yet.'}
                 </TableCell>
               </TableRow>
             )}

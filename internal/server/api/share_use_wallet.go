@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 
 	"github.com/looplj/axonhub/internal/contexts"
 	"github.com/looplj/axonhub/internal/ent"
+	"github.com/looplj/axonhub/internal/ent/userpointledgerentry"
 	"github.com/looplj/axonhub/internal/server/biz"
 )
 
@@ -47,20 +50,25 @@ func (h *ShareUseWalletHandlers) ListLedger(c *gin.Context) {
 	}
 	page := parseShareUseLedgerInt(c, "page", 0)
 	pageSize := parseShareUseLedgerInt(c, "pageSize", 20)
-	ledgerPage, err := h.ShareUseWalletService.ListLedgerPage(c.Request.Context(), user.ID, page, pageSize)
+	filters, err := parseShareUseLedgerFilters(c)
+	if err != nil {
+		JSONError(c, http.StatusBadRequest, err)
+		return
+	}
+	ledgerPage, err := h.ShareUseWalletService.ListLedgerPage(c.Request.Context(), user.ID, page, pageSize, filters)
 	if err != nil {
 		JSONError(c, http.StatusInternalServerError, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"entries":      ledgerPage.Entries,
+		"entries":       ledgerPage.Entries,
 		"ledgerEntries": ledgerPage.Entries,
-		"totalCount":   ledgerPage.TotalCount,
-		"page":         ledgerPage.Page,
-		"pageSize":     ledgerPage.PageSize,
-		"hasNext":      ledgerPage.HasNext,
-		"hasPrev":      ledgerPage.HasPrev,
-		"data":         ledgerPage,
+		"totalCount":    ledgerPage.TotalCount,
+		"page":          ledgerPage.Page,
+		"pageSize":      ledgerPage.PageSize,
+		"hasNext":       ledgerPage.HasNext,
+		"hasPrev":       ledgerPage.HasPrev,
+		"data":          ledgerPage,
 	})
 }
 
@@ -96,4 +104,72 @@ func parseShareUseLedgerInt(c *gin.Context, key string, fallback int) int {
 		return fallback
 	}
 	return parsed
+}
+
+func parseShareUseLedgerFilters(c *gin.Context) (biz.ShareUseLedgerFilters, error) {
+	filters := biz.ShareUseLedgerFilters{}
+
+	scene, err := parseShareUseLedgerScene(c.Query("scene"))
+	if err != nil {
+		return biz.ShareUseLedgerFilters{}, err
+	}
+	filters.Scene = scene
+
+	direction, err := parseShareUseLedgerDirection(c.Query("direction"))
+	if err != nil {
+		return biz.ShareUseLedgerFilters{}, err
+	}
+	filters.Direction = direction
+
+	createdAtGTE, err := parseShareUseLedgerTime(c.Query("createdAtGTE"), "createdAtGTE")
+	if err != nil {
+		return biz.ShareUseLedgerFilters{}, err
+	}
+	filters.CreatedAtGTE = createdAtGTE
+
+	createdAtLTE, err := parseShareUseLedgerTime(c.Query("createdAtLTE"), "createdAtLTE")
+	if err != nil {
+		return biz.ShareUseLedgerFilters{}, err
+	}
+	filters.CreatedAtLTE = createdAtLTE
+
+	if filters.CreatedAtGTE != nil && filters.CreatedAtLTE != nil && filters.CreatedAtGTE.After(*filters.CreatedAtLTE) {
+		return biz.ShareUseLedgerFilters{}, fmt.Errorf("createdAtGTE must be before or equal to createdAtLTE")
+	}
+
+	return filters, nil
+}
+
+func parseShareUseLedgerScene(raw string) (string, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return "", nil
+	}
+	if err := userpointledgerentry.SceneValidator(userpointledgerentry.Scene(value)); err != nil {
+		return "", fmt.Errorf("invalid scene %q: must be one of %s, %s, %s, %s", value, userpointledgerentry.SceneContributionPending, userpointledgerentry.SceneContributionReward, userpointledgerentry.SceneConsume, userpointledgerentry.SceneAdjustment)
+	}
+	return value, nil
+}
+
+func parseShareUseLedgerDirection(raw string) (string, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return "", nil
+	}
+	if err := userpointledgerentry.DirectionValidator(userpointledgerentry.Direction(value)); err != nil {
+		return "", fmt.Errorf("invalid direction %q: must be one of %s or %s", value, userpointledgerentry.DirectionCredit, userpointledgerentry.DirectionDebit)
+	}
+	return value, nil
+}
+
+func parseShareUseLedgerTime(raw, key string) (*time.Time, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return nil, nil
+	}
+	parsed, err := time.Parse(time.RFC3339, value)
+	if err != nil {
+		return nil, fmt.Errorf("%s must be an RFC3339 timestamp", key)
+	}
+	return &parsed, nil
 }

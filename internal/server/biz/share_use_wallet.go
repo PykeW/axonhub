@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/shopspring/decimal"
 	"go.uber.org/fx"
 
 	"github.com/looplj/axonhub/internal/ent"
+	"github.com/looplj/axonhub/internal/ent/predicate"
 	"github.com/looplj/axonhub/internal/ent/userpointaccount"
 	"github.com/looplj/axonhub/internal/ent/userpointledgerentry"
 )
@@ -59,13 +61,20 @@ type ShareUseWalletUsageView struct {
 	LedgerEntries []ShareUsePointLedgerEntryView `json:"ledgerEntries"`
 }
 
+type ShareUseLedgerFilters struct {
+	Scene        string
+	Direction    string
+	CreatedAtGTE *time.Time
+	CreatedAtLTE *time.Time
+}
+
 type ShareUseLedgerPage struct {
 	Entries    []ShareUsePointLedgerEntryView `json:"entries"`
-	TotalCount int                           `json:"totalCount"`
-	Page       int                           `json:"page"`
-	PageSize   int                           `json:"pageSize"`
-	HasNext    bool                          `json:"hasNext"`
-	HasPrev    bool                          `json:"hasPrev"`
+	TotalCount int                            `json:"totalCount"`
+	Page       int                            `json:"page"`
+	PageSize   int                            `json:"pageSize"`
+	HasNext    bool                           `json:"hasNext"`
+	HasPrev    bool                           `json:"hasPrev"`
 }
 
 func NewShareUseWalletService(params ShareUseWalletServiceParams) *ShareUseWalletService {
@@ -84,12 +93,12 @@ func (s *ShareUseWalletService) GetWallet(ctx context.Context, userID int) (*Sha
 }
 
 func (s *ShareUseWalletService) ListLedgerEntries(ctx context.Context, userID int) ([]ShareUsePointLedgerEntryView, error) {
-	return s.listLedgerEntries(ctx, userID, 0, 200)
+	return s.listLedgerEntries(ctx, userID, 0, 200, ShareUseLedgerFilters{})
 }
 
-func (s *ShareUseWalletService) ListLedgerPage(ctx context.Context, userID, page, pageSize int) (*ShareUseLedgerPage, error) {
+func (s *ShareUseWalletService) ListLedgerPage(ctx context.Context, userID, page, pageSize int, filters ShareUseLedgerFilters) (*ShareUseLedgerPage, error) {
 	page, pageSize = normalizeShareUseLedgerPage(page, pageSize)
-	entries, totalCount, err := s.listLedgerEntriesPage(ctx, userID, page, pageSize)
+	entries, totalCount, err := s.listLedgerEntriesPage(ctx, userID, page, pageSize, filters)
 	if err != nil {
 		return nil, err
 	}
@@ -131,17 +140,17 @@ func (s *ShareUseWalletService) listWallets(ctx context.Context, userID int) ([]
 	return out, nil
 }
 
-func (s *ShareUseWalletService) listLedgerEntries(ctx context.Context, userID, page, pageSize int) ([]ShareUsePointLedgerEntryView, error) {
-	entries, _, err := s.listLedgerEntriesPage(ctx, userID, page, pageSize)
+func (s *ShareUseWalletService) listLedgerEntries(ctx context.Context, userID, page, pageSize int, filters ShareUseLedgerFilters) ([]ShareUsePointLedgerEntryView, error) {
+	entries, _, err := s.listLedgerEntriesPage(ctx, userID, page, pageSize, filters)
 	if err != nil {
 		return nil, err
 	}
 	return entries, nil
 }
 
-func (s *ShareUseWalletService) listLedgerEntriesPage(ctx context.Context, userID, page, pageSize int) ([]ShareUsePointLedgerEntryView, int, error) {
+func (s *ShareUseWalletService) listLedgerEntriesPage(ctx context.Context, userID, page, pageSize int, filters ShareUseLedgerFilters) ([]ShareUsePointLedgerEntryView, int, error) {
 	query := s.entFromContext(ctx).UserPointLedgerEntry.Query().
-		Where(userpointledgerentry.UserID(userID))
+		Where(append([]predicate.UserPointLedgerEntry{userpointledgerentry.UserIDEQ(userID)}, shareUseLedgerPredicates(filters)...)...)
 	totalCount, err := query.Clone().Count(ctx)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count share/use point ledger entries: %w", err)
@@ -177,6 +186,23 @@ func normalizeShareUseLedgerPage(page, pageSize int) (int, int) {
 		pageSize = 100
 	}
 	return page, pageSize
+}
+
+func shareUseLedgerPredicates(filters ShareUseLedgerFilters) []predicate.UserPointLedgerEntry {
+	predicates := make([]predicate.UserPointLedgerEntry, 0, 4)
+	if filters.Scene != "" {
+		predicates = append(predicates, userpointledgerentry.SceneEQ(userpointledgerentry.Scene(filters.Scene)))
+	}
+	if filters.Direction != "" {
+		predicates = append(predicates, userpointledgerentry.DirectionEQ(userpointledgerentry.Direction(filters.Direction)))
+	}
+	if filters.CreatedAtGTE != nil {
+		predicates = append(predicates, userpointledgerentry.CreatedAtGTE(*filters.CreatedAtGTE))
+	}
+	if filters.CreatedAtLTE != nil {
+		predicates = append(predicates, userpointledgerentry.CreatedAtLTE(*filters.CreatedAtLTE))
+	}
+	return predicates
 }
 
 func shareUseWalletFromEnt(row *ent.UserPointAccount) ShareUsePointWalletView {

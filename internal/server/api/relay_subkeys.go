@@ -19,8 +19,8 @@ import (
 type RelaySubKeyHandlersParams struct {
 	fx.In
 
-	RelayAdminService      *biz.RelayAdminService
-	ShareUseWalletService  *biz.ShareUseWalletService
+	RelayAdminService     *biz.RelayAdminService
+	ShareUseWalletService *biz.ShareUseWalletService
 }
 
 type RelaySubKeyHandlers struct {
@@ -313,12 +313,29 @@ func (h *RelaySubKeyHandlers) ListShareUseLedger(c *gin.Context) {
 	if !exists {
 		return
 	}
-	ledgerEntries, err := h.ShareUseWalletService.ListLedgerEntries(c.Request.Context(), user.ID)
+	page := parseShareUseLedgerInt(c, "page", 0)
+	pageSize := parseShareUseLedgerInt(c, "pageSize", 20)
+	filters, err := parseShareUseLedgerFilters(c)
+	if err != nil {
+		JSONError(c, http.StatusBadRequest, err)
+		return
+	}
+
+	ledgerPage, err := h.ShareUseWalletService.ListLedgerPage(c.Request.Context(), user.ID, page, pageSize, filters)
 	if err != nil {
 		relaySubKeyJSONError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"ledgerEntries": ledgerEntries, "data": ledgerEntries})
+	c.JSON(http.StatusOK, gin.H{
+		"entries":       ledgerPage.Entries,
+		"ledgerEntries": ledgerPage.Entries,
+		"totalCount":    ledgerPage.TotalCount,
+		"page":          ledgerPage.Page,
+		"pageSize":      ledgerPage.PageSize,
+		"hasNext":       ledgerPage.HasNext,
+		"hasPrev":       ledgerPage.HasPrev,
+		"data":          ledgerPage,
+	})
 }
 
 func (h *RelaySubKeyHandlers) GetShareUseUsage(c *gin.Context) {
@@ -369,7 +386,6 @@ func currentRelaySubKeyUser(c *gin.Context) (*ent.User, bool) {
 }
 
 func relaySubKeyBindJSON(c *gin.Context, dest any) bool {
-
 	if err := c.ShouldBindJSON(dest); err != nil {
 		JSONError(c, http.StatusBadRequest, fmt.Errorf("invalid request body: %w", err))
 		return false

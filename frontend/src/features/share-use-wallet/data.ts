@@ -36,6 +36,13 @@ export interface ShareUseWalletUsage {
   ledgerEntries: ShareUsePointLedgerEntry[];
 }
 
+export interface ShareUseLedgerFilters {
+  scene?: ShareUsePointLedgerEntry['scene'];
+  direction?: ShareUsePointLedgerEntry['direction'];
+  createdAtGTE?: string;
+  createdAtLTE?: string;
+}
+
 export interface ShareUseLedgerPage {
   entries: ShareUsePointLedgerEntry[];
   ledgerEntries: ShareUsePointLedgerEntry[];
@@ -46,6 +53,8 @@ export interface ShareUseLedgerPage {
   hasPrev: boolean;
 }
 
+type ShareUseLedgerQueryKey = readonly ['share-use-ledger', number, number, string, string, string, string];
+
 async function getShareUseWallet(): Promise<ShareUsePointWallet | null | undefined> {
   const response = await apiRequest<{ wallet?: ShareUsePointWallet | null; data?: ShareUsePointWallet | null }>('/admin/share-use/wallet', {
     requireAuth: true,
@@ -53,11 +62,24 @@ async function getShareUseWallet(): Promise<ShareUsePointWallet | null | undefin
   return response.wallet ?? response.data;
 }
 
-async function fetchShareUseLedgerPage(page: number, pageSize: number): Promise<ShareUseLedgerPage> {
+async function fetchShareUseLedgerPage(page: number, pageSize: number, filters: ShareUseLedgerFilters): Promise<ShareUseLedgerPage> {
   const searchParams = new URLSearchParams({
     page: String(page),
     pageSize: String(pageSize),
   });
+  if (filters.scene) {
+    searchParams.set('scene', filters.scene);
+  }
+  if (filters.direction) {
+    searchParams.set('direction', filters.direction);
+  }
+  if (filters.createdAtGTE) {
+    searchParams.set('createdAtGTE', filters.createdAtGTE);
+  }
+  if (filters.createdAtLTE) {
+    searchParams.set('createdAtLTE', filters.createdAtLTE);
+  }
+
   const response = await apiRequest<{
     entries?: ShareUsePointLedgerEntry[];
     ledgerEntries?: ShareUsePointLedgerEntry[];
@@ -74,7 +96,7 @@ async function fetchShareUseLedgerPage(page: number, pageSize: number): Promise<
   const entries = response.entries ?? response.ledgerEntries ?? data?.entries ?? data?.ledgerEntries ?? [];
   return {
     entries,
-    ledgerEntries: data?.ledgerEntries ?? entries,
+    ledgerEntries: response.ledgerEntries ?? data?.ledgerEntries ?? entries,
     totalCount: response.totalCount ?? data?.totalCount ?? entries.length,
     page: response.page ?? data?.page ?? page,
     pageSize: response.pageSize ?? data?.pageSize ?? pageSize,
@@ -99,12 +121,25 @@ export function useShareUseWalletQuery(enabled = true) {
   });
 }
 
-export function useShareUseLedgerQuery(page: number, pageSize: number, enabled = true) {
-  return useQuery<ShareUseLedgerPage, Error, ShareUseLedgerPage, readonly ['share-use-ledger', number, number]>({
-    queryKey: ['share-use-ledger', page, pageSize],
+export function useShareUseLedgerQuery(page: number, pageSize: number, filters: ShareUseLedgerFilters, enabled = true) {
+  return useQuery<ShareUseLedgerPage, Error, ShareUseLedgerPage, ShareUseLedgerQueryKey>({
+    queryKey: [
+      'share-use-ledger',
+      page,
+      pageSize,
+      filters.scene ?? '',
+      filters.direction ?? '',
+      filters.createdAtGTE ?? '',
+      filters.createdAtLTE ?? '',
+    ],
     queryFn: ({ queryKey }) => {
-      const [, currentPage, currentPageSize] = queryKey;
-      return fetchShareUseLedgerPage(currentPage, currentPageSize);
+      const [, currentPage, currentPageSize, scene, direction, createdAtGTE, createdAtLTE] = queryKey;
+      return fetchShareUseLedgerPage(currentPage, currentPageSize, {
+        scene: scene || undefined,
+        direction: direction || undefined,
+        createdAtGTE: createdAtGTE || undefined,
+        createdAtLTE: createdAtLTE || undefined,
+      });
     },
     enabled,
     staleTime: 60_000,
